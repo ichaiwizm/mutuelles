@@ -1,0 +1,25 @@
+{
+  "manifest_version": 3,
+  "name": "SwissLife One Extension",
+  "version": "1.0",
+  "description": "Extension qui salue différemment selon le site",
+  "permissions": ["activeTab"],
+  "host_permissions": ["https://*.swisslifeone.fr/*"],
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://*.swisslifeone.fr/*"],
+      "js": [
+        "leads.js",
+        "utils.js", 
+        "form-filler.js",
+        "ui-components.js",
+        "content.js"
+      ],
+      "all_frames": true,
+      "run_at": "document_end"
+    }
+  ]
+}
