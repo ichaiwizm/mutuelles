@@ -35,54 +35,60 @@ export class DeduplicationService {
     return null;
   }
 
+  private static pick<T>(a: T | undefined, b: T | undefined): T | undefined {
+    return a ?? b; // garde la valeur de base si définie
+  }
+
   private static mergeLead(existing: Lead, newLead: Lead): Lead {
-    // Garder la fiche la plus récente comme base
     const base = new Date(existing.extractedAt) > new Date(newLead.extractedAt) ? existing : newLead;
     const other = base === existing ? newLead : existing;
 
-    // Fusionner les champs vides
     const merged: Lead = {
       ...base,
-      contact: {
-        ...base.contact,
-        ...Object.fromEntries(
-          Object.entries(other.contact).filter(([_, v]) => v && !base.contact[_ as keyof typeof base.contact])
-        )
-      },
-      souscripteur: {
-        ...base.souscripteur,
-        ...Object.fromEntries(
-          Object.entries(other.souscripteur).filter(([_, v]) => v && !base.souscripteur[_ as keyof typeof base.souscripteur])
-        )
-      },
-      conjoint: base.conjoint || other.conjoint ? {
-        ...base.conjoint,
-        ...other.conjoint,
-        ...Object.fromEntries(
-          Object.entries(other.conjoint || {}).filter(([_, v]) => v && !(base.conjoint?.[_ as keyof typeof base.conjoint]))
-        )
-      } : undefined,
-      enfants: [...base.enfants, ...other.enfants].filter((e, i, arr) => 
-        arr.findIndex(x => x.dateNaissance === e.dateNaissance) === i
-      ),
-      besoins: {
-        ...base.besoins,
-        ...Object.fromEntries(
-          Object.entries(other.besoins).filter(([_, v]) => v !== undefined && base.besoins[_ as keyof typeof base.besoins] === undefined)
-        )
-      },
-      source: base.source === other.source ? base.source : 'gmail',
+      contact: Object.fromEntries(
+        Object.keys({ ...base.contact, ...other.contact }).map((k) => [
+          k,
+          this.pick(base.contact[k as keyof typeof base.contact], other.contact[k as keyof typeof other.contact])
+        ])
+      ) as Lead['contact'],
+
+      souscripteur: Object.fromEntries(
+        Object.keys({ ...base.souscripteur, ...other.souscripteur }).map((k) => [
+          k,
+          this.pick(base.souscripteur[k as keyof typeof base.souscripteur], other.souscripteur[k as keyof typeof other.souscripteur])
+        ])
+      ) as Lead['souscripteur'],
+
+      conjoint: (base.conjoint || other.conjoint)
+        ? Object.fromEntries(
+            Object.keys({ ...(base.conjoint||{}), ...(other.conjoint||{}) }).map((k) => [
+              k,
+              this.pick(base.conjoint?.[k as keyof NonNullable<typeof base.conjoint>], other.conjoint?.[k as keyof NonNullable<typeof other.conjoint>])
+            ])
+          ) as NonNullable<Lead['conjoint']>
+        : undefined,
+
+      enfants: [...base.enfants, ...other.enfants]
+        .filter((e, i, arr) => arr.findIndex(x => x.dateNaissance === e.dateNaissance) === i),
+
+      besoins: Object.fromEntries(
+        Object.keys({ ...base.besoins, ...other.besoins }).map((k) => [
+          k,
+          this.pick(
+            base.besoins[k as keyof typeof base.besoins],
+            other.besoins[k as keyof typeof other.besoins]
+          )
+        ])
+      ) as Lead['besoins'],
+
+      source: base.source === other.source ? base.source : 'multiple',
       score: Math.max(base.score, other.score),
       isDuplicate: false,
-      notes: { ...other.notes, ...base.notes }
+      notes: { ...base.notes, ...other.notes }
     };
 
-    // Marquer les sources multiples dans les notes
     if (base.source !== other.source) {
-      merged.notes = {
-        ...merged.notes,
-        sources: ['gmail', 'calendar']
-      };
+      merged.notes = { ...merged.notes, sources: Array.from(new Set([base.source, other.source])) };
     }
 
     return merged;

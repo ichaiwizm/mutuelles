@@ -34,7 +34,7 @@ export interface Lead {
       dentaire?: number;
     };
   };
-  source: 'gmail' | 'calendar';
+  source: 'gmail' | 'calendar' | 'multiple';
   extractedAt: string;
   rawSnippet?: string;
   fullContent?: string;

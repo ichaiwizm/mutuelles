@@ -11,13 +11,11 @@ export interface Settings {
   days: number;
   sources: {
     gmail: boolean;
-    calendar: boolean;
   };
 }
 
 export interface LastSync {
   gmail?: string;
-  calendar?: string;
 }
 
 export class StorageManager {
@@ -35,8 +33,7 @@ export class StorageManager {
     return data ? JSON.parse(data) : {
       days: 30,
       sources: {
-        gmail: true,
-        calendar: true
+        gmail: true
       }
     };
   }
@@ -50,7 +47,7 @@ export class StorageManager {
     return data ? JSON.parse(data) : {};
   }
 
-  static updateLastSync(source: 'gmail' | 'calendar'): void {
+  static updateLastSync(source: 'gmail'): void {
     const lastSync = this.getLastSync();
     lastSync[source] = new Date().toISOString();
     localStorage.setItem(STORAGE_KEYS.LAST_SYNC, JSON.stringify(lastSync));

@@ -8,7 +8,7 @@ export function Login() {
   const handleGoogleLogin = () => {
     console.log('🔄 Redirection vers l\'authentification Google...');
     setLoading(true);
-    window.location.href = 'http://localhost:3001/auth/google/start';
+    window.location.href = `${import.meta.env.VITE_API_URL}/auth/google/start`;
   };
 
   return (

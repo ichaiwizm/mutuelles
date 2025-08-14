@@ -30,36 +30,46 @@ Application complète d'extraction et de gestion de leads depuis Gmail et Google
 ### Installation du projet
 
 ```bash
-# Installer les dépendances frontend
-npm install
+# Depuis la racine du monorepo
+npm run install:all
 
-# Installer les dépendances backend
-cd server
-npm install
-cd ..
+# Ou individuellement:
+npm install                    # racine
+cd platform/lead-extractor && npm install
+cd ../../server && npm install
 ```
 
 ### Configuration
 
-Créer/modifier le fichier `.env` à la racine:
+1. Créer le fichier `server/.env`:
 ```env
 PORT=3001
 GOOGLE_CLIENT_ID=votre_client_id
 GOOGLE_CLIENT_SECRET=votre_client_secret
+GOOGLE_REDIRECT_URI=http://localhost:3001/auth/google/callback
+FRONTEND_URL=http://localhost:5174
+```
+
+2. Créer le fichier `platform/lead-extractor/.env`:
+```env
+VITE_API_URL=http://localhost:3001
 ```
 
 ## Lancement
 
 ```bash
-# Terminal 1 - Backend
-cd server
-npm start
-
-# Terminal 2 - Frontend
+# Depuis la racine du monorepo - Développement
 npm run dev
+
+# Ou individuellement:
+# Terminal 1 - Backend
+cd server && npm run dev
+
+# Terminal 2 - Frontend  
+cd platform/lead-extractor && npm run dev
 ```
 
-L'application sera accessible sur http://localhost:5173
+L'application sera accessible sur http://localhost:5174
 
 ## Fonctionnalités
 
@@ -104,29 +114,36 @@ L'application sera accessible sur http://localhost:5173
 6. **Consolidation**: Fusion conflits, agrégation notes
 7. **Scoring**: Évaluation qualité (nombre de champs remplis)
 
-## Structure du projet
+## Structure du projet (Monorepo)
 
 ```
-lead-extractor/
-├── src/
-│   ├── components/
-│   │   ├── ui/           # Composants shadcn/ui
-│   │   └── LeadDetailDrawer.tsx
-│   ├── lib/
-│   │   ├── storage.ts    # Gestion localStorage
-│   │   ├── deduplication.ts
-│   │   └── utils.ts
-│   ├── pages/
-│   │   ├── Login.tsx
-│   │   ├── Dashboard.tsx
-│   │   └── Rules.tsx
-│   └── types/
-│       └── lead.ts
-├── server/
-│   ├── index.js          # API Express + OAuth
-│   └── services/
-│       └── parsing.js     # Pipeline d'extraction
-└── .env                  # Configuration Google
+mutuelles/
+├── package.json          # Scripts du monorepo
+├── platform/
+│   └── lead-extractor/   # Frontend React
+│       ├── src/
+│       │   ├── components/
+│       │   │   ├── ui/           # shadcn/ui
+│       │   │   └── LeadDetailDrawer.tsx
+│       │   ├── lib/
+│       │   │   ├── storage.ts    # localStorage
+│       │   │   ├── deduplication.ts
+│       │   │   └── utils.ts
+│       │   ├── pages/
+│       │   │   ├── Login.tsx
+│       │   │   ├── Dashboard.tsx
+│       │   │   └── Rules.tsx
+│       │   └── types/
+│       │       └── lead.ts
+│       └── .env          # Config frontend
+├── server/               # Backend Express
+│   ├── index.js          # API + OAuth
+│   ├── services/
+│   │   └── parsing.js    # Pipeline extraction
+│   └── .env             # Config backend
+└── swisslife-one-ext/   # Extension Chrome
+    ├── manifest.json
+    └── ...
 ```
 
 ## API Backend

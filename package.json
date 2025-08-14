@@ -1,0 +1,28 @@
+{
+  "name": "mutuelles-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "platform/lead-extractor",
+    "server",
+    "swisslife-one-ext"
+  ],
+  "scripts": {
+    "dev": "concurrently --names \"🔧SERVER,🎯FRONTEND\" --prefix-colors \"blue,green\" \"npm run dev:server\" \"npm run dev:frontend\"",
+    "dev:server": "cd server && npm run dev",
+    "dev:frontend": "cd platform/lead-extractor && npm run dev",
+    "build": "npm run build:server && npm run build:frontend",
+    "build:server": "cd server && npm run build",
+    "build:frontend": "cd platform/lead-extractor && npm run build",
+    "start": "npm run start:server",
+    "start:server": "cd server && npm run start",
+    "install:all": "npm install && npm run install:server && npm run install:frontend && npm run install:ext",
+    "install:server": "cd server && npm install",
+    "install:frontend": "cd platform/lead-extractor && npm install",
+    "install:ext": "cd swisslife-one-ext && npm install"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
