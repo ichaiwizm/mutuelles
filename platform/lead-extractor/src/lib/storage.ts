@@ -12,6 +12,12 @@ export interface Settings {
   sources: {
     gmail: boolean;
   };
+  ui: {
+    pageSize: number;
+    currentPage: number;
+    activeTab: 'leads' | 'all';
+    globalFilter: string;
+  };
 }
 
 export interface LastSync {
@@ -31,9 +37,15 @@ export class StorageManager {
   static getSettings(): Settings {
     const data = localStorage.getItem(STORAGE_KEYS.SETTINGS);
     return data ? JSON.parse(data) : {
-      days: 30,
+      days: 7,
       sources: {
         gmail: true
+      },
+      ui: {
+        pageSize: 10,
+        currentPage: 0,
+        activeTab: 'leads',
+        globalFilter: ''
       }
     };
   }

@@ -1,11 +1,12 @@
 import { useState, useEffect, useMemo } from 'react';
 import { StorageManager } from '@/lib/storage';
 import { DeduplicationService } from '@/lib/deduplication';
+import type { Lead } from '@/types/lead';
 
 const MIN_SCORE = 3;
 
 export const useLeads = () => {
-  const [leads, setLeads] = useState([]);
+  const [leads, setLeads] = useState<Lead[]>([]);
 
   // Charger les leads au démarrage
   useEffect(() => {
@@ -23,7 +24,10 @@ export const useLeads = () => {
   );
 
   // Ajouter de nouveaux leads avec déduplication et statistiques détaillées
-  const addLeads = (newLeads) => {
+  const addLeads = (newLeads: Lead[]) => {
+    console.log('🔍 Debug addLeads - newLeads:', newLeads.length);
+    console.log('🔍 Debug addLeads - scores:', newLeads.map(l => l.score));
+    
     const before = leads;
     const beforeQualified = before.filter(l => (l.score ?? 0) >= MIN_SCORE).length;
 
@@ -35,6 +39,17 @@ export const useLeads = () => {
     const addedQualified = Math.max(0, afterQualified - beforeQualified);
     const addedNon = Math.max(0, (allLeads.length - afterQualified) - (before.length - beforeQualified));
     const dedupMerged = Math.max(0, newLeads.length - uniquesAdded);
+
+    console.log('🔍 Debug stats:', { 
+      beforeCount: before.length, 
+      beforeQualified, 
+      afterCount: allLeads.length, 
+      afterQualified, 
+      uniquesAdded, 
+      addedQualified, 
+      addedNon, 
+      dedupMerged 
+    });
 
     setLeads(allLeads);
     StorageManager.saveLeads(allLeads);

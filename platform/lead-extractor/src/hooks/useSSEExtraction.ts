@@ -3,9 +3,7 @@ import { StorageManager } from '@/lib/storage';
 import { toast } from 'sonner';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
-const MIN_SCORE = 3;
-
-export const useSSEExtraction = (addLeads, checkAuthStatus) => {
+export const useSSEExtraction = (addLeads: any, checkAuthStatus: any) => {
   const [showProgress, setShowProgress] = useState(false);
   const [progressPhase, setProgressPhase] = useState('');
   const [progressMessage, setProgressMessage] = useState('');
@@ -18,7 +16,7 @@ export const useSSEExtraction = (addLeads, checkAuthStatus) => {
   const end = () => setPendingOps(n => Math.max(0, n - 1));
   const busy = pendingOps > 0;
 
-  const extractWithSSE = async (source, days) => {
+  const extractWithSSE = async (source: any, days: any) => {
     const authOk = await checkAuthStatus();
     if (!authOk) {
       toast.error('Authentification requise. Redirection...');
@@ -47,7 +45,7 @@ export const useSSEExtraction = (addLeads, checkAuthStatus) => {
         eventSource.close();
         
         // Ajouter les leads avec statistiques détaillées
-        const { allLeads: after, addedQualified, addedNon, dedupMerged } = addLeads(collectedLeads);
+        const { addedQualified, addedNon, dedupMerged } = addLeads(collectedLeads);
         StorageManager.updateLastSync(source);
 
         // Toast avec données post-déduplication
@@ -67,8 +65,7 @@ export const useSSEExtraction = (addLeads, checkAuthStatus) => {
       }
     };
 
-    eventSource.onerror = (error) => {
-      console.error('SSE Error:', error);
+    eventSource.onerror = () => {
       eventSource.close();
       toast.error('Erreur lors de l\'extraction Gmail');
       setShowProgress(false);

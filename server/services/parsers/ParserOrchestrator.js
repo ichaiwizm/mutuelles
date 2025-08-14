@@ -1,4 +1,5 @@
 import { AssurProspectParser } from './AssurProspectParser.js';
+import { AssurleadParser } from './AssurleadParser.js';
 import { GenericParser } from './GenericParser.js';
 import { BaseParser } from './BaseParser.js';
 import { v4 as uuidv4 } from 'uuid';
@@ -6,6 +7,7 @@ import { v4 as uuidv4 } from 'uuid';
 export class ParserOrchestrator {
   static parsers = [
     AssurProspectParser,
+    AssurleadParser,  // Parser spécifique pour Assurlead
     GenericParser  // Toujours en dernier (fallback)
   ];
 

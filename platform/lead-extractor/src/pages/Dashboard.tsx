@@ -4,6 +4,7 @@ import { LeadDetailModal } from '@/components/LeadDetailModal';
 import { useAuth } from '@/hooks/useAuth';
 import { useLeads } from '@/hooks/useLeads';
 import { useSettings } from '@/hooks/useSettings';
+import { useUIState } from '@/hooks/useUIState';
 import { useSSEExtraction } from '@/hooks/useSSEExtraction';
 import { ControlsPanel } from '@/components/dashboard/ControlsPanel';
 import { TabsNavigation } from '@/components/dashboard/TabsNavigation';
@@ -17,17 +18,22 @@ export function Dashboard() {
   const [modalLeads, setModalLeads] = useState<Lead[]>([]);
   const [currentLeadIndex, setCurrentLeadIndex] = useState(0);
   const [modalOpen, setModalOpen] = useState(false);
-  const [globalFilter, setGlobalFilter] = useState('');
-  const [activeTab, setActiveTab] = useState<'leads' | 'nonleads' | 'all'>('leads');
 
   // Hooks personnalisés
   const { isAuthenticated, checkAuthStatus, redirectToLogin } = useAuth();
-  const { leads, qualifiedLeads, nonLeads, addLeads, clearAllLeads, stats } = useLeads();
+  const { leads, qualifiedLeads, addLeads, clearAllLeads, stats } = useLeads();
   const {
     days, setDays,
     gmailEnabled, setGmailEnabled,
     saveSettings
   } = useSettings();
+  const {
+    uiState,
+    setPageSize,
+    setCurrentPage,
+    setActiveTab,
+    setGlobalFilter
+  } = useUIState();
 
   const {
     showProgress,
@@ -62,9 +68,8 @@ export function Dashboard() {
 
   // Données de table selon l'onglet actif
   const getTableData = () => {
-    switch (activeTab) {
+    switch (uiState?.activeTab || 'leads') {
       case 'leads': return qualifiedLeads;
-      case 'nonleads': return nonLeads;
       case 'all': return leads;
       default: return leads;
     }
@@ -112,7 +117,7 @@ export function Dashboard() {
         <div className="mb-4 mt-6">
           <Input
             placeholder="Rechercher par nom, prénom, email, téléphone ou ville..."
-            value={globalFilter}
+            value={uiState?.globalFilter || ''}
             onChange={(e) => setGlobalFilter(e.target.value)}
             className="max-w-sm border-slate-300 focus:border-indigo-500 focus:ring-indigo-500"
           />
@@ -120,19 +125,22 @@ export function Dashboard() {
 
         {/* Navigation onglets */}
         <TabsNavigation
-          activeTab={activeTab}
+          activeTab={uiState?.activeTab || 'leads'}
           onTabChange={setActiveTab}
           qualifiedCount={stats.qualified}
-          nonLeadsCount={stats.nonLeads}
           totalCount={stats.total}
         />
 
         {/* Table */}
         <LeadsTable
           data={getTableData()}
-          globalFilter={globalFilter}
+          globalFilter={uiState?.globalFilter || ''}
           onRowClick={handleRowClick}
-          activeTab={activeTab}
+          activeTab={uiState?.activeTab || 'leads'}
+          pageSize={uiState?.pageSize || 10}
+          currentPage={uiState?.currentPage || 0}
+          onPageSizeChange={setPageSize}
+          onPageChange={setCurrentPage}
         />
 
         {/* Modal détail */}

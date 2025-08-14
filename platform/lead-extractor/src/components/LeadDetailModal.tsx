@@ -3,9 +3,7 @@ import type { Lead } from '@/types/lead';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Separator } from '@/components/ui/separator';
-import { ChevronLeft, ChevronRight, Code, X, Loader2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Code, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface LeadDetailModalProps {
@@ -21,7 +19,7 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
 export function LeadDetailModal({ lead, leads, currentIndex, open, onOpenChange, onLeadChange }: LeadDetailModalProps) {
   const [showParsingDetails, setShowParsingDetails] = useState(false);
-  const [parsingResult, setParsingResult] = useState(null);
+  const [parsingResult, setParsingResult] = useState<any>(null);
   const [parsing, setParsing] = useState(false);
   
   if (!lead) return null;
@@ -79,7 +77,6 @@ export function LeadDetailModal({ lead, leads, currentIndex, open, onOpenChange,
       setShowParsingDetails(true);
       toast.success('Parsing réalisé avec succès');
     } catch (error) {
-      console.error('Parsing error:', error);
       toast.error('Erreur lors du parsing');
     } finally {
       setParsing(false);

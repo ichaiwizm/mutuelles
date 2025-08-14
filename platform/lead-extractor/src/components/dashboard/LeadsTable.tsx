@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   type ColumnDef,
   flexRender,
@@ -13,6 +13,7 @@ import {
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { rankItem } from '@tanstack/match-sorter-utils';
 import type { Lead } from '@/types/lead';
@@ -21,10 +22,23 @@ interface LeadsTableProps {
   data: Lead[];
   globalFilter: string;
   onRowClick: (lead: Lead, allSortedData: Lead[], leadIndex: number) => void;
-  activeTab: 'leads' | 'nonleads' | 'all';
+  activeTab: 'leads' | 'all';
+  pageSize: number;
+  currentPage: number;
+  onPageSizeChange: (pageSize: number) => void;
+  onPageChange: (page: number) => void;
 }
 
-export function LeadsTable({ data, globalFilter, onRowClick, activeTab }: LeadsTableProps) {
+export function LeadsTable({ 
+  data, 
+  globalFilter, 
+  onRowClick, 
+  activeTab,
+  pageSize,
+  currentPage,
+  onPageSizeChange,
+  onPageChange
+}: LeadsTableProps) {
   const [sorting, setSorting] = useState<SortingState>([{ id: 'score', desc: true }]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
 
@@ -106,7 +120,15 @@ export function LeadsTable({ data, globalFilter, onRowClick, activeTab }: LeadsT
   const table = useReactTable({
     data,
     columns,
-    state: { sorting, columnFilters, globalFilter },
+    state: { 
+      sorting, 
+      columnFilters, 
+      globalFilter,
+      pagination: {
+        pageIndex: currentPage,
+        pageSize: pageSize
+      }
+    },
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     getCoreRowModel: getCoreRowModel(),
@@ -114,7 +136,16 @@ export function LeadsTable({ data, globalFilter, onRowClick, activeTab }: LeadsT
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     globalFilterFn,
+    manualPagination: false,
+    pageCount: Math.ceil(data.length / pageSize)
   });
+
+  // Synchroniser les changements de page avec le hook parent
+  useEffect(() => {
+    if (table.getState().pagination.pageIndex !== currentPage) {
+      onPageChange(table.getState().pagination.pageIndex);
+    }
+  }, [table.getState().pagination.pageIndex, currentPage, onPageChange]);
 
   // Obtenir les données dans l'ordre EXACT du tableau final (trié + filtré)
   // La méthode la plus fiable : utiliser getPrePaginationRowModel qui a tout sauf la pagination
@@ -126,7 +157,6 @@ export function LeadsTable({ data, globalFilter, onRowClick, activeTab }: LeadsT
   const getEmptyMessage = () => {
     switch (activeTab) {
       case 'leads': return 'Aucun lead qualifié';
-      case 'nonleads': return 'Aucun non-lead';
       case 'all': return 'Aucun lead trouvé';
       default: return 'Aucun lead trouvé';
     }
@@ -170,7 +200,7 @@ export function LeadsTable({ data, globalFilter, onRowClick, activeTab }: LeadsT
           </TableHeader>
           <TableBody>
             {table.getRowModel().rows?.length ? (
-              table.getRowModel().rows.map((row, pageIndex) => (
+              table.getRowModel().rows.map((row) => (
                 <TableRow
                   key={row.id}
                   onClick={() => {
@@ -203,14 +233,33 @@ export function LeadsTable({ data, globalFilter, onRowClick, activeTab }: LeadsT
 
       {/* Pagination */}
       <div className="flex items-center justify-between space-x-2 py-4">
-        <div className="text-sm text-slate-600">
-          Affichage {table.getState().pagination.pageIndex * table.getState().pagination.pageSize + 1} à {Math.min((table.getState().pagination.pageIndex + 1) * table.getState().pagination.pageSize, table.getFilteredRowModel().rows.length)} sur {table.getFilteredRowModel().rows.length} entrée(s)
+        <div className="flex items-center gap-4">
+          <div className="text-sm text-slate-600">
+            Affichage {table.getState().pagination.pageIndex * table.getState().pagination.pageSize + 1} à {Math.min((table.getState().pagination.pageIndex + 1) * table.getState().pagination.pageSize, table.getFilteredRowModel().rows.length)} sur {table.getFilteredRowModel().rows.length} entrée(s)
+          </div>
+          {/* Sélecteur de taille de page */}
+          <div className="flex items-center gap-2">
+            <Select value={String(pageSize)} onValueChange={(v) => onPageSizeChange(Number(v))}>
+              <SelectTrigger className="w-20">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="10">10</SelectItem>
+                <SelectItem value="25">25</SelectItem>
+                <SelectItem value="50">50</SelectItem>
+                <SelectItem value="100">100</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
         <div className="flex items-center space-x-2">
           <Button
             variant="outline"
             size="sm"
-            onClick={() => table.setPageIndex(0)}
+            onClick={() => {
+              table.setPageIndex(0);
+              onPageChange(0);
+            }}
             disabled={!table.getCanPreviousPage()}
             className="border-slate-300 text-slate-700 hover:bg-slate-50"
           >
@@ -219,7 +268,10 @@ export function LeadsTable({ data, globalFilter, onRowClick, activeTab }: LeadsT
           <Button
             variant="outline"
             size="sm"
-            onClick={() => table.previousPage()}
+            onClick={() => {
+              table.previousPage();
+              onPageChange(table.getState().pagination.pageIndex - 1);
+            }}
             disabled={!table.getCanPreviousPage()}
             className="border-slate-300 text-slate-700 hover:bg-slate-50"
           >
@@ -233,7 +285,10 @@ export function LeadsTable({ data, globalFilter, onRowClick, activeTab }: LeadsT
           <Button
             variant="outline"
             size="sm"
-            onClick={() => table.nextPage()}
+            onClick={() => {
+              table.nextPage();
+              onPageChange(table.getState().pagination.pageIndex + 1);
+            }}
             disabled={!table.getCanNextPage()}
             className="border-slate-300 text-slate-700 hover:bg-slate-50"
           >
@@ -242,7 +297,11 @@ export function LeadsTable({ data, globalFilter, onRowClick, activeTab }: LeadsT
           <Button
             variant="outline"
             size="sm"
-            onClick={() => table.setPageIndex(table.getPageCount() - 1)}
+            onClick={() => {
+              const lastPage = table.getPageCount() - 1;
+              table.setPageIndex(lastPage);
+              onPageChange(lastPage);
+            }}
             disabled={!table.getCanNextPage()}
             className="border-slate-300 text-slate-700 hover:bg-slate-50"
           >

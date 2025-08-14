@@ -4,7 +4,7 @@ import axios from 'axios';
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
 export const useAuth = () => {
-  const [isAuthenticated, setIsAuthenticated] = useState(null);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [loading, setLoading] = useState(true);
 
   const checkAuthStatus = async () => {
@@ -13,7 +13,6 @@ export const useAuth = () => {
       setIsAuthenticated(response.data.authenticated);
       return response.data.authenticated;
     } catch (error) {
-      console.error('Auth check failed:', error);
       setIsAuthenticated(false);
       return false;
     } finally {

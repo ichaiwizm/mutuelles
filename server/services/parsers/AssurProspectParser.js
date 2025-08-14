@@ -8,55 +8,30 @@ export class AssurProspectParser extends BaseParser {
   }
 
   static parse(content) {
-    console.log('🔍 === PARSING ASSURPROSPECT ===');
-    console.log('🔍 Contenu original (premiers 200 chars):', content.substring(0, 200) + '...');
-    
     const normalizedContent = this.normalizeContent(content);
-    console.log('🔍 Contenu normalisé (premiers 200 chars):', normalizedContent.substring(0, 200) + '...');
     
     // Découper le contenu en sections
     const sections = this.extractSections(normalizedContent);
-    console.log('🔍 Sections extraites:', Object.keys(sections));
-    console.log('🔍 Détail des sections:', sections);
     
     // Extraire les données de chaque section
-    console.log('🔍 === EXTRACTION PAR SECTION ===');
-    
     const contact = this.extractContact(sections.contact || '');
-    console.log('🔍 Contact extrait:', contact);
-    
     const souscripteur = this.extractSouscripteur(sections.souscripteur || '');
-    console.log('🔍 Souscripteur extrait:', souscripteur);
     
     const conjoint = this.extractConjoint(sections.conjoint || '');
-    console.log('🔍 Conjoint extrait:', conjoint);
-    
     const enfants = this.extractEnfants(sections.enfants || '');
-    console.log('🔍 Enfants extraits:', enfants);
-    
     const besoins = this.extractBesoins(sections.besoin || '');
-    console.log('🔍 Besoins extraits:', besoins);
     
-    const data = {
+    return {
       contact,
       souscripteur,
       conjoint,
       enfants,
       besoins
     };
-
-    console.log('🔍 === DONNÉES FINALES ===');
-    console.log('🔍 Données complètes:', JSON.stringify(data, null, 2));
-    console.log('🔍 === FIN PARSING ASSURPROSPECT ===');
-
-    return data;
   }
 
   static extractSections(content) {
     const sections = {};
-    
-    console.log('📋 === EXTRACTION DES SECTIONS ===');
-    console.log('📋 Contenu à découper:', content.substring(0, 300) + '...');
     
     // Découper par sections principales
     const sectionRegexes = {
@@ -68,17 +43,12 @@ export class AssurProspectParser extends BaseParser {
     };
 
     for (const [sectionName, regex] of Object.entries(sectionRegexes)) {
-      console.log(`📋 Tentative extraction section "${sectionName}"...`);
       const match = content.match(regex);
       if (match) {
         sections[sectionName] = match[1].trim();
-        console.log(`📋 ✅ Section "${sectionName}" trouvée (${match[1].length} chars):`, match[1].substring(0, 100) + '...');
-      } else {
-        console.log(`📋 ❌ Section "${sectionName}" non trouvée`);
       }
     }
 
-    console.log('📋 === FIN EXTRACTION SECTIONS ===');
     return sections;
   }
 
