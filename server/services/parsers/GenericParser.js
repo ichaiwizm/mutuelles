@@ -14,7 +14,8 @@ export class GenericParser extends BaseParser {
       souscripteur: this.extractSouscripteurInfo(normalizedContent),
       conjoint: this.extractConjointInfo(normalizedContent),
       enfants: this.extractEnfantsInfo(normalizedContent),
-      besoins: this.extractBesoinsInfo(normalizedContent)
+      besoins: this.extractBesoinsInfo(normalizedContent),
+      signature: this.extractSignatureInfo(normalizedContent)
     };
 
     return data;
@@ -197,5 +198,35 @@ export class GenericParser extends BaseParser {
     }
     
     return besoins;
+  }
+  
+  static extractSignatureInfo(text) {
+    const signature = {};
+    
+    // Numéro ORIAS (courtier assurance)
+    const oriasMatch = text.match(/N°\s*ORIAS\s*:\s*(\d+)/i);
+    if (oriasMatch) signature.numeroOrias = oriasMatch[1];
+    
+    // SIREN entreprise
+    const sirenMatch = text.match(/SIREN\s*(\d{9})/i);
+    if (sirenMatch) signature.siren = sirenMatch[1];
+    
+    // Site web
+    const siteMatch = text.match(/Site\s*web\s*([a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/i);
+    if (siteMatch) signature.siteWeb = siteMatch[1];
+    
+    // Instagram
+    const instaMatch = text.match(/Instagram\s*@?([a-zA-Z0-9_]+)/i);
+    if (instaMatch) signature.instagram = instaMatch[1];
+    
+    // RCP (Responsabilité Civile Professionnelle)
+    const rcpMatch = text.match(/RCP\s*Prof\s*n°\s*(\d+)/i);
+    if (rcpMatch) signature.numeroRCP = rcpMatch[1];
+    
+    // Nom entreprise en début de signature
+    const entrepriseMatch = text.match(/^([A-Z][A-Za-z\s&-]+)\s*–\s*SIREN/m);
+    if (entrepriseMatch) signature.nomEntreprise = entrepriseMatch[1].trim();
+    
+    return Object.keys(signature).length > 0 ? signature : null;
   }
 }

@@ -38,10 +38,27 @@ export class BaseParser {
   }
 
   static normalizeTelephone(tel) {
-    let normalized = tel.replace(/[^\d+]/g, '');
-    if (normalized.length >= 10) {
-      return normalized;
+    if (!tel) return '';
+    
+    // Nettoyer les caractères non numériques sauf le +
+    let cleaned = tel.replace(/[^\d+]/g, '');
+    
+    // Gérer les formats internationaux français
+    if (cleaned.startsWith('+33')) {
+      cleaned = '0' + cleaned.slice(3);
     }
+    
+    // Formater avec points si 10 chiffres commençant par 0
+    if (cleaned.length === 10 && cleaned.startsWith('0')) {
+      return cleaned.replace(/(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})/, '$1.$2.$3.$4.$5');
+    }
+    
+    // Si format valide mais pas français (garde tel quel)
+    if (cleaned.length >= 10) {
+      return cleaned;
+    }
+    
+    // Sinon retourner le numéro original
     return tel;
   }
 

@@ -8,36 +8,28 @@ export function splitKV(line) {
   const mColon = line.match(/^(.+?)\s*:\s*(.+)$/);
   if (mColon) return [mColon[1], mColon[2]];
 
-  // Gestion du format Assurlead avec espaces/tabs multiples
-  const mSpaces = line.match(/^(.+?)\s{2,}(.+)$/);
+  // Gestion du format Assurlead avec espaces/tabs multiples ou un seul TAB
+  const mSpaces = line.match(/^(.+?)\s*\t\s*(.+)$/) || line.match(/^(.+?)\s{2,}(.+)$/);
   if (mSpaces) {
     const key = mSpaces[1].trim();
     const value = mSpaces[2].trim();
-    const normalizedKey = strip(key).replace(/\s+/g,' ').trim();
     
-    logger.debug('AssurleadParser parsing attempt', { 
+    logger.debug('AssurleadParser parsing with tabs/spaces', { 
       original_key: key, 
-      normalized_key: normalizedKey, 
-      value: value,
-      key_exists: RAW_KEYS.hasOwnProperty(normalizedKey)
+      value: value
     });
     
-    if (RAW_KEYS.hasOwnProperty(normalizedKey) && value && value !== 'NON RENSEIGNE') {
-      logger.debug('AssurleadParser key matched', { 
-        key: normalizedKey, 
-        value: value 
-      });
+    if (value && value !== 'NON RENSEIGNE') {
       return [key, value];
-    } else {
-      logger.debug('AssurleadParser key not matched', { 
-        key: normalizedKey, 
-        key_exists: RAW_KEYS.hasOwnProperty(normalizedKey),
-        value: value
-      });
     }
   }
 
   // Méthode de fallback avec analyse par mots - PRIORITÉ AUX CLÉS SPÉCIFIQUES
+  // Éviter le fallback sur des lignes spécifiques problématiques
+  if (line.trim() === 'Telephone domicile' || line.trim() === 'Telephone portable') {
+    return [null, null];
+  }
+  
   const words = line.split(/\s+/);
   
   // D'abord chercher les clés spécifiques les plus longues (enfants, conjoint)

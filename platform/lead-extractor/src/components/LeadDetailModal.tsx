@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import type { Lead } from '@/types/lead';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription } from '@/components/ui/dialog';
+import { Code } from 'lucide-react';
 import { useLeadNavigation } from '@/hooks/useLeadNavigation';
 import { useLeadParsing } from '@/hooks/useLeadParsing';
 import { LeadDetailHeader } from './LeadDetailHeader';
@@ -10,6 +11,7 @@ import { SouscripteurSection } from './lead-detail/SouscripteurSection';
 import { ConjointSection } from './lead-detail/ConjointSection';
 import { EnfantsSection } from './lead-detail/EnfantsSection';
 import { BesoinsSection } from './lead-detail/BesoinsSection';
+import { SignatureSection } from './lead-detail/SignatureSection';
 import { EmailContentSection } from './lead-detail/EmailContentSection';
 
 interface LeadDetailModalProps {
@@ -40,10 +42,11 @@ export function LeadDetailModal({ lead, leads, currentIndex, open, onOpenChange,
     resetParsing
   } = useLeadParsing();
 
-  // Réinitialiser le parsing lors du changement de lead
+
+  // Réinitialiser le parsing lors du changement de lead uniquement
   useEffect(() => {
     resetParsing();
-  }, [lead.id, resetParsing]);
+  }, [lead.id]);
 
   const handleParseCurrentLead = () => {
     parseCurrentLead(lead);
@@ -61,18 +64,17 @@ export function LeadDetailModal({ lead, leads, currentIndex, open, onOpenChange,
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      {/* Overlay plus opaque */}
-      <div 
-        className={`fixed inset-0 z-40 bg-black transition-opacity duration-200 ${
-          open ? 'opacity-70' : 'opacity-0 pointer-events-none'
-        }`} 
-      />
-      <DialogContent className="sm:max-w-6xl max-w-6xl w-[95vw] max-h-[90vh] p-0 z-50"
+      <DialogContent 
+        className="sm:max-w-6xl max-w-6xl w-[95vw] max-h-[90vh] p-0"
+        showCloseButton={false}
         style={{ 
           backgroundColor: 'white',
           boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
         }}
       >
+        <DialogDescription className="sr-only">
+          Détails du lead {lead.contact.prenom} {lead.contact.nom}
+        </DialogDescription>
         {/* Header avec navigation - sticky */}
         <LeadDetailHeader
           lead={lead}
@@ -110,6 +112,7 @@ export function LeadDetailModal({ lead, leads, currentIndex, open, onOpenChange,
               <ConjointSection conjoint={lead.conjoint} />
               <EnfantsSection enfants={lead.enfants} />
               <BesoinsSection besoins={lead.besoins} />
+              <SignatureSection signature={lead.signature} />
               <EmailContentSection lead={lead} />
             </div>
           </div>

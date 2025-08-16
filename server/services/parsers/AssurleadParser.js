@@ -68,8 +68,15 @@ export class AssurleadParser extends BaseParser {
       }
 
       const val = v.trim();
-      if (!val || val === 'NON RENSEIGNE') {
+      if (!val) {
         logger.debug('AssurleadParser skipping line (empty value)', { normalized_key: nk, value: val, line: raw });
+        continue;
+      }
+      
+      // Normaliser les valeurs vides/non renseignées
+      if (val === 'NON RENSEIGNE' || val === 'NON RENSEIGNÉ' || val === '') {
+        logger.debug('AssurleadParser setting null for empty field', { mapped_key: mapped, value: val, line: raw });
+        result[mapped] = null;
         continue;
       }
 

@@ -39,6 +39,9 @@ export function useLeadsTable({
       row.original.contact?.telephone,
       row.original.contact?.ville,
       row.original.contact?.codePostal,
+      row.original.signature?.nomEntreprise,
+      row.original.signature?.numeroOrias,
+      row.original.signature?.siren,
     ].filter(Boolean).join(' ');
     return rankItem(haystack, filterValue).passed;
   };

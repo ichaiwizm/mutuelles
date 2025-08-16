@@ -8,6 +8,7 @@ import authRoutes from './routes/auth.js';
 import ingestRoutes from './routes/ingest.js';
 import sseRoutes from './routes/sse.js';
 import logger from './logger.js';
+import { ParserOrchestrator } from './services/parsers/ParserOrchestrator.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -37,6 +38,42 @@ app.get('/health', (req, res) => {
     timestamp: new Date().toISOString(),
     version: '1.0.0'
   });
+});
+
+// Route pour les métriques des parsers
+app.get('/api/metrics/parsers', (req, res) => {
+  try {
+    const metrics = ParserOrchestrator.getMetricsSummary();
+    res.json({
+      success: true,
+      data: metrics,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    logger.error('Error getting parser metrics:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to retrieve parser metrics'
+    });
+  }
+});
+
+// Route pour reset les métriques des parsers (optionnel)
+app.post('/api/metrics/parsers/reset', (req, res) => {
+  try {
+    ParserOrchestrator.resetMetrics();
+    res.json({
+      success: true,
+      message: 'Parser metrics reset successfully',
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    logger.error('Error resetting parser metrics:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to reset parser metrics'
+    });
+  }
 });
 
 // Gestion des erreurs 404

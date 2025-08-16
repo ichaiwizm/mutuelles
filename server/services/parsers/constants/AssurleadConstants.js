@@ -14,6 +14,7 @@ export const RAW_KEYS = {
   'sexe': 'sexe',
   'besoin assurance sante': 'besoin',
   'mois d\'echeance': 'mois_echeance',
+  'mois d echeance': 'mois_echeance',
   'regime social': 'regime_social',
   'situation familiale': 'situation_familiale',
   'profession': 'profession',
@@ -29,6 +30,19 @@ export const RAW_KEYS = {
   'assureur actuel': 'assureur_actuel',
   'formule choisie': 'formule',
   'user_id': 'user_id',
+  'user id': 'user_id',
+  'userid': 'user_id',
+  'v2': 'complement_adresse',
   'v4': 'adresse',
-  'adresse': 'adresse'
+  'adresse': 'adresse',
+  // Nouveaux mappings basés sur email_text_vrac.txt
+  'travailleurs non salaries': 'regime_social',
+  'profession liberale': 'profession',
+  'ticket moderateur': 'formule',
+  'intermediaire': 'formule',
+  'vous assurer pour la premiere fois': 'besoin',
+  'changer de contrat': 'besoin',
+  'celibataire': 'situation_familiale',
+  'divorce': 'situation_familiale',
+  'axa courtage': 'assureur_actuel'
 };

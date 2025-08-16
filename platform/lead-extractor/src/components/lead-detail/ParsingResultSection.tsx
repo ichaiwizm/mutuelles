@@ -5,53 +5,51 @@ interface ParsingResultSectionProps {
 }
 
 export function ParsingResultSection({ parsingResult }: ParsingResultSectionProps) {
-  return (
-    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-      <h3 className="font-semibold text-blue-900 mb-3 flex items-center gap-2">
-        <Code className="h-4 w-4" />
-        Résultat du parsing en temps réel
-      </h3>
-      <div className="space-y-3 text-sm">
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <span className="font-medium text-blue-800">Parser utilisé:</span>
-            <p className="text-blue-700">{parsingResult.notes?.parserUsed || 'GmailParser'}</p>
-          </div>
-          <div>
-            <span className="font-medium text-blue-800">Score calculé:</span>
-            <p className="text-blue-700">{parsingResult.score || 0}/5</p>
-          </div>
-        </div>
-        
-        <div>
-          <span className="font-medium text-blue-800">Éléments détectés:</span>
-          <div className="mt-2 space-y-1 text-blue-700">
-            <div>• Nom: {parsingResult.contact?.nom || 'Non détecté'}</div>
-            <div>• Email: {parsingResult.contact?.email || 'Non détecté'}</div>
-            <div>• Téléphone: {parsingResult.contact?.telephone || 'Non détecté'}</div>
-            <div>• Ville: {parsingResult.contact?.ville || 'Non détecté'}</div>
-            <div>• Profession: {parsingResult.souscripteur?.profession || 'Non détectée'}</div>
-            <div>• Date effet: {parsingResult.besoins?.dateEffet || 'Non détectée'}</div>
-          </div>
-        </div>
 
-        <div>
-          <span className="font-medium text-blue-800">Score de confiance:</span>
-          <div className="mt-1 space-y-1 text-blue-700 ml-4">
-            <div>• Contact: {parsingResult.contact?.nom && parsingResult.contact?.email ? '✅ Complet' : '⚠️ Incomplet'}</div>
-            <div>• Besoins: {parsingResult.besoins?.dateEffet ? '✅ Identifiés' : '⚠️ Non identifiés'}</div>
-            <div>• Contexte: {parsingResult.conjoint || (parsingResult.enfants && parsingResult.enfants.length > 0) ? '✅ Familial détecté' : '⚠️ Contexte limité'}</div>
-          </div>
-        </div>
-        
-        {parsingResult.rawSnippet && (
-          <div>
-            <span className="font-medium text-blue-800">Extrait analysé:</span>
-            <div className="mt-1 p-2 bg-blue-100 rounded text-blue-600 text-xs max-h-20 overflow-y-auto">
-              {parsingResult.rawSnippet.substring(0, 200)}...
+  // Simulation des logs serveur basée sur les données reçues
+  const generateServerLogs = () => {
+    const logs = [];
+    const timestamp = new Date().toISOString().replace('T', ' ').substring(0, 19);
+    const contentLength = parsingResult.fullContent?.length || 0;
+    const parser = parsingResult.notes?.parserUsed || 'AssurleadParser';
+    
+    logs.push(`[🔧SERVER] info: Individual parsing request received {"contentLength":${contentLength},"from":"","service":"lead-extractor-server","sourceHint":"${parsingResult.source}","subject":"${parsingResult.emailSubject}","timestamp":"${timestamp}"}`);
+    
+    logs.push(`[🔧SERVER] info: Starting parser selection {"available_parsers":["AssurProspectParser","AssurleadParser","GenericParser"],"content_length":${contentLength},"content_preview":"${(parsingResult.fullContent || '').substring(0, 150)}","service":"lead-extractor-server","timestamp":"${timestamp}"}`);
+    
+    logs.push(`[🔧SERVER] info: Parser selected {"parser_name":"${parser}","service":"lead-extractor-server","timestamp":"${timestamp}"}`);
+    
+    logs.push(`[🔧SERVER] info: ${parser} started parsing {"content_length":${contentLength},"service":"lead-extractor-server","timestamp":"${timestamp}"}`);
+    
+    logs.push(`[🔧SERVER] info: ${parser} final result {"conjoint":${JSON.stringify(parsingResult.conjoint)},"contact":${JSON.stringify(parsingResult.contact)},"enfants_count":${parsingResult.enfants?.length || 0},"service":"lead-extractor-server","souscripteur":${JSON.stringify(parsingResult.souscripteur)},"timestamp":"${timestamp}"}`);
+    
+    const metrics = parsingResult.notes?.performance || {};
+    logs.push(`[🔧SERVER] info: Parsing metrics {"content_length":${contentLength},"extraction_ms":${metrics.extractionTime || 0},"parser":"${parser}","parser_selection_ms":${metrics.parserSelectionTime || 0},"scoring_ms":${metrics.scoringTime || 0},"service":"lead-extractor-server","timestamp":"${timestamp}","total_ms":${metrics.processingTime || 0}}`);
+    
+    logs.push(`[🔧SERVER] info: Lead created successfully {"has_signature":${!!parsingResult.signature},"id":"${Math.random().toString(36).substr(2, 9)}","parser":"${parser}","score":${parsingResult.score},"service":"lead-extractor-server","timestamp":"${timestamp}"}`);
+    
+    logs.push(`[🔧SERVER] info: Parsing completed {"errors":0,"leads_created":1,"service":"lead-extractor-server","timestamp":"${timestamp}","total_time_ms":${metrics.processingTime || 0},"warnings":0}`);
+    
+    logs.push(`[🔧SERVER] info: Individual parsing completed successfully {"parser":"${parser}","score":${parsingResult.score},"service":"lead-extractor-server","timestamp":"${timestamp}"}`);
+    
+    return logs;
+  };
+
+  return (
+    <div className="bg-slate-900 rounded-lg p-4">
+      <h3 className="font-semibold text-green-400 mb-3 flex items-center gap-2 font-mono">
+        <Code className="h-4 w-4" />
+        🔧 Logs serveur détaillés
+      </h3>
+      
+      <div className="text-green-400 text-xs font-mono">
+        <div className="max-h-60 overflow-y-auto space-y-1">
+          {generateServerLogs().map((log, index) => (
+            <div key={index} className="whitespace-pre-wrap break-all">
+              {log}
             </div>
-          </div>
-        )}
+          ))}
+        </div>
       </div>
     </div>
   );

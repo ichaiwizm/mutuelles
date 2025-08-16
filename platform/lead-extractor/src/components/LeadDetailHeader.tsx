@@ -52,10 +52,19 @@ export function LeadDetailHeader({
             size="sm"
             onClick={onParseCurrentLead}
             disabled={parsing}
-            className="flex items-center gap-2"
+            className={`flex items-center gap-2 transition-all duration-200 ${
+              parsing ? 'bg-blue-50 border-blue-300' : 
+              showParsingDetails ? 'bg-green-50 border-green-300 text-green-700' : ''
+            }`}
           >
-            {parsing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Code className="h-4 w-4" />}
-            {parsing ? 'Parsing...' : (showParsingDetails ? 'Masquer' : 'Parser')}
+            {parsing ? (
+              <Loader2 className="h-4 w-4 animate-spin text-blue-500" />
+            ) : showParsingDetails ? (
+              <Code className="h-4 w-4 text-green-600" />
+            ) : (
+              <Code className="h-4 w-4" />
+            )}
+            {parsing ? 'Analyse en cours...' : (showParsingDetails ? '✅ Masquer les détails' : '🔍 Analyser')}
           </Button>
           
           <div className="flex items-center gap-1 border-l pl-2 ml-2">

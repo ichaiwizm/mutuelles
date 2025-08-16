@@ -34,6 +34,14 @@ export interface Lead {
       dentaire?: number;
     };
   };
+  signature?: {
+    numeroOrias?: string;
+    siren?: string;
+    siteWeb?: string;
+    instagram?: string;
+    numeroRCP?: string;
+    nomEntreprise?: string;
+  };
   source: 'gmail' | 'calendar' | 'multiple';
   extractedAt: string;
   rawSnippet?: string;

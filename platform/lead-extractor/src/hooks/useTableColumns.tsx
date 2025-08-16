@@ -11,8 +11,11 @@ export function useTableColumns(): ColumnDef<Lead>[] {
       accessorFn: (row) => `${row.contact.civilite || ''} ${row.contact.prenom || ''} ${row.contact.nom || ''}`.trim(),
       cell: ({ row }) => (
         <div>
-          <div className="font-medium">
+          <div className="font-medium flex items-center gap-2">
             {row.original.contact.civilite} {row.original.contact.prenom} {row.original.contact.nom}
+            {row.original.signature?.numeroOrias && (
+              <Badge variant="secondary" className="text-xs">PRO</Badge>
+            )}
           </div>
           <div className="text-sm text-gray-500">{row.original.contact.email}</div>
           <div className="text-sm text-gray-500">{row.original.contact.telephone}</div>
