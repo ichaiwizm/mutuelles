@@ -3,6 +3,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Loader2 } from 'lucide-react';
+import { AutomationButton } from '@/components/automation';
+import type { Lead } from '@/types/lead';
 
 interface ControlsPanelProps {
   days: number;
@@ -14,6 +16,7 @@ interface ControlsPanelProps {
   onClearAll: () => void;
   onRefresh: () => void;
   busy: boolean;
+  leads?: Lead[];
 }
 
 export function ControlsPanel({
@@ -25,7 +28,8 @@ export function ControlsPanel({
   onExtractGmail,
   onClearAll,
   onRefresh,
-  busy
+  busy,
+  leads = []
 }: ControlsPanelProps) {
   return (
     <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200/60 mb-6">
@@ -60,6 +64,12 @@ export function ControlsPanel({
         >
           Sauvegarder
         </Button>
+
+        {/* Bouton Automation */}
+        <AutomationButton 
+          leads={leads} 
+          disabled={busy || leads.length === 0}
+        />
 
         {/* Actions */}
         <div className="flex gap-2 ml-auto">

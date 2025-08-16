@@ -1,13 +1,19 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { initAuth } from './middleware/auth.js';
 import authRoutes from './routes/auth.js';
 import ingestRoutes from './routes/ingest.js';
 import sseRoutes from './routes/sse.js';
 import logger from './logger.js';
 
-dotenv.config();
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Charger le .env depuis la racine du projet
+dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
 const app = express();
 const PORT = process.env.PORT || 3001;

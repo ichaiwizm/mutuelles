@@ -29,26 +29,23 @@ export const useLeads = () => {
     console.log('🔍 Debug addLeads - scores:', newLeads.map(l => l.score));
     
     const before = leads;
-    const beforeQualified = before.filter(l => (l.score ?? 0) >= MIN_SCORE).length;
-
     const allLeads = DeduplicationService.deduplicateLeads([...before, ...newLeads]);
 
-    const afterQualified = allLeads.filter(l => (l.score ?? 0) >= MIN_SCORE).length;
-
-    const uniquesAdded = Math.max(0, allLeads.length - before.length);
-    const addedQualified = Math.max(0, afterQualified - beforeQualified);
-    const addedNon = Math.max(0, (allLeads.length - afterQualified) - (before.length - beforeQualified));
-    const dedupMerged = Math.max(0, newLeads.length - uniquesAdded);
+    // Compter les nouveaux leads ajoutés par catégorie de score
+    const newQualifiedLeads = newLeads.filter(l => (l.score ?? 0) >= MIN_SCORE);
+    const newNonLeads = newLeads.filter(l => (l.score ?? 0) < MIN_SCORE);
+    
+    const addedQualified = newQualifiedLeads.length;
+    const addedNon = newNonLeads.length;
+    const totalAdded = allLeads.length - before.length;
 
     console.log('🔍 Debug stats:', { 
       beforeCount: before.length, 
-      beforeQualified, 
       afterCount: allLeads.length, 
-      afterQualified, 
-      uniquesAdded, 
+      newLeadsCount: newLeads.length,
       addedQualified, 
-      addedNon, 
-      dedupMerged 
+      addedNon,
+      totalAdded
     });
 
     setLeads(allLeads);
@@ -56,10 +53,9 @@ export const useLeads = () => {
     
     return { 
       allLeads, 
-      uniquesAdded, 
       addedQualified, 
-      addedNon, 
-      dedupMerged 
+      addedNon,
+      totalAdded
     };
   };
 

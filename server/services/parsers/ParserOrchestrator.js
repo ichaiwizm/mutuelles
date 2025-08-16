@@ -3,6 +3,7 @@ import { AssurleadParser } from './AssurleadParser.js';
 import { GenericParser } from './GenericParser.js';
 import { BaseParser } from './BaseParser.js';
 import { v4 as uuidv4 } from 'uuid';
+import logger from '../../logger.js';
 
 export class ParserOrchestrator {
   static parsers = [
@@ -27,22 +28,25 @@ export class ParserOrchestrator {
     
     // Trouver le parser approprié
     let selectedParser = null;
-    console.log('🔍 === SÉLECTION DU PARSER ===');
+    logger.info('Starting parser selection', { available_parsers: this.parsers.map(p => p.name) });
+    
     for (const parser of this.parsers) {
-      console.log(`🔍 Test du parser: ${parser.name}`);
+      logger.info('Testing parser', { parser_name: parser.name });
       const canParse = parser.canParse(normalizedContent);
-      console.log(`🔍 ${parser.name} peut parser: ${canParse}`);
+      logger.info('Parser test result', { parser_name: parser.name, can_parse: canParse });
       
       if (canParse) {
         selectedParser = parser;
-        console.log(`✅ Parser sélectionné: ${parser.name}`);
+        logger.info('Parser selected', { parser_name: parser.name });
         break;
       }
     }
 
     if (!selectedParser) {
-      console.log('❌ Aucun parser trouvé');
-      console.log('🚀 ==================== FIN PARSING (ÉCHEC) ====================');
+      logger.warn('No parser found for content', { 
+        content_length: content.length,
+        content_preview: content.substring(0, 200)
+      });
       return [];
     }
 

@@ -45,13 +45,12 @@ export const useSSEExtraction = (addLeads: any, checkAuthStatus: any) => {
         eventSource.close();
         
         // Ajouter les leads avec statistiques détaillées
-        const { addedQualified, addedNon, dedupMerged } = addLeads(collectedLeads);
+        const { addedQualified, addedNon, totalAdded } = addLeads(collectedLeads);
         StorageManager.updateLastSync(source);
 
-        // Toast avec données post-déduplication
-        const dedupInfo = dedupMerged > 0 ? ` (${dedupMerged} doublon(s) fusionnés)` : '';
+        // Toast avec informations claires
         toast.success(
-          `${addedQualified} lead(s) qualifié(s) et ${addedNon} non-lead(s) ajoutés${dedupInfo}`
+          `${addedQualified} lead(s) qualifié(s) et ${addedNon} non-lead(s) trouvés (${totalAdded} ajoutés après déduplication)`
         );
 
         setShowProgress(false);

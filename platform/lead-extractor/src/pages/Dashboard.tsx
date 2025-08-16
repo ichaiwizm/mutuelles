@@ -110,6 +110,7 @@ export function Dashboard() {
           onClearAll={clearAllLeads}
           onRefresh={handleRefresh}
           busy={busy}
+          leads={leads}
         />
 
 
