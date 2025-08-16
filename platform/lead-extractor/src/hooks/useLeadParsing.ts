@@ -1,0 +1,63 @@
+import { useState } from 'react';
+import { toast } from 'sonner';
+import type { Lead } from '@/types/lead';
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+
+export function useLeadParsing() {
+  const [showParsingDetails, setShowParsingDetails] = useState(false);
+  const [parsingResult, setParsingResult] = useState<any>(null);
+  const [parsing, setParsing] = useState(false);
+
+  const parseCurrentLead = async (lead: Lead) => {
+    if (showParsingDetails && parsingResult) {
+      // Si déjà ouvert, on ferme
+      setShowParsingDetails(false);
+      return;
+    }
+
+    // Sinon on lance le parsing
+    setParsing(true);
+    try {
+      const response = await fetch(`${API_URL}/api/ingest/parse`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          content: lead.fullContent || lead.rawSnippet || '',
+          subject: lead.emailSubject || '',
+          date: lead.emailDate || lead.extractedAt,
+          from: (lead as any).emailFrom || '',
+          sourceHint: lead.source || ''
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Parsing failed');
+      }
+
+      const data = await response.json();
+      setParsingResult(data.parsingDetails);
+      setShowParsingDetails(true);
+      toast.success('Parsing réalisé avec succès');
+    } catch (error) {
+      toast.error('Erreur lors du parsing');
+    } finally {
+      setParsing(false);
+    }
+  };
+
+  const resetParsing = () => {
+    setShowParsingDetails(false);
+    setParsingResult(null);
+  };
+
+  return {
+    showParsingDetails,
+    parsingResult,
+    parsing,
+    parseCurrentLead,
+    resetParsing
+  };
+}

@@ -9,7 +9,11 @@
       "Bash(node:*)",
       "Bash(npm run build:*)",
       "Bash(npm run test-convert:*)",
-      "Bash(npm run trigger-extract:*)"
+      "Bash(npm run trigger-extract:*)",
+      "Bash(find:*)",
+      "Bash(grep:*)",
+      "Bash(awk:*)",
+      "Bash(npm ls:*)"
     ],
     "deny": [],
     "ask": [],

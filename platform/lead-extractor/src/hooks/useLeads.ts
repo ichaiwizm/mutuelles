@@ -25,9 +25,6 @@ export const useLeads = () => {
 
   // Ajouter de nouveaux leads avec déduplication et statistiques détaillées
   const addLeads = (newLeads: Lead[]) => {
-    console.log('🔍 Debug addLeads - newLeads:', newLeads.length);
-    console.log('🔍 Debug addLeads - scores:', newLeads.map(l => l.score));
-    
     const before = leads;
     const allLeads = DeduplicationService.deduplicateLeads([...before, ...newLeads]);
 
@@ -38,15 +35,6 @@ export const useLeads = () => {
     const addedQualified = newQualifiedLeads.length;
     const addedNon = newNonLeads.length;
     const totalAdded = allLeads.length - before.length;
-
-    console.log('🔍 Debug stats:', { 
-      beforeCount: before.length, 
-      afterCount: allLeads.length, 
-      newLeadsCount: newLeads.length,
-      addedQualified, 
-      addedNon,
-      totalAdded
-    });
 
     setLeads(allLeads);
     StorageManager.saveLeads(allLeads);

@@ -25,23 +25,6 @@ export class MessageExtractor {
     return { subject, content, date };
   }
 
-  static extractCalendarContent(event) {
-    const content = [
-      event.summary || '',
-      event.description || '',
-      event.location || '',
-      ...(event.attendees || []).map(a => 
-        `${a.displayName || ''} ${a.email || ''}`
-      ).filter(Boolean)
-    ].join('\n');
-
-    return {
-      subject: event.summary || '',
-      content,
-      date: event.start?.dateTime || event.start?.date || ''
-    };
-  }
-
   static _extractBody(payload) {
     if (!payload) return '';
     

@@ -13,18 +13,11 @@ export class ParserOrchestrator {
   ];
 
   static parseContent(content, source, subject = '', fullContent = null, emailDate = null) {
-    console.log('🚀 ==================== DÉBUT PARSING ====================');
-    console.log('🚀 Source:', source);
-    console.log('🚀 Sujet:', subject);
-    console.log('🚀 Date email:', emailDate);
-    console.log('🚀 Contenu (premiers 300 chars):', content.substring(0, 300) + '...');
-    console.log('🚀 ========================================================');
     
     const leads = [];
     
     // Normaliser le contenu
     const normalizedContent = BaseParser.normalizeContent(content);
-    console.log('🔧 Contenu normalisé (premiers 300 chars):', normalizedContent.substring(0, 300) + '...');
     
     // Trouver le parser approprié
     let selectedParser = null;
@@ -51,23 +44,12 @@ export class ParserOrchestrator {
     }
 
     // Extraire les données
-    console.log('⚙️ === EXTRACTION DES DONNÉES ===');
     const extractedData = selectedParser.parse(normalizedContent);
-    console.log('⚙️ Données extraites (résumé):', {
-      contact: Object.keys(extractedData.contact).length + ' champs',
-      souscripteur: Object.keys(extractedData.souscripteur).length + ' champs',
-      conjoint: extractedData.conjoint ? 'présent' : 'absent',
-      enfants: extractedData.enfants.length + ' enfant(s)',
-      besoins: Object.keys(extractedData.besoins).length + ' champs'
-    });
     
     // Calculer le score
-    console.log('🎯 === CALCUL DU SCORE ===');
     const score = selectedParser.calculateScore(extractedData);
-    console.log(`🎯 Score final: ${score}/5`);
     
     // Si le score est suffisant, créer un lead
-    console.log('💾 === CRÉATION DU LEAD ===');
     if (score >= 1) {
       const lead = {
         id: uuidv4(),
@@ -96,24 +78,14 @@ export class ParserOrchestrator {
         }
       };
       
-      console.log('✅ Lead créé avec succès!');
-      console.log('💾 ID:', lead.id);
-      console.log('💾 Score:', lead.score + '/5');
-      console.log('💾 Parser utilisé:', selectedParser.name);
-      console.log('💾 Contact:', Object.keys(lead.contact));
-      console.log('💾 Souscripteur:', Object.keys(lead.souscripteur));
-      console.log('💾 Conjoint:', lead.conjoint ? 'oui' : 'non');
-      console.log('💾 Enfants:', lead.enfants.length);
-      console.log('💾 Besoins:', Object.keys(lead.besoins));
+      logger.info('Lead created successfully', { id: lead.id, score: lead.score, parser: selectedParser.name });
       
       leads.push(lead);
     } else {
-      console.log(`❌ Score insuffisant (${score}/5), lead non créé`);
+      logger.info('Lead not created - insufficient score', { score, minimum: 1 });
     }
     
-    console.log('🚀 ==================== FIN PARSING ====================');
-    console.log('🚀 Nombre de leads créés:', leads.length);
-    console.log('🚀 ======================================================');
+    logger.info('Parsing completed', { leads_created: leads.length });
     
     return leads;
   }

@@ -1,0 +1,57 @@
+import { useState, useMemo, useEffect } from 'react';
+import type { Lead } from '@/types/lead';
+
+export function useLeadSelection(filteredLeads: Lead[]) {
+  const [selectedLeadIds, setSelectedLeadIds] = useState<Set<string>>(new Set());
+
+  // Sélectionner automatiquement tous les leads filtrés
+  useEffect(() => {
+    if (filteredLeads.length > 0) {
+      const newSelection = new Set<string>();
+      filteredLeads.forEach(lead => newSelection.add(lead.id));
+      setSelectedLeadIds(newSelection);
+    }
+  }, [filteredLeads]);
+
+  // Leads sélectionnés (intersection entre filtrés et sélectionnés)
+  const selectedLeads = useMemo(() => {
+    return filteredLeads.filter(lead => selectedLeadIds.has(lead.id));
+  }, [filteredLeads, selectedLeadIds]);
+
+  // Gestion de la sélection
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      const newSelection = new Set(selectedLeadIds);
+      filteredLeads.forEach(lead => newSelection.add(lead.id));
+      setSelectedLeadIds(newSelection);
+    } else {
+      const newSelection = new Set(selectedLeadIds);
+      filteredLeads.forEach(lead => newSelection.delete(lead.id));
+      setSelectedLeadIds(newSelection);
+    }
+  };
+
+  const handleSelectLead = (leadId: string, checked: boolean) => {
+    const newSelection = new Set(selectedLeadIds);
+    if (checked) {
+      newSelection.add(leadId);
+    } else {
+      newSelection.delete(leadId);
+    }
+    setSelectedLeadIds(newSelection);
+  };
+
+  // État de "Tout sélectionner"
+  const allFilteredSelected = filteredLeads.length > 0 && 
+    filteredLeads.every(lead => selectedLeadIds.has(lead.id));
+  const someFilteredSelected = filteredLeads.some(lead => selectedLeadIds.has(lead.id));
+
+  return {
+    selectedLeadIds,
+    selectedLeads,
+    handleSelectAll,
+    handleSelectLead,
+    allFilteredSelected,
+    someFilteredSelected
+  };
+}

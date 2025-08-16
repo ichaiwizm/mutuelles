@@ -80,8 +80,6 @@ export class BaseParser {
     let score = 0;
     const scoreDetails = [];
 
-    console.log('📊 === CALCUL DU SCORE ===');
-    console.log('📊 Données d\'entrée:', JSON.stringify(data, null, 2));
 
     // Contact (0-1.5 points)
     if (data.contact.nom && data.contact.prenom) {
@@ -174,12 +172,6 @@ export class BaseParser {
 
     const finalScore = Math.min(Math.round(score), 5);
 
-    console.log('📊 === DÉTAIL DU SCORING ===');
-    scoreDetails.forEach(detail => console.log(`📊 ${detail}`));
-    console.log(`📊 === RÉSULTAT ===`);
-    console.log(`📊 Score brut: ${score.toFixed(1)}`);
-    console.log(`📊 Score final (arrondi, max 5): ${finalScore}/5`);
-    console.log('📊 === FIN CALCUL ===');
 
     return finalScore;
   }

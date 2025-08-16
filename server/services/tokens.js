@@ -34,14 +34,4 @@ export class TokensService {
     return fs.existsSync(TOKENS_FILE);
   }
 
-  static delete() {
-    try {
-      if (fs.existsSync(TOKENS_FILE)) {
-        fs.unlinkSync(TOKENS_FILE);
-        logger.info('Tokens deleted successfully');
-      }
-    } catch (error) {
-      logger.error('Error deleting tokens:', error);
-    }
-  }
 }

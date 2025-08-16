@@ -35,8 +35,7 @@ const RAW_KEYS = {
   'formule choisie': 'formule',
   'user_id': 'user_id',
   'v4': 'adresse',
-  'adresse': 'adresse',
-  'v2': null,
+  'adresse': 'adresse'
 };
 
 function splitKV(line) {
