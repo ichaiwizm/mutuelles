@@ -36,7 +36,10 @@ export function LeadSelectionSection({
               id="select-all"
               checked={allFilteredSelected}
               ref={(ref) => {
-                if (ref) ref.indeterminate = someFilteredSelected && !allFilteredSelected;
+                if (ref) {
+                  const input = ref.querySelector('input[type="checkbox"]') as HTMLInputElement;
+                  if (input) input.indeterminate = someFilteredSelected && !allFilteredSelected;
+                }
               }}
               onCheckedChange={onSelectAll}
             />

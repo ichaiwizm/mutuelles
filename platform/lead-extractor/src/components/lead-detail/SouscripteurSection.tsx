@@ -13,7 +13,6 @@ export function SouscripteurSection({ souscripteur }: SouscripteurSectionProps) 
         {souscripteur.profession && <div><span className="font-medium">Profession:</span> {souscripteur.profession}</div>}
         {souscripteur.regimeSocial && <div><span className="font-medium">Régime social:</span> {souscripteur.regimeSocial}</div>}
         {souscripteur.nombreEnfants !== undefined && <div><span className="font-medium">Nombre d'enfants:</span> {souscripteur.nombreEnfants}</div>}
-        {souscripteur.revenusAnnuels && <div><span className="font-medium">Revenus annuels:</span> {souscripteur.revenusAnnuels}</div>}
       </div>
     </div>
   );

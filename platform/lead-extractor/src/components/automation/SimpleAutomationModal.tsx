@@ -51,8 +51,7 @@ export function SimpleAutomationModal({
   const {
     isExporting,
     exportResult,
-    exportLeads,
-    setExportResult
+    exportLeads
   } = useLeadExport();
 
   // Export des leads
