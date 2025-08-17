@@ -1,0 +1,24 @@
+{
+  "nomProjet": "#nom-projet",
+  "santeOui": "#projet-sante-individuelle-oui",
+  "confortNon": "#projet-confort-hospitalisation-non",
+  "simulationIndividuelle": "#simulation-individuelle",
+  "simulationCouple": "#simulation-couple",
+
+  "dateNaissancePrincipal": "#date-naissance-assure-principal",
+  "departementPrincipal": "#departement-assure-principal",
+  "regimeSocialPrincipal": "#regime-social-assure-principal",
+  "statutPrincipal": "#statut-assure-principal",
+  "professionPrincipal": "#profession-assure-principal",
+
+  "nombreEnfants": "#sante-nombre-enfant-assures",
+
+  "dateNaissanceConjoint": "#date-naissance-assure-conjoint",
+  "regimeSocialConjoint": "#regime-social-assure-conjoint",
+  "statutConjoint": "#statut-assure-conjoint",
+
+  "gamme": "#selection-produit-sante",
+  "dateEffet": "#contratSante-dateEffet",
+  "loiMadelinCheckbox": "#loi-madelin-checkbox",
+  "resiliationNon": "#resiliation-contrat-non"
+}

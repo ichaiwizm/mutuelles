@@ -114,8 +114,50 @@ window.SwissLifeFormFiller = {
     return false;
   },
 
+  // Gestion centralisée des sélecteurs (chargés depuis selectors.json)
+  selectors: null,
+
+  loadSelectors: async function () {
+    if (this.selectors) return this.selectors;
+
+    try {
+      let url;
+      if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.getURL) {
+        url = chrome.runtime.getURL('selectors.json');
+      } else if (document.currentScript) {
+        // Construit une URL relative au script courant (contexte page)
+        url = new URL('selectors.json', document.currentScript.src).href;
+      } else {
+        throw new Error('chrome.runtime.getURL indisponible');
+      }
+
+      const resp = await fetch(url);
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      const data = await resp.json();
+      // On complète avec les sélecteurs dynamiques qui ne peuvent pas être décrits en JSON
+      this.selectors = {
+        ...data,
+        enfantDateNaissance: (index) => `#enfants-${index}-dateNaissance`
+      };
+      return this.selectors;
+    } catch (err) {
+      console.warn('⚠️ Sélecteurs JSON non chargés, utilisation du mapping legacy.', err);
+      // On laisse this.selectors à null, pour permettre le fallback
+      return null;
+    }
+  },
+
+  ensureSelectorsLoaded: async function () {
+    if (!this.selectors) {
+      await this.loadSelectors();
+    }
+    return this.selectors;
+  },
+
   // Définition des champs et sélecteurs
-  getFieldSelectors: () => ({
+  getFieldSelectors: function () {
+    if (this.selectors) return this.selectors; // mapping JSON chargé
+    return {
     // Projet
     nomProjet: '#nom-projet',
     santeOui: '#projet-sante-individuelle-oui',
@@ -144,7 +186,7 @@ window.SwissLifeFormFiller = {
     dateEffet: '#contratSante-dateEffet',
     loiMadelinCheckbox: '#loi-madelin-checkbox',
     resiliationNon: '#resiliation-contrat-non'
-  }),
+  };},
 
   // Fonctions de manipulation des champs
   setInputValue: (selector, value, { change = true, blur = false } = {}) => {
@@ -454,9 +496,41 @@ window.SwissLifeFormFiller = {
     setTimeout(() => el.blur(), 80);
   },
 
-  // Fonction principale de remplissage avec orchestration séquentielle
+  // Fonction principale de remplissage - LEGACY (utilise maintenant le runner)
   fillFormComplete: async (leadData) => {
-    console.log('🔄 Début du remplissage dans l\'iframe:', leadData.projetNom);
+    SwissLifeAPI.info('🔄 Début du remplissage dans l\'iframe (via runner)', { project: leadData.projetNom });
+
+    // Validation des données d'entrée
+    const validation = SwissLifeAPI.ValidationEngine.validateLeadData(leadData);
+    if (!validation.valid) {
+      SwissLifeAPI.error('Données de lead invalides', { errors: validation.errors });
+      return false;
+    }
+
+    try {
+      // Utiliser le nouveau runner avec le plugin swisslife-sante
+      const success = await SwissLifeAPI.runPlugin('swisslife-sante', leadData);
+      
+      if (success) {
+        SwissLifeAPI.info('✅ Remplissage terminé avec succès via runner');
+        return true;
+      } else {
+        throw new Error('Le runner a échoué');
+      }
+    } catch (error) {
+      SwissLifeAPI.error('❌ Erreur lors du remplissage via runner, fallback vers méthode legacy', { error: error.message });
+      
+      // Fallback vers l'ancienne méthode
+      return SwissLifeFormFiller.fillFormCompleteLegacy(leadData);
+    }
+  },
+
+  // Ancienne méthode de remplissage (conservée en fallback)
+  fillFormCompleteLegacy: async (leadData) => {
+    SwissLifeAPI.warn('🔄 Utilisation de la méthode legacy pour le remplissage');
+
+    // Assurer que les sélecteurs JSON sont disponibles
+    await SwissLifeFormFiller.ensureSelectorsLoaded();
     
     try {
       // 0) Projet et portées (immédiat)
@@ -491,11 +565,11 @@ window.SwissLifeFormFiller = {
       SwissLifeFormFiller.triggerSingleRecalc();               // ⬅️ un seul blur global
       await new Promise(resolve => setTimeout(resolve, 400));  // laisse le serveur répondre
       console.log('✅ Remplissage terminé dans l\'iframe:', leadData.projetNom);
-      SwissLifeUtils.log(`Formulaire rempli avec succès: ${leadData.projetNom}`, 'success');
+      SwissLifeAPI.info(`Formulaire rempli avec succès: ${leadData.projetNom}`);
       
     } catch (error) {
       console.error('❌ Erreur pendant le remplissage:', error);
-      SwissLifeUtils.log(`Erreur remplissage: ${error.message}`, 'error');
+      SwissLifeAPI.error(`Erreur remplissage: ${error.message}`);
       
       // Tentative de récupération avec les anciennes méthodes
       console.log('🔄 Tentative de récupération avec délais fixes...');

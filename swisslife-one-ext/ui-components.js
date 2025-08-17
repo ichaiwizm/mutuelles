@@ -178,11 +178,37 @@ window.SwissLifeUI = {
         option.style.background = 'white';
       });
 
-      // Action de sélection du lead
-      option.addEventListener('click', () => {
-        SwissLifeUI.state.leadsMenu.style.display = 'none';
-        SwissLifeUI.sendLeadToIframe(lead.data);
-      });
+          // Action de sélection du lead
+    option.addEventListener('click', () => {
+      SwissLifeUI.state.leadsMenu.style.display = 'none';
+      SwissLifeUI.sendLeadToIframe(lead.data);
+    });
+
+    // Bouton pour activer le mode debug sur ce lead
+    const debugBtn = SwissLifeUtils.createElement('button',
+      `position: absolute !important;
+       right: 5px !important;
+       top: 50% !important;
+       transform: translateY(-50%) !important;
+       background: #333 !important;
+       color: white !important;
+       border: none !important;
+       padding: 2px 6px !important;
+       font-size: 10px !important;
+       cursor: pointer !important;
+       border-radius: 3px !important;`,
+      '🔧'
+    );
+    
+    debugBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      SwissLifeAPI.enableDebug();
+      SwissLifeUI.state.leadsMenu.style.display = 'none';
+      SwissLifeUI.sendLeadToIframe(lead.data);
+    });
+
+    option.style.position = 'relative';
+    option.appendChild(debugBtn);
 
       SwissLifeUI.state.leadsMenu.appendChild(option);
     });

@@ -50,7 +50,7 @@ export function convertLeadToSwissLife(lead: Lead): ConversionResult {
       gammeTexte: 'SwissLife Santé',
       statutTexte: mapRegimeToStatut(lead.souscripteur.regimeSocial),
       profTexte,
-      simulationType: lead.conjoint ? 'couple' : 'individuelle'
+      simulationType: (lead.conjoint && lead.conjoint.dateNaissance) ? 'couple' : 'individuelle'
     }
   };
   

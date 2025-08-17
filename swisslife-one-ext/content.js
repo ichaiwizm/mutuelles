@@ -24,7 +24,7 @@
   const isTarifRoute = SwissLifeUtils.isTarifRoute();
   const isTarifIframe = SwissLifeUtils.isTarifIframe();
 
-  SwissLifeUtils.log(`Contexte détecté - Frame principale: ${isMainFrame}, Route tarif: ${isTarifRoute}, Iframe tarif: ${isTarifIframe}`, 'info');
+  SwissLifeUtils.log(`Contexeeeeeeeeeeeeeeeeeeeeeeeeeeeeeete détecté - Frame principale: ${isMainFrame}, Route tarif: ${isTarifRoute}, Iframe tarif: ${isTarifIframe}`, 'info');
 
   // BRANCHE 1: Page parente - Interface utilisateur
   if (isMainFrame && isTarifRoute) {
