@@ -1,6 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
 import { StorageManager } from '@/lib/storage';
-import { DeduplicationService } from '@/lib/deduplication';
 import type { Lead } from '@/types/lead';
 
 const MIN_SCORE = 3;
@@ -23,18 +22,45 @@ export const useLeads = () => {
     leads.filter(l => (l.score ?? 0) < MIN_SCORE), [leads]
   );
 
-  // Ajouter de nouveaux leads avec déduplication et statistiques détaillées
+  // Ajouter de nouveaux leads (déjà dédupliqués côté serveur)
   const addLeads = (newLeads: Lead[]) => {
-    const before = leads;
-    const allLeads = DeduplicationService.deduplicateLeads([...before, ...newLeads]);
+    console.log('🎯 useLeads.addLeads - DÉBUT (serveur a déjà fait la déduplication)', {
+      leadsExistants: leads.length,
+      nouveauxLeadsDejaDedup: newLeads.length,
+    });
 
-    // Compter les nouveaux leads ajoutés par catégorie de score
+    console.log('🎯 Nouveaux leads (déjà dédupliqués par le serveur):', newLeads.map(l => ({
+      id: l.id,
+      nom: l.contact.nom,
+      prenom: l.contact.prenom,
+      email: l.contact.email,
+      extractedAt: l.extractedAt
+    })));
+
+    // Les leads viennent du serveur déjà dédupliqués, on les accepte directement
+    const allLeads = [...leads, ...newLeads];
+
+    // Compter les statistiques
     const newQualifiedLeads = newLeads.filter(l => (l.score ?? 0) >= MIN_SCORE);
     const newNonLeads = newLeads.filter(l => (l.score ?? 0) < MIN_SCORE);
     
     const addedQualified = newQualifiedLeads.length;
     const addedNon = newNonLeads.length;
-    const totalAdded = allLeads.length - before.length;
+    const totalAdded = newLeads.length;
+
+    console.log('🎯 Statistiques finales (pas de re-déduplication frontend):', {
+      avantAjout: leads.length,
+      apresAjout: allLeads.length,
+      ajoutesReel: totalAdded,
+      pierreLeads: allLeads.filter(l => 
+        l.contact.nom?.toLowerCase() === 'laurent' && 
+        l.contact.prenom?.toLowerCase() === 'pierre'
+      ).map(l => ({
+        id: l.id,
+        email: l.contact.email,
+        civilite: l.contact.civilite
+      }))
+    });
 
     setLeads(allLeads);
     StorageManager.saveLeads(allLeads);

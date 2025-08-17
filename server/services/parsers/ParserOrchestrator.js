@@ -12,11 +12,11 @@ export class ParserOrchestrator {
     GenericParser  // Toujours en dernier (fallback)
   ];
 
-  static parseContent(content, source, subject = '', fullContent = null, emailDate = null) {
-    return this.parseContentWithDetails(content, source, subject, fullContent, emailDate).leads;
+  static parseContent(content, source, subject = '', fullContent = null, emailDate = null, originalMessage = null) {
+    return this.parseContentWithDetails(content, source, subject, fullContent, emailDate, originalMessage).leads;
   }
 
-  static parseContentWithDetails(content, source, subject = '', fullContent = null, emailDate = null) {
+  static parseContentWithDetails(content, source, subject = '', fullContent = null, emailDate = null, originalMessage = null) {
     const startTime = Date.now();
     const result = {
       success: false,
@@ -78,7 +78,7 @@ export class ParserOrchestrator {
 
       // Extraire les données
       const extractionStart = Date.now();
-      const extractedData = selectedParser.parse(normalizedContent);
+      const extractedData = selectedParser.parse(normalizedContent, originalMessage);
       result.stats.extractionTime = Date.now() - extractionStart;
       
       // Calculer le score

@@ -1,8 +1,52 @@
 import { BaseParser } from './BaseParser.js';
 
 export class GenericParser extends BaseParser {
+  static BLACKLISTED_DOMAINS = [
+    'facebook.com', 'facebookmail.com', 'meta.com',
+    'linkedin.com', 'notifications-noreply@linkedin.com', 'messages-noreply@linkedin.com',
+    'google.com', 'gmail.com', 'cloudplatform-noreply@google.com', 'google-gemini-noreply@google.com',
+    'shopify.com', 'shopifyemail.com', 't.shopifyemail.com',
+    'github.com', 'noreply@github.com',
+    'microsoft.com', 'outlook.com',
+    'apple.com', 'icloud.com',
+    'bigbluetracking.com', 'notif-colissimo-laposte.info',
+    '2captcha.com', 'napkin.ai', 'chizuk.guardyoureyes.com',
+    '1min.ai', 'admin.manus.im', 'mail.cursor.com',
+    'no-reply@accounts.google.com'
+  ];
+
+  static PROMOTIONAL_KEYWORDS = [
+    'notification', 'newsletter', 'unsubscribe', 'se désabonner',
+    'marketing', 'promotion', 'publicité', 'commande', 'livraison',
+    'satisfaction', 'terms of service', 'privacy policy',
+    'colis', 'tracking', 'suivi', 'expedition'
+  ];
+
   static canParse(content) {
-    // Le parser générique peut toujours tenter d'analyser le contenu
+    // Extraire l'expéditeur depuis les headers Gmail
+    const fromMatch = content.match(/From:\s*([^\r\n]+)/i);
+    if (fromMatch) {
+      const fromEmail = fromMatch[1].toLowerCase();
+      const isBlacklisted = this.BLACKLISTED_DOMAINS.some(domain => 
+        fromEmail.includes(domain)
+      );
+      if (isBlacklisted) {
+        console.log(`GenericParser: Email blacklisté - ${fromEmail}`);
+        return false;
+      }
+    }
+    
+    // Vérifier si c'est un email purement promotionnel
+    const contentLower = content.toLowerCase();
+    const hasPromotionalContent = this.PROMOTIONAL_KEYWORDS.some(keyword => 
+      contentLower.includes(keyword)
+    );
+    
+    if (hasPromotionalContent) {
+      console.log(`GenericParser: Contenu promotionnel détecté`);
+      return false;
+    }
+    
     return true;
   }
 
@@ -228,5 +272,26 @@ export class GenericParser extends BaseParser {
     if (entrepriseMatch) signature.nomEntreprise = entrepriseMatch[1].trim();
     
     return Object.keys(signature).length > 0 ? signature : null;
+  }
+
+  static calculateScore(data) {
+    const baseScore = super.calculateScore(data);
+    
+    // Si pas de nom/prénom ET pas d'adresse complète, score = 0
+    const hasIdentity = data.contact.nom && data.contact.prenom;
+    const hasAddress = data.contact.adresse && data.contact.codePostal && data.contact.ville;
+    
+    if (!hasIdentity && !hasAddress) {
+      console.log('GenericParser: Lead rejeté - pas d\'identité ni d\'adresse complète');
+      return 0; // Force le rejet
+    }
+    
+    // Si score de base trop faible (juste email + téléphone), on exige plus
+    if (baseScore < 2 && !hasIdentity) {
+      console.log('GenericParser: Lead rejeté - score trop faible sans identité');
+      return 0;
+    }
+    
+    return baseScore;
   }
 }

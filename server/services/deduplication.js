@@ -1,36 +1,36 @@
-import type { Lead } from '@/types/lead';
+import logger from '../logger.js';
 
 export class DeduplicationService {
-  private static normalizePhone(phone?: string): string {
+  static normalizePhone(phone) {
     if (!phone) return '';
     return phone.replace(/[\s\-\(\)\.]/g, '');
   }
 
-  private static normalizeEmail(email?: string): string {
+  static normalizeEmail(email) {
     if (!email) return '';
     return email.toLowerCase().trim();
   }
 
-  private static normalizeString(str?: string): string {
+  static normalizeString(str) {
     if (!str) return '';
     return str.toLowerCase().trim();
   }
 
-  private static getDeduplicationKey(lead: Lead): string | null {
-    console.log('🔑 Génération clé déduplication pour lead:', {
+  static getDeduplicationKey(lead) {
+    logger.info('🔑 Génération clé déduplication pour lead:', {
       id: lead.id,
-      nom: lead.contact.nom,
-      prenom: lead.contact.prenom,
-      email: lead.contact.email,
-      telephone: lead.contact.telephone,
-      dateNaissance: lead.souscripteur.dateNaissance,
+      nom: lead.contact?.nom,
+      prenom: lead.contact?.prenom,
+      email: lead.contact?.email,
+      telephone: lead.contact?.telephone,
+      dateNaissance: lead.souscripteur?.dateNaissance,
       extractedAt: lead.extractedAt
     });
 
     // Priorité 1: Email
-    if (lead.contact.email) {
+    if (lead.contact?.email) {
       const key = `email:${this.normalizeEmail(lead.contact.email)}`;
-      console.log('🔑 Clé EMAIL générée:', {
+      logger.info('🔑 Clé EMAIL générée:', {
         leadId: lead.id,
         originalEmail: lead.contact.email,
         normalizedEmail: this.normalizeEmail(lead.contact.email),
@@ -40,9 +40,9 @@ export class DeduplicationService {
     }
 
     // Priorité 2: Téléphone
-    if (lead.contact.telephone) {
+    if (lead.contact?.telephone) {
       const key = `phone:${this.normalizePhone(lead.contact.telephone)}`;
-      console.log('🔑 Clé TELEPHONE générée:', {
+      logger.info('🔑 Clé TELEPHONE générée:', {
         leadId: lead.id,
         originalPhone: lead.contact.telephone,
         normalizedPhone: this.normalizePhone(lead.contact.telephone),
@@ -52,9 +52,9 @@ export class DeduplicationService {
     }
 
     // Priorité 3: Triplet (Prénom + Nom + DOB)
-    if (lead.contact.prenom && lead.contact.nom && lead.souscripteur.dateNaissance) {
+    if (lead.contact?.prenom && lead.contact?.nom && lead.souscripteur?.dateNaissance) {
       const key = `triplet:${this.normalizeString(lead.contact.prenom)}-${this.normalizeString(lead.contact.nom)}-${lead.souscripteur.dateNaissance}`;
-      console.log('🔑 Clé TRIPLET générée:', {
+      logger.info('🔑 Clé TRIPLET générée:', {
         leadId: lead.id,
         prenom: lead.contact.prenom,
         nom: lead.contact.nom,
@@ -64,89 +64,86 @@ export class DeduplicationService {
       return key;
     }
 
-    console.log('🔑 AUCUNE CLÉ générée pour lead:', {
+    logger.info('🔑 AUCUNE CLÉ générée pour lead:', {
       leadId: lead.id,
-      hasEmail: !!lead.contact.email,
-      hasPhone: !!lead.contact.telephone,
-      hasPrenom: !!lead.contact.prenom,
-      hasNom: !!lead.contact.nom,
-      hasDateNaissance: !!lead.souscripteur.dateNaissance
+      hasEmail: !!(lead.contact?.email),
+      hasPhone: !!(lead.contact?.telephone),
+      hasPrenom: !!(lead.contact?.prenom),
+      hasNom: !!(lead.contact?.nom),
+      hasDateNaissance: !!(lead.souscripteur?.dateNaissance)
     });
     return null;
   }
 
-  private static pick<T>(a: T | undefined, b: T | undefined): T | undefined {
+  static pick(a, b) {
     return a ?? b; // garde la valeur de base si définie
   }
 
-  private static mergeLead(existing: Lead, newLead: Lead): Lead {
-    console.log('🔀 FUSION DE LEADS:', {
+  static mergeLead(existing, newLead) {
+    logger.info('🔀 FUSION DE LEADS:', {
       existing: {
         id: existing.id,
         extractedAt: existing.extractedAt,
-        civilite: existing.contact.civilite,
-        email: existing.contact.email
+        civilite: existing.contact?.civilite,
+        email: existing.contact?.email
       },
       newLead: {
         id: newLead.id,
         extractedAt: newLead.extractedAt,
-        civilite: newLead.contact.civilite,
-        email: newLead.contact.email
+        civilite: newLead.contact?.civilite,
+        email: newLead.contact?.email
       }
     });
 
     const base = new Date(existing.extractedAt) > new Date(newLead.extractedAt) ? existing : newLead;
     const other = base === existing ? newLead : existing;
 
-    console.log('🔀 Base/Other selection:', {
+    logger.info('🔀 Base/Other selection:', {
       baseId: base.id,
-      baseCivilite: base.contact.civilite,
+      baseCivilite: base.contact?.civilite,
       baseExtractedAt: base.extractedAt,
       otherId: other.id,
-      otherCivilite: other.contact.civilite,
+      otherCivilite: other.contact?.civilite,
       otherExtractedAt: other.extractedAt
     });
 
-    const merged: Lead = {
+    const merged = {
       ...base,
       contact: Object.fromEntries(
         Object.keys({ ...base.contact, ...other.contact }).map((k) => [
           k,
-          this.pick(base.contact[k as keyof typeof base.contact], other.contact[k as keyof typeof other.contact])
+          this.pick(base.contact?.[k], other.contact?.[k])
         ])
-      ) as Lead['contact'],
+      ),
 
       souscripteur: Object.fromEntries(
         Object.keys({ ...base.souscripteur, ...other.souscripteur }).map((k) => [
           k,
-          this.pick(base.souscripteur[k as keyof typeof base.souscripteur], other.souscripteur[k as keyof typeof other.souscripteur])
+          this.pick(base.souscripteur?.[k], other.souscripteur?.[k])
         ])
-      ) as Lead['souscripteur'],
+      ),
 
       conjoint: (base.conjoint || other.conjoint)
         ? Object.fromEntries(
             Object.keys({ ...(base.conjoint||{}), ...(other.conjoint||{}) }).map((k) => [
               k,
-              this.pick(base.conjoint?.[k as keyof NonNullable<typeof base.conjoint>], other.conjoint?.[k as keyof NonNullable<typeof other.conjoint>])
+              this.pick(base.conjoint?.[k], other.conjoint?.[k])
             ])
-          ) as NonNullable<Lead['conjoint']>
+          )
         : undefined,
 
-      enfants: [...base.enfants, ...other.enfants]
+      enfants: [...(base.enfants || []), ...(other.enfants || [])]
         .filter((e, i, arr) => arr.findIndex(x => x.dateNaissance === e.dateNaissance) === i),
 
       besoins: Object.fromEntries(
         Object.keys({ ...base.besoins, ...other.besoins }).map((k) => [
           k,
-          this.pick(
-            base.besoins[k as keyof typeof base.besoins],
-            other.besoins[k as keyof typeof other.besoins]
-          )
+          this.pick(base.besoins?.[k], other.besoins?.[k])
         ])
-      ) as Lead['besoins'],
+      ),
 
       source: base.source === other.source ? base.source : 'multiple',
-      score: Math.max(base.score, other.score),
+      score: Math.max(base.score || 0, other.score || 0),
       isDuplicate: false,
       notes: { ...base.notes, ...other.notes }
     };
@@ -155,10 +152,10 @@ export class DeduplicationService {
       merged.notes = { ...merged.notes, sources: Array.from(new Set([base.source, other.source])) };
     }
 
-    console.log('🔀 RÉSULTAT FUSION:', {
+    logger.info('🔀 RÉSULTAT FUSION:', {
       mergedId: merged.id,
-      mergedCivilite: merged.contact.civilite,
-      mergedEmail: merged.contact.email,
+      mergedCivilite: merged.contact?.civilite,
+      mergedEmail: merged.contact?.email,
       mergedExtractedAt: merged.extractedAt,
       mergedScore: merged.score
     });
@@ -166,62 +163,62 @@ export class DeduplicationService {
     return merged;
   }
 
-  static deduplicateLeads(leads: Lead[]): Lead[] {
-    console.log('🚀 DÉBUT DÉDUPLICATION - Traitement de', leads.length, 'leads');
-    console.log('🚀 Liste des leads à traiter:', leads.map(l => ({
+  static deduplicateLeads(leads) {
+    logger.info('🚀 DÉBUT DÉDUPLICATION SERVEUR - Traitement de', leads.length, 'leads');
+    logger.info('🚀 Liste des leads à traiter:', leads.map(l => ({
       id: l.id,
-      nom: l.contact.nom,
-      prenom: l.contact.prenom,
-      email: l.contact.email,
-      telephone: l.contact.telephone,
+      nom: l.contact?.nom,
+      prenom: l.contact?.prenom,
+      email: l.contact?.email,
+      telephone: l.contact?.telephone,
       extractedAt: l.extractedAt
     })));
 
-    const deduplicationMap = new Map<string, Lead>();
-    const noKeyLeads: Lead[] = [];
+    const deduplicationMap = new Map();
+    const noKeyLeads = [];
 
     for (const lead of leads) {
-      console.log('🔄 Traitement lead:', lead.id, `(${lead.contact.prenom} ${lead.contact.nom})`);
+      logger.info('🔄 Traitement lead:', lead.id, `(${lead.contact?.prenom} ${lead.contact?.nom})`);
       
       const key = this.getDeduplicationKey(lead);
       
       if (!key) {
-        console.log('🚫 Lead sans clé → ajout à noKeyLeads:', lead.id);
+        logger.info('🚫 Lead sans clé → ajout à noKeyLeads:', lead.id);
         noKeyLeads.push(lead);
         continue;
       }
 
       const existing = deduplicationMap.get(key);
       if (existing) {
-        console.log('🔀 DOUBLON DÉTECTÉ! Fusion required:', {
+        logger.info('🔀 DOUBLON DÉTECTÉ! Fusion required:', {
           key,
           existingLead: {
             id: existing.id,
             extractedAt: existing.extractedAt,
-            civilite: existing.contact.civilite
+            civilite: existing.contact?.civilite
           },
           newLead: {
             id: lead.id,
             extractedAt: lead.extractedAt,
-            civilite: lead.contact.civilite
+            civilite: lead.contact?.civilite
           }
         });
         
         const merged = this.mergeLead(existing, lead);
-        console.log('🔀 Lead fusionné:', {
+        logger.info('🔀 Lead fusionné:', {
           mergedId: merged.id,
-          mergedCivilite: merged.contact.civilite,
+          mergedCivilite: merged.contact?.civilite,
           mergedExtractedAt: merged.extractedAt
         });
         
         deduplicationMap.set(key, merged);
       } else {
-        console.log('✅ Nouveau lead ajouté avec clé:', { key, leadId: lead.id });
+        logger.info('✅ Nouveau lead ajouté avec clé:', { key, leadId: lead.id });
         deduplicationMap.set(key, lead);
       }
     }
 
-    console.log('📊 Résultat déduplication MAP:', {
+    logger.info('📊 Résultat déduplication MAP:', {
       uniqueKeys: Array.from(deduplicationMap.keys()),
       leadCount: deduplicationMap.size,
       noKeyLeadsCount: noKeyLeads.length
@@ -231,20 +228,20 @@ export class DeduplicationService {
     for (const lead of noKeyLeads) {
       lead.isDuplicate = this.checkPotentialDuplicate(lead, [...deduplicationMap.values(), ...noKeyLeads]);
       if (lead.isDuplicate) {
-        console.log('⚠️ Lead marqué comme doublon potentiel:', lead.id);
+        logger.info('⚠️ Lead marqué comme doublon potentiel:', lead.id);
       }
     }
 
     const finalResult = [...deduplicationMap.values(), ...noKeyLeads];
-    console.log('🏁 RÉSULTAT FINAL DÉDUPLICATION:', {
+    logger.info('🏁 RÉSULTAT FINAL DÉDUPLICATION SERVEUR:', {
       inputCount: leads.length,
       outputCount: finalResult.length,
       duplicatesRemoved: leads.length - finalResult.length,
       finalLeads: finalResult.map(l => ({
         id: l.id,
-        nom: l.contact.nom,
-        prenom: l.contact.prenom,
-        email: l.contact.email,
+        nom: l.contact?.nom,
+        prenom: l.contact?.prenom,
+        email: l.contact?.email,
         isDuplicate: l.isDuplicate
       }))
     });
@@ -252,7 +249,7 @@ export class DeduplicationService {
     return finalResult;
   }
 
-  private static checkPotentialDuplicate(lead: Lead, allLeads: Lead[]): boolean {
+  static checkPotentialDuplicate(lead, allLeads) {
     // Vérifier la similarité avec d'autres leads
     for (const other of allLeads) {
       if (other.id === lead.id) continue;
@@ -260,19 +257,19 @@ export class DeduplicationService {
       let similarityScore = 0;
       
       // Comparer les noms
-      if (lead.contact.nom && other.contact.nom && 
+      if (lead.contact?.nom && other.contact?.nom && 
           this.normalizeString(lead.contact.nom) === this.normalizeString(other.contact.nom)) {
         similarityScore++;
       }
       
       // Comparer les prénoms
-      if (lead.contact.prenom && other.contact.prenom && 
+      if (lead.contact?.prenom && other.contact?.prenom && 
           this.normalizeString(lead.contact.prenom) === this.normalizeString(other.contact.prenom)) {
         similarityScore++;
       }
       
       // Comparer les villes
-      if (lead.contact.ville && other.contact.ville && 
+      if (lead.contact?.ville && other.contact?.ville && 
           this.normalizeString(lead.contact.ville) === this.normalizeString(other.contact.ville)) {
         similarityScore++;
       }

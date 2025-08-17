@@ -1,0 +1,930 @@
+[
+  {
+    "id": "6b493322-66a0-4af7-9ff9-754c039d18f4",
+    "data": {
+      "contact": {
+        "civilite": "MONSIEUR",
+        "nom": "PINELLI",
+        "prenom": "XAVIER",
+        "telephone": "0603824772",
+        "email": "xp17mai@gmail.com",
+        "adresse": "195 CHEMIN DE BOMPERTUIS",
+        "codePostal": "13120",
+        "ville": "GARDANNE"
+      },
+      "souscripteur": {
+        "dateNaissance": "17/05/1971",
+        "profession": "Profession libérale",
+        "regimeSocial": "Travailleurs Non Salariés",
+        "situationFamiliale": "Célibataire",
+        "sexe": "Homme",
+        "age": 53,
+        "nombreEnfants": 0
+      },
+      "conjoint": null,
+      "enfants": [],
+      "besoins": {
+        "besoinAssurance": "Changer de contrat",
+        "dateEffet": "Avril",
+        "assureActuellement": true,
+        "assureurActuel": "AXA COURTAGE",
+        "formuleChoisie": "Intermédiaire",
+        "niveaux": {
+          "formule": "Intermédiaire"
+        }
+      }
+    },
+    "parser": "AssurleadParser",
+    "score": 5,
+    "source": {
+      "type": "gmail",
+      "emailId": "198a8a64e240ce23",
+      "subject": "Fwd: 1 LEAD assurlead - FRANCE_EPARGNE_SANTE_TNS",
+      "from": "Nathaniel Ohayon <ohayon.n@france-epargne.fr>",
+      "date": "Thu, 14 Aug 2025 15:54:54 +0300",
+      "fileName": "email_1755386488190_198a8a64e240ce23.json"
+    },
+    "subject": "Fwd: 1 LEAD assurlead - FRANCE_EPARGNE_SANTE_TNS",
+    "emailDate": "Thu, 14 Aug 2025 15:54:54 +0300"
+  },
+  {
+    "id": "1446c18a-802d-4072-9b05-93489d7c36ba",
+    "data": {
+      "contact": {
+        "civilite": "MONSIEUR",
+        "nom": "LAURENT",
+        "prenom": "PIERRE",
+        "telephone": "0662378312",
+        "email": "ttnabil@yahoo.fr",
+        "adresse": "RUE DU ROCHER",
+        "codePostal": "75008",
+        "ville": "PARIS"
+      },
+      "souscripteur": {
+        "dateNaissance": "01/06/1963",
+        "profession": "Profession libérale",
+        "regimeSocial": "Travailleurs Non Salariés",
+        "situationFamiliale": "Divorcé",
+        "sexe": "Homme",
+        "age": 61,
+        "nombreEnfants": 0
+      },
+      "conjoint": null,
+      "enfants": [],
+      "besoins": {
+        "besoinAssurance": "Vous assurer pour la première fois",
+        "dateEffet": null,
+        "assureActuellement": false,
+        "assureurActuel": null,
+        "formuleChoisie": "Ticket modérateur",
+        "niveaux": {
+          "formule": "Ticket modérateur"
+        }
+      }
+    },
+    "parser": "AssurleadParser",
+    "score": 5,
+    "source": {
+      "type": "gmail",
+      "emailId": "198a8a5ab3ba6b2d",
+      "subject": "Fwd: 1 LEAD assurlead - FRANCE_EPARGNE_SANTE_TNS",
+      "from": "Nathaniel Ohayon <ohayon.n@france-epargne.fr>",
+      "date": "Thu, 14 Aug 2025 15:54:12 +0300",
+      "fileName": "email_1755386488414_198a8a5ab3ba6b2d.json"
+    },
+    "subject": "Fwd: 1 LEAD assurlead - FRANCE_EPARGNE_SANTE_TNS",
+    "emailDate": "Thu, 14 Aug 2025 15:54:12 +0300"
+  },
+  {
+    "id": "9e895ba4-3a71-47b7-8c26-ceb00f0fdce5",
+    "data": {
+      "contact": {
+        "civilite": null,
+        "nom": "LAURENT",
+        "prenom": "PIERRE",
+        "telephone": null,
+        "email": null,
+        "adresse": "RUE DU ROCHER",
+        "codePostal": "75008",
+        "ville": "PARIS"
+      },
+      "souscripteur": {
+        "dateNaissance": "01/06/1963",
+        "profession": "Profession libérale",
+        "regimeSocial": "Travailleurs Non Salariés",
+        "situationFamiliale": "Divorcé",
+        "sexe": "Homme",
+        "age": 61,
+        "nombreEnfants": 0
+      },
+      "conjoint": null,
+      "enfants": [],
+      "besoins": {
+        "besoinAssurance": "Vous assurer pour la première fois",
+        "dateEffet": null,
+        "assureActuellement": false,
+        "assureurActuel": null,
+        "formuleChoisie": "Ticket modérateur",
+        "niveaux": {
+          "formule": "Ticket modérateur"
+        }
+      }
+    },
+    "parser": "AssurleadParser",
+    "score": 4,
+    "source": {
+      "type": "gmail",
+      "emailId": "198a8a53d53808f6",
+      "subject": "Fwd: 1 LEAD assurlead - FRANCE_EPARGNE_SANTE_TNS",
+      "from": "Nathaniel Ohayon <ohayon.n@france-epargne.fr>",
+      "date": "Thu, 14 Aug 2025 15:53:42 +0300",
+      "fileName": "email_1755386488636_198a8a53d53808f6.json"
+    },
+    "subject": "Fwd: 1 LEAD assurlead - FRANCE_EPARGNE_SANTE_TNS",
+    "emailDate": "Thu, 14 Aug 2025 15:53:42 +0300"
+  },
+  {
+    "id": "7c58a5ca-d5d2-4189-bcb6-b3b2ac97d28e",
+    "contact": {
+      "civilite": "M.",
+      "nom": "Kiss",
+      "prenom": "Nicolas",
+      "adresse": "5 rue des hauts graviers",
+      "codePostal": "91360",
+      "ville": "EPINAY SUR ORGE",
+      "telephone": "06.49.83.32.28",
+      "email": "tian-han-men@wanadoo.fr"
+    },
+    "souscripteur": {
+      "dateNaissance": "1982-10-18",
+      "profession": "Profession libérale",
+      "regimeSocial": "TNS",
+      "nombreEnfants": 1
+    },
+    "conjoint": {
+      "dateNaissance": "1983-04-26",
+      "profession": "En recherche d'emploi",
+      "regimeSocial": "Salarié"
+    },
+    "enfants": [
+      {
+        "dateNaissance": "2014-05-27"
+      }
+    ],
+    "besoins": {
+      "dateEffet": "2025-06-20",
+      "assureActuellement": false,
+      "niveaux": {
+        "soinsMedicaux": 2,
+        "hospitalisation": 2,
+        "optique": 3,
+        "dentaire": 4
+      }
+    },
+    "signature": null,
+    "source": {
+      "type": "gmail",
+      "emailId": "198a4c5a09a7dda5",
+      "subject": "Fiche trio Mutuelle Santé AssurProspect.fr",
+      "from": "Nathaniel Ohayon <ohayon.n@france-epargne.fr>",
+      "date": "Wed, 13 Aug 2025 21:50:38 +0300",
+      "fileName": "email_1755386490124_198a4c5a09a7dda5.json"
+    },
+    "extractedAt": "2025-08-16T23:21:43.942Z",
+    "rawSnippet": "... Nicolas\nAdresse : 5 rue des hauts graviers\nCode postal : 91360\nVille : EPINAY SUR ORGE\nTéléphone : 06.49.83.32.28\nEmail : tian-han-men@wanadoo.fr <mailto:tian-han-men@wanadoo.fr>\nSouscripteur\n\nDate de naissance : 18/10/1982\nProfession : Profession libérale\nRégime Social : TNS : régime des indépenda...",
+    "fullContent": "\r\nCe message est envoyé par un automate.\r\nPour contacter AssurProspect.fr <http://assurprospect.fr/>, nous vous invitons à utiliser ce formulaire de contact <{SITE}/contact>\r\n\r\n\r\nTransmission d'une fiche\r\nVoici les éléments de la fiche trio :\r\n\r\n\r\nContact\r\n\r\n\r\nCivilité : M.\r\nNom : Kiss\r\nPrénom : Nicolas\r\nAdresse : 5 rue des hauts graviers\r\nCode postal : 91360\r\nVille : EPINAY SUR ORGE\r\nTéléphone : 06.49.83.32.28\r\nEmail : tian-han-men@wanadoo.fr <mailto:tian-han-men@wanadoo.fr>\r\nSouscripteur\r\n\r\n\r\nDate de naissance : 18/10/1982\r\nProfession : Profession libérale\r\nRégime Social : TNS : régime des indépendants\r\nNombre d'enfants : 1\r\nConjoint\r\n\r\n\r\nDate de naissance : 26/04/1983\r\nProfession : En recherche d'emploi\r\nRégime Social : Salarié (ou retraité)\r\nEnfants\r\n\r\n\r\nDate de naissance du 1er enfant : 27/05/2014\r\nBesoin\r\n\r\n\r\nDate d'effet : 20/06/2025\r\nSouscripteur actuellement assuré : Non\r\nSoins médicaux : 2\r\nHospitalisation : 2\r\nOptique : 3\r\nDentaire : 4\r\n\r\n\r\n\r\nA noter : Cet email contient des données personnelles. Merci de le supprimer après traitement. \r\nDans le cadre du contrat qui nous lie, vous nous avez demandé l’envoi de ces données par e-mail simple. Nous vous rappelons que dans le cadre du Règlement sur la protection des données personnelles, vous pouvez accéder via nos services à des canaux de transmission plus sécurisés. Nous vous invitons à vous rapprocher de votre account manager pour toute demande d’évolution du canal de transmission ou à effectuer la manipulation vous - même dans votre espace client.\r\n\r\n\r\nA très bientôt sur AssurProspect.fr <http://assurprospect.fr/>\r\nL'équipe AssurProspect\r\nPS : Si vous avez des questions ou suggestions, n'hésitez pas à nous en faire part à l'adresse contact@assurprospect.fr <mailto:contact@assurprospect.fr>\r\n\r\n\r\n\t\r\nOHAYON Nathaniel\r\nFondateur\r\n+33 (0) 6 51 51 70 53  <tel:+33651517053>\r\nohayon.n@france-epargne.fr  <mailto:ohayon.n@france-epargne.fr>\r\nfrance-epargne.fr  <https://france-epargne.fr/>\r\n@franceepargne  <https://instagram.com/franceepargne>\r\nN° ORIAS : 23001687\r\n📊 Essayez notre simulateur d’épargne →  <https://www.france-epargne.fr/simulateurs/epargne>\t\r\n🌟 Découvrez nos comparateurs et offres →  <https://www.france-epargne.fr/comparateurs>\r\nPrévoyances | Mutuelles | Retraite | Placements\r\nSARL France Epargne – SIREN 917 632 465\r\nCourtier en assurance immatriculé à l’ORIAS n° 23001687 – www.orias.fr <https://www.orias.fr/> – Sous le contrôle de l’ACPR – RCP Prof n° 18375798 – Lloyd’s Insurance Company S.A.\r\n🔒 Confidentialité : ce message et ses pièces jointes sont confidentiels. Si vous n’êtes pas destinataire, supprimez-le et avertissez l’expéditeur.  🖨️ Merci de n’imprimer que si nécessaire.\r\n\r\n",
+    "emailSubject": "Fiche trio Mutuelle Santé AssurProspect.fr",
+    "emailDate": "Wed, 13 Aug 2025 21:50:38 +0300",
+    "score": 5,
+    "isDuplicate": false,
+    "notes": {
+      "parserUsed": "AssurProspectParser",
+      "extractionDetails": {
+        "hasContact": true,
+        "hasSouscripteur": true,
+        "hasConjoint": true,
+        "enfantsCount": 1,
+        "hasBesoins": true,
+        "hasSignature": false
+      },
+      "performance": {
+        "processingTime": 2,
+        "parserSelectionTime": 0,
+        "extractionTime": 1,
+        "scoringTime": 0
+      }
+    }
+  },
+  {
+    "id": "ec659aaa-c0eb-4389-9da3-b49e3c276696",
+    "contact": {
+      "civilite": "Mme",
+      "nom": "Vijoul",
+      "prenom": "Sandrine",
+      "adresse": "130 rue duguesclin",
+      "codePostal": "69006",
+      "ville": "LYON",
+      "telephone": "06.12.23.45.34",
+      "email": "svijoul@yahoo.fr"
+    },
+    "souscripteur": {
+      "dateNaissance": "1975-05-16",
+      "profession": "Profession libérale",
+      "regimeSocial": "TNS",
+      "nombreEnfants": 1
+    },
+    "conjoint": null,
+    "enfants": [
+      {
+        "dateNaissance": "2008-10-14"
+      }
+    ],
+    "besoins": {
+      "dateEffet": "2025-06-12",
+      "assureActuellement": true,
+      "niveaux": {
+        "soinsMedicaux": 3,
+        "hospitalisation": 3,
+        "optique": 3,
+        "dentaire": 3
+      }
+    },
+    "signature": null,
+    "source": {
+      "type": "gmail",
+      "emailId": "198a4c54c05de1a5",
+      "subject": "Fiche trio Mutuelle Santé AssurProspect.fr",
+      "from": "Nathaniel Ohayon <ohayon.n@france-epargne.fr>",
+      "date": "Wed, 13 Aug 2025 21:50:17 +0300",
+      "fileName": "email_1755386490367_198a4c54c05de1a5.json"
+    },
+    "extractedAt": "2025-08-16T23:21:43.944Z",
+    "rawSnippet": "... VIJOUL\nPrénom : Sandrine\nAdresse : 130 rue duguesclin\nCode postal : 69006\nVille : LYON\nTéléphone : 06.12.23.45.34\nEmail : svijoul@yahoo.fr <mailto:svijoul@yahoo.fr>\nSouscripteur\n\nDate de naissance : 16/05/1975\nProfession : Profession libérale\nRégime Social : TNS : régime des indépendants\nNombre d'e...",
+    "fullContent": "\r\nCe message est envoyé par un automate.\r\nPour contacter AssurProspect.fr <http://assurprospect.fr/>, nous vous invitons à utiliser ce formulaire de contact <{SITE}/contact>\r\n\r\n\r\nTransmission d'une fiche\r\nVoici les éléments de la fiche trio :\r\n\r\n\r\nContact\r\n\r\n\r\nCivilité : Mme\r\nNom : VIJOUL\r\nPrénom : Sandrine\r\nAdresse : 130 rue duguesclin\r\nCode postal : 69006\r\nVille : LYON\r\nTéléphone : 06.12.23.45.34\r\nEmail : svijoul@yahoo.fr <mailto:svijoul@yahoo.fr>\r\nSouscripteur\r\n\r\n\r\nDate de naissance : 16/05/1975\r\nProfession : Profession libérale\r\nRégime Social : TNS : régime des indépendants\r\nNombre d'enfants : 1\r\nEnfants\r\n\r\n\r\nDate de naissance du 1er enfant : 14/10/2008\r\nBesoin\r\n\r\n\r\nDate d'effet : 12/06/2025\r\nSouscripteur actuellement assuré : Oui\r\nSoins médicaux : 3\r\nHospitalisation : 3\r\nOptique : 3\r\nDentaire : 3\r\n\r\n\r\n\r\nA noter : Cet email contient des données personnelles. Merci de le supprimer après traitement. \r\nDans le cadre du contrat qui nous lie, vous nous avez demandé l’envoi de ces données par e-mail simple. Nous vous rappelons que dans le cadre du Règlement sur la protection des données personnelles, vous pouvez accéder via nos services à des canaux de transmission plus sécurisés. Nous vous invitons à vous rapprocher de votre account manager pour toute demande d’évolution du canal de transmission ou à effectuer la manipulation vous - même dans votre espace client.\r\n\r\n\r\nA très bientôt sur AssurProspect.fr <http://assurprospect.fr/>\r\nL'équipe AssurProspect\r\nPS : Si vous avez des questions ou suggestions, n'hésitez pas à nous en faire part à l'adresse contact@assurprospect.fr <mailto:contact@assurprospect.fr>\r\n\r\n\r\n\t\r\nOHAYON Nathaniel\r\nFondateur\r\n+33 (0) 6 51 51 70 53  <tel:+33651517053>\r\nohayon.n@france-epargne.fr  <mailto:ohayon.n@france-epargne.fr>\r\nfrance-epargne.fr  <https://france-epargne.fr/>\r\n@franceepargne  <https://instagram.com/franceepargne>\r\nN° ORIAS : 23001687\r\n📊 Essayez notre simulateur d’épargne →  <https://www.france-epargne.fr/simulateurs/epargne>\t\r\n🌟 Découvrez nos comparateurs et offres →  <https://www.france-epargne.fr/comparateurs>\r\nPrévoyances | Mutuelles | Retraite | Placements\r\nSARL France Epargne – SIREN 917 632 465\r\nCourtier en assurance immatriculé à l’ORIAS n° 23001687 – www.orias.fr <https://www.orias.fr/> – Sous le contrôle de l’ACPR – RCP Prof n° 18375798 – Lloyd’s Insurance Company S.A.\r\n🔒 Confidentialité : ce message et ses pièces jointes sont confidentiels. Si vous n’êtes pas destinataire, supprimez-le et avertissez l’expéditeur.  🖨️ Merci de n’imprimer que si nécessaire.\r\n\r\n",
+    "emailSubject": "Fiche trio Mutuelle Santé AssurProspect.fr",
+    "emailDate": "Wed, 13 Aug 2025 21:50:17 +0300",
+    "score": 5,
+    "isDuplicate": false,
+    "notes": {
+      "parserUsed": "AssurProspectParser",
+      "extractionDetails": {
+        "hasContact": true,
+        "hasSouscripteur": true,
+        "hasConjoint": false,
+        "enfantsCount": 1,
+        "hasBesoins": true,
+        "hasSignature": false
+      },
+      "performance": {
+        "processingTime": 0,
+        "parserSelectionTime": 0,
+        "extractionTime": 0,
+        "scoringTime": 0
+      }
+    }
+  },
+  {
+    "id": "d9e6a9ca-75ca-4236-a0ee-55bcc435d8e5",
+    "contact": {
+      "civilite": "M.",
+      "nom": "Ratsimba",
+      "prenom": "Ndretsa",
+      "adresse": "18 Rue des Cerisiers",
+      "codePostal": "34725",
+      "ville": "ST ANDRE DE SANGONIS",
+      "telephone": "06.07.25.23.30",
+      "email": "hsratsimba@gmail.com"
+    },
+    "souscripteur": {
+      "dateNaissance": "1962-06-19",
+      "profession": "Artisan",
+      "regimeSocial": "TNS"
+    },
+    "conjoint": {
+      "dateNaissance": "1965-08-14",
+      "profession": "Salarié",
+      "regimeSocial": "Salarié"
+    },
+    "enfants": [],
+    "besoins": {
+      "dateEffet": "2025-06-12",
+      "assureActuellement": true,
+      "niveaux": {
+        "soinsMedicaux": 4,
+        "hospitalisation": 3,
+        "optique": 4,
+        "dentaire": 4
+      }
+    },
+    "signature": null,
+    "source": {
+      "type": "gmail",
+      "emailId": "198a4c5278d8d002",
+      "subject": "Fiche trio Mutuelle Santé AssurProspect.fr (différent) ",
+      "from": "Nathaniel Ohayon <ohayon.n@france-epargne.fr>",
+      "date": "Wed, 13 Aug 2025 21:50:06 +0300",
+      "fileName": "email_1755386490599_198a4c5278d8d002.json"
+    },
+    "extractedAt": "2025-08-16T23:21:43.947Z",
+    "rawSnippet": "...Ndretsa\nAdresse : 18 Rue des Cerisiers\nCode postal : 34725\nVille : ST ANDRE DE SANGONIS\nTéléphone : 06.07.25.23.30\nEmail : hsratsimba@gmail.com <mailto:hsratsimba@gmail.com>\nSouscripteur\n\nDate de naissance : 19/06/1962\nProfession : Artisan\nRégime Social : TNS : régime des indépendants\nConjoint\n\nDate...",
+    "fullContent": "\r\nCe message est envoyé par un automate.\r\nPour contacter AssurProspect.fr <http://assurprospect.fr/>, nous vous invitons à utiliser ce formulaire de contact <{SITE}/contact>\r\n\r\n\r\nTransmission d'une fiche\r\nVoici les éléments de la fiche trio :\r\n\r\n\r\nContact\r\n\r\n\r\nCivilité : M.\r\nNom : Ratsimba\r\nPrénom : Ndretsa\r\nAdresse : 18 Rue des Cerisiers\r\nCode postal : 34725\r\nVille : ST ANDRE DE SANGONIS\r\nTéléphone : 06.07.25.23.30\r\nEmail : hsratsimba@gmail.com <mailto:hsratsimba@gmail.com>\r\nSouscripteur\r\n\r\n\r\nDate de naissance : 19/06/1962\r\nProfession : Artisan\r\nRégime Social : TNS : régime des indépendants\r\nConjoint\r\n\r\n\r\nDate de naissance : 14/08/1965\r\nProfession : Salarié\r\nRégime Social : Salarié (ou retraité)\r\nBesoin\r\n\r\n\r\nDate d'effet : 12/06/2025\r\nSouscripteur actuellement assuré : Oui\r\nSoins médicaux : 4\r\nHospitalisation : 3\r\nOptique : 4\r\nDentaire : 4\r\n\r\n\r\n\r\nA noter : Cet email contient des données personnelles. Merci de le supprimer après traitement. \r\nDans le cadre du contrat qui nous lie, vous nous avez demandé l’envoi de ces données par e-mail simple. Nous vous rappelons que dans le cadre du Règlement sur la protection des données personnelles, vous pouvez accéder via nos services à des canaux de transmission plus sécurisés. Nous vous invitons à vous rapprocher de votre account manager pour toute demande d’évolution du canal de transmission ou à effectuer la manipulation vous - même dans votre espace client.\r\n\r\n\r\nA très bientôt sur AssurProspect.fr <http://assurprospect.fr/>\r\nL'équipe AssurProspect\r\nPS : Si vous avez des questions ou suggestions, n'hésitez pas à nous en faire part à l'adresse contact@assurprospect.fr <mailto:contact@assurprospect.fr>\r\n\r\n\r\n\t\r\nOHAYON Nathaniel\r\nFondateur\r\n+33 (0) 6 51 51 70 53  <tel:+33651517053>\r\nohayon.n@france-epargne.fr  <mailto:ohayon.n@france-epargne.fr>\r\nfrance-epargne.fr  <https://france-epargne.fr/>\r\n@franceepargne  <https://instagram.com/franceepargne>\r\nN° ORIAS : 23001687\r\n📊 Essayez notre simulateur d’épargne →  <https://www.france-epargne.fr/simulateurs/epargne>\t\r\n🌟 Découvrez nos comparateurs et offres →  <https://www.france-epargne.fr/comparateurs>\r\nPrévoyances | Mutuelles | Retraite | Placements\r\nSARL France Epargne – SIREN 917 632 465\r\nCourtier en assurance immatriculé à l’ORIAS n° 23001687 – www.orias.fr <https://www.orias.fr/> – Sous le contrôle de l’ACPR – RCP Prof n° 18375798 – Lloyd’s Insurance Company S.A.\r\n🔒 Confidentialité : ce message et ses pièces jointes sont confidentiels. Si vous n’êtes pas destinataire, supprimez-le et avertissez l’expéditeur.  🖨️ Merci de n’imprimer que si nécessaire.\r\n\r\n",
+    "emailSubject": "Fiche trio Mutuelle Santé AssurProspect.fr (différent) ",
+    "emailDate": "Wed, 13 Aug 2025 21:50:06 +0300",
+    "score": 5,
+    "isDuplicate": false,
+    "notes": {
+      "parserUsed": "AssurProspectParser",
+      "extractionDetails": {
+        "hasContact": true,
+        "hasSouscripteur": true,
+        "hasConjoint": true,
+        "enfantsCount": 0,
+        "hasBesoins": true,
+        "hasSignature": false
+      },
+      "performance": {
+        "processingTime": 1,
+        "parserSelectionTime": 1,
+        "extractionTime": 0,
+        "scoringTime": 0
+      }
+    }
+  },
+  {
+    "id": "cfd2b03a-a575-4e18-8202-7774205a2ddb",
+    "contact": {
+      "civilite": "Mme",
+      "nom": "Daire",
+      "prenom": "Christine",
+      "adresse": "74 rue de Mons",
+      "codePostal": "59570",
+      "ville": "LA LONGUEVILLE",
+      "telephone": "03.27.65.57.09",
+      "email": "dairech@hotmail.com"
+    },
+    "souscripteur": {
+      "dateNaissance": "1958-05-26",
+      "profession": "Profession libérale",
+      "regimeSocial": "TNS"
+    },
+    "conjoint": {
+      "dateNaissance": "1949-01-01",
+      "profession": "Salarié",
+      "regimeSocial": "Salarié"
+    },
+    "enfants": [],
+    "besoins": {
+      "dateEffet": "2025-06-06",
+      "assureActuellement": true,
+      "niveaux": {
+        "soinsMedicaux": 2,
+        "hospitalisation": 2,
+        "optique": 2,
+        "dentaire": 2
+      }
+    },
+    "signature": null,
+    "source": {
+      "type": "gmail",
+      "emailId": "198a4c4f2c2fdc92",
+      "subject": "Fiche trio Mutuelle Santé AssurProspect.fr (différent) ",
+      "from": "Nathaniel Ohayon <ohayon.n@france-epargne.fr>",
+      "date": "Wed, 13 Aug 2025 21:49:53 +0300",
+      "fileName": "email_1755386490840_198a4c4f2c2fdc92.json"
+    },
+    "extractedAt": "2025-08-16T23:21:43.949Z",
+    "rawSnippet": "...\nPrénom : Christine\nAdresse : 74 rue de Mons\nCode postal : 59570\nVille : LA LONGUEVILLE\nTéléphone : 03.27.65.57.09\nEmail : dairech@hotmail.com <mailto:dairech@hotmail.com>\nSouscripteur\n\nDate de naissance : 26/05/1958\nProfession : Profession libérale\nRégime Social : TNS : régime des indépendants\nConj...",
+    "fullContent": "\r\nCe message est envoyé par un automate.\r\nPour contacter AssurProspect.fr <http://assurprospect.fr/>, nous vous invitons à utiliser ce formulaire de contact <{SITE}/contact>\r\n\r\n\r\nTransmission d'une fiche\r\nVoici les éléments de la fiche trio :\r\n\r\n\r\nContact\r\n\r\n\r\nCivilité : Mme\r\nNom : Daire\r\nPrénom : Christine\r\nAdresse : 74 rue de Mons\r\nCode postal : 59570\r\nVille : LA LONGUEVILLE\r\nTéléphone : 03.27.65.57.09\r\nEmail : dairech@hotmail.com <mailto:dairech@hotmail.com>\r\nSouscripteur\r\n\r\n\r\nDate de naissance : 26/05/1958\r\nProfession : Profession libérale\r\nRégime Social : TNS : régime des indépendants\r\nConjoint\r\n\r\n\r\nDate de naissance : 01/01/1949\r\nProfession : Salarié\r\nRégime Social : Salarié (ou retraité)\r\nBesoin\r\n\r\n\r\nDate d'effet : 06/06/2025\r\nSouscripteur actuellement assuré : Oui\r\nSoins médicaux : 2\r\nHospitalisation : 2\r\nOptique : 2\r\nDentaire : 2\r\n\r\n\r\n\r\nA noter : Cet email contient des données personnelles. Merci de le supprimer après traitement. \r\nDans le cadre du contrat qui nous lie, vous nous avez demandé l’envoi de ces données par e-mail simple. Nous vous rappelons que dans le cadre du Règlement sur la protection des données personnelles, vous pouvez accéder via nos services à des canaux de transmission plus sécurisés. Nous vous invitons à vous rapprocher de votre account manager pour toute demande d’évolution du canal de transmission ou à effectuer la manipulation vous - même dans votre espace client.\r\n\r\n\r\nA très bientôt sur AssurProspect.fr <http://assurprospect.fr/>\r\nL'équipe AssurProspect\r\nPS : Si vous avez des questions ou suggestions, n'hésitez pas à nous en faire part à l'adresse contact@assurprospect.fr <mailto:contact@assurprospect.fr>\r\n\r\n\r\n\t\r\nOHAYON Nathaniel\r\nFondateur\r\n+33 (0) 6 51 51 70 53  <tel:+33651517053>\r\nohayon.n@france-epargne.fr  <mailto:ohayon.n@france-epargne.fr>\r\nfrance-epargne.fr  <https://france-epargne.fr/>\r\n@franceepargne  <https://instagram.com/franceepargne>\r\nN° ORIAS : 23001687\r\n📊 Essayez notre simulateur d’épargne →  <https://www.france-epargne.fr/simulateurs/epargne>\t\r\n🌟 Découvrez nos comparateurs et offres →  <https://www.france-epargne.fr/comparateurs>\r\nPrévoyances | Mutuelles | Retraite | Placements\r\nSARL France Epargne – SIREN 917 632 465\r\nCourtier en assurance immatriculé à l’ORIAS n° 23001687 – www.orias.fr <https://www.orias.fr/> – Sous le contrôle de l’ACPR – RCP Prof n° 18375798 – Lloyd’s Insurance Company S.A.\r\n🔒 Confidentialité : ce message et ses pièces jointes sont confidentiels. Si vous n’êtes pas destinataire, supprimez-le et avertissez l’expéditeur.  🖨️ Merci de n’imprimer que si nécessaire.\r\n\r\n",
+    "emailSubject": "Fiche trio Mutuelle Santé AssurProspect.fr (différent) ",
+    "emailDate": "Wed, 13 Aug 2025 21:49:53 +0300",
+    "score": 5,
+    "isDuplicate": false,
+    "notes": {
+      "parserUsed": "AssurProspectParser",
+      "extractionDetails": {
+        "hasContact": true,
+        "hasSouscripteur": true,
+        "hasConjoint": true,
+        "enfantsCount": 0,
+        "hasBesoins": true,
+        "hasSignature": false
+      },
+      "performance": {
+        "processingTime": 0,
+        "parserSelectionTime": 0,
+        "extractionTime": 0,
+        "scoringTime": 0
+      }
+    }
+  },
+  {
+    "id": "ed16889e-a9f6-4e86-abf3-d997096db12c",
+    "contact": {
+      "civilite": "M.",
+      "nom": "Bazzi",
+      "prenom": "Mathieu",
+      "adresse": "43 avenue des mimosas",
+      "codePostal": "06110",
+      "ville": "LE CANNET",
+      "telephone": "06.35.36.99.88",
+      "email": "bazzihassan@gmail.com"
+    },
+    "souscripteur": {
+      "dateNaissance": "1983-02-23",
+      "profession": "Chef d'entreprise",
+      "regimeSocial": "TNS",
+      "nombreEnfants": 3
+    },
+    "conjoint": {
+      "dateNaissance": "1983-09-22",
+      "profession": "En recherche d'emploi",
+      "regimeSocial": "Salarié"
+    },
+    "enfants": [
+      {
+        "dateNaissance": "2016-09-07"
+      },
+      {
+        "dateNaissance": "2019-07-09"
+      },
+      {
+        "dateNaissance": "2021-05-10"
+      }
+    ],
+    "besoins": {
+      "dateEffet": "2025-05-28",
+      "assureActuellement": true,
+      "niveaux": {
+        "soinsMedicaux": 2,
+        "hospitalisation": 2,
+        "optique": 2,
+        "dentaire": 3
+      }
+    },
+    "signature": null,
+    "source": {
+      "type": "gmail",
+      "emailId": "198a4c4afe97cbbc",
+      "subject": "Fiche trio Mutuelle Santé AssurProspect.fr",
+      "from": "Nathaniel Ohayon <ohayon.n@france-epargne.fr>",
+      "date": "Wed, 13 Aug 2025 21:49:36 +0300",
+      "fileName": "email_1755386491090_198a4c4afe97cbbc.json"
+    },
+    "extractedAt": "2025-08-16T23:21:43.952Z",
+    "rawSnippet": "...\nPrénom : Mathieu\nAdresse : 43 avenue des mimosas\nCode postal : 06110\nVille : LE CANNET\nTéléphone : 06.35.36.99.88\nEmail : bazzihassan@gmail.com <mailto:bazzihassan@gmail.com>\nSouscripteur\n\nDate de naissance : 23/02/1983\nProfession : Chef d'entreprise\nRégime Social : TNS : régime des indépendants\nNo...",
+    "fullContent": "\r\nCe message est envoyé par un automate.\r\nPour contacter AssurProspect.fr <http://assurprospect.fr/>, nous vous invitons à utiliser ce formulaire de contact <x-msg://10/%7BSITE%7D/contact>\r\n\r\n\r\nTransmission d'une fiche\r\nVoici les éléments de la fiche trio :\r\n\r\n\r\nContact\r\n\r\n\r\nCivilité : M.\r\nNom : Bazzi\r\nPrénom : Mathieu\r\nAdresse : 43 avenue des mimosas\r\nCode postal : 06110\r\nVille : LE CANNET\r\nTéléphone : 06.35.36.99.88\r\nEmail : bazzihassan@gmail.com <mailto:bazzihassan@gmail.com>\r\nSouscripteur\r\n\r\n\r\nDate de naissance : 23/02/1983\r\nProfession : Chef d'entreprise\r\nRégime Social : TNS : régime des indépendants\r\nNombre d'enfants : 3\r\nConjoint\r\n\r\n\r\nDate de naissance : 22/09/1983\r\nProfession : En recherche d'emploi\r\nRégime Social : Salarié (ou retraité)\r\nEnfants\r\n\r\n\r\nDate de naissance du 1er enfant : 07/09/2016\r\nDate de naissance du 2ème enfant : 09/07/2019\r\nDate de naissance du 3ème enfant : 10/05/2021\r\nBesoin\r\n\r\n\r\nDate d'effet : 28/05/2025\r\nSouscripteur actuellement assuré : Oui\r\nSoins médicaux : 2\r\nHospitalisation : 2\r\nOptique : 2\r\nDentaire : 3\r\n\r\n\r\n\r\nA noter : Cet email contient des données personnelles. Merci de le supprimer après traitement. \r\nDans le cadre du contrat qui nous lie, vous nous avez demandé l’envoi de ces données par e-mail simple. Nous vous rappelons que dans le cadre du Règlement sur la protection des données personnelles, vous pouvez accéder via nos services à des canaux de transmission plus sécurisés. Nous vous invitons à vous rapprocher de votre account manager pour toute demande d’évolution du canal de transmission ou à effectuer la manipulation vous - même dans votre espace client.\r\n\r\n\r\nA très bientôt sur AssurProspect.fr <http://assurprospect.fr/>\r\nL'équipe AssurProspect\r\nPS : Si vous avez des questions ou suggestions, n'hésitez pas à nous en faire part à l'adresse contact@assurprospect.fr <mailto:contact@assurprospect.fr>\r\n\r\n\r\n\t\r\nOHAYON Nathaniel\r\nFondateur\r\n+33 (0) 6 51 51 70 53  <tel:+33651517053>\r\nohayon.n@france-epargne.fr  <mailto:ohayon.n@france-epargne.fr>\r\nfrance-epargne.fr  <https://france-epargne.fr/>\r\n@franceepargne  <https://instagram.com/franceepargne>\r\nN° ORIAS : 23001687\r\n📊 Essayez notre simulateur d’épargne →  <https://www.france-epargne.fr/simulateurs/epargne>\t\r\n🌟 Découvrez nos comparateurs et offres →  <https://www.france-epargne.fr/comparateurs>\r\nPrévoyances | Mutuelles | Retraite | Placements\r\nSARL France Epargne – SIREN 917 632 465\r\nCourtier en assurance immatriculé à l’ORIAS n° 23001687 – www.orias.fr <https://www.orias.fr/> – Sous le contrôle de l’ACPR – RCP Prof n° 18375798 – Lloyd’s Insurance Company S.A.\r\n🔒 Confidentialité : ce message et ses pièces jointes sont confidentiels. Si vous n’êtes pas destinataire, supprimez-le et avertissez l’expéditeur.  🖨️ Merci de n’imprimer que si nécessaire.\r\n\r\n",
+    "emailSubject": "Fiche trio Mutuelle Santé AssurProspect.fr",
+    "emailDate": "Wed, 13 Aug 2025 21:49:36 +0300",
+    "score": 5,
+    "isDuplicate": false,
+    "notes": {
+      "parserUsed": "AssurProspectParser",
+      "extractionDetails": {
+        "hasContact": true,
+        "hasSouscripteur": true,
+        "hasConjoint": true,
+        "enfantsCount": 3,
+        "hasBesoins": true,
+        "hasSignature": false
+      },
+      "performance": {
+        "processingTime": 1,
+        "parserSelectionTime": 0,
+        "extractionTime": 0,
+        "scoringTime": 0
+      }
+    }
+  },
+  {
+    "id": "c08b0f02-cb4d-4428-bf47-0077bb06ded7",
+    "contact": {
+      "civilite": "M.",
+      "nom": "Dupont",
+      "prenom": "Ali",
+      "adresse": "3 rue de silly",
+      "codePostal": "92100",
+      "ville": "BOULOGNE BILLANCOURT",
+      "telephone": "01.96.35.26.32",
+      "email": "terracapa@gmail.com"
+    },
+    "souscripteur": {
+      "dateNaissance": "1988-01-04",
+      "profession": "Artisan",
+      "regimeSocial": "TNS"
+    },
+    "conjoint": null,
+    "enfants": [],
+    "besoins": {
+      "dateEffet": "2025-04-15",
+      "assureActuellement": false,
+      "niveaux": {
+        "soinsMedicaux": 3,
+        "hospitalisation": 3,
+        "optique": 2,
+        "dentaire": 2
+      }
+    },
+    "signature": null,
+    "source": {
+      "type": "gmail",
+      "emailId": "198a4c46ca720b9f",
+      "subject": "Fiche trio Mutuelle Santé AssurProspect.fr",
+      "from": "Nathaniel Ohayon <ohayon.n@france-epargne.fr>",
+      "date": "Wed, 13 Aug 2025 21:49:19 +0300",
+      "fileName": "email_1755386491331_198a4c46ca720b9f.json"
+    },
+    "extractedAt": "2025-08-16T23:21:43.955Z",
+    "rawSnippet": "...\nPrénom : Ali\nAdresse : 3 rue de silly\nCode postal : 92100\nVille : BOULOGNE BILLANCOURT\nTéléphone : 01.96.35.26.32\nEmail : terracapa@gmail.com <mailto:terracapa@gmail.com>\nSouscripteur\n\nDate de naissance : 04/01/1988\nProfession : Artisan\nRégime Social : TNS : régime des indépendants\nBesoin\n\nDate d'e...",
+    "fullContent": "\r\nCe message est envoyé par un automate.\r\nPour contacter AssurProspect.fr <http://assurprospect.fr/>, nous vous invitons à utiliser ce formulaire de contact <{SITE}/contact>\r\n\r\n\r\nTransmission d'une fiche\r\nVoici les éléments de la fiche trio :\r\n\r\n\r\nContact\r\n\r\n\r\nCivilité : M.\r\nNom : Dupont\r\nPrénom : Ali\r\nAdresse : 3 rue de silly\r\nCode postal : 92100\r\nVille : BOULOGNE BILLANCOURT\r\nTéléphone : 01.96.35.26.32\r\nEmail : terracapa@gmail.com <mailto:terracapa@gmail.com>\r\nSouscripteur\r\n\r\n\r\nDate de naissance : 04/01/1988\r\nProfession : Artisan\r\nRégime Social : TNS : régime des indépendants\r\nBesoin\r\n\r\n\r\nDate d'effet : 15/04/2025\r\nSouscripteur actuellement assuré : Non\r\nSoins médicaux : 3\r\nHospitalisation : 3\r\nOptique : 2\r\nDentaire : 2\r\n\r\n\r\n\r\nA noter : Cet email contient des données personnelles. Merci de le supprimer après traitement. \r\nDans le cadre du contrat qui nous lie, vous nous avez demandé l’envoi de ces données par e-mail simple. Nous vous rappelons que dans le cadre du Règlement sur la protection des données personnelles, vous pouvez accéder via nos services à des canaux de transmission plus sécurisés. Nous vous invitons à vous rapprocher de votre account manager pour toute demande d’évolution du canal de transmission ou à effectuer la manipulation vous - même dans votre espace client.\r\n\r\n\r\nA très bientôt sur AssurProspect.fr <http://assurprospect.fr/>\r\nL'équipe AssurProspect\r\nPS : Si vous avez des questions ou suggestions, n'hésitez pas à nous en faire part à l'adresse contact@assurprospect.fr <mailto:contact@assurprospect.fr>\r\n\r\n\r\n\t\r\nOHAYON Nathaniel\r\nFondateur\r\n+33 (0) 6 51 51 70 53  <tel:+33651517053>\r\nohayon.n@france-epargne.fr  <mailto:ohayon.n@france-epargne.fr>\r\nfrance-epargne.fr  <https://france-epargne.fr/>\r\n@franceepargne  <https://instagram.com/franceepargne>\r\nN° ORIAS : 23001687\r\n📊 Essayez notre simulateur d’épargne →  <https://www.france-epargne.fr/simulateurs/epargne>\t\r\n🌟 Découvrez nos comparateurs et offres →  <https://www.france-epargne.fr/comparateurs>\r\nPrévoyances | Mutuelles | Retraite | Placements\r\nSARL France Epargne – SIREN 917 632 465\r\nCourtier en assurance immatriculé à l’ORIAS n° 23001687 – www.orias.fr <https://www.orias.fr/> – Sous le contrôle de l’ACPR – RCP Prof n° 18375798 – Lloyd’s Insurance Company S.A.\r\n🔒 Confidentialité : ce message et ses pièces jointes sont confidentiels. Si vous n’êtes pas destinataire, supprimez-le et avertissez l’expéditeur.  🖨️ Merci de n’imprimer que si nécessaire.\r\n\r\n",
+    "emailSubject": "Fiche trio Mutuelle Santé AssurProspect.fr",
+    "emailDate": "Wed, 13 Aug 2025 21:49:19 +0300",
+    "score": 5,
+    "isDuplicate": false,
+    "notes": {
+      "parserUsed": "AssurProspectParser",
+      "extractionDetails": {
+        "hasContact": true,
+        "hasSouscripteur": true,
+        "hasConjoint": false,
+        "enfantsCount": 0,
+        "hasBesoins": true,
+        "hasSignature": false
+      },
+      "performance": {
+        "processingTime": 1,
+        "parserSelectionTime": 0,
+        "extractionTime": 0,
+        "scoringTime": 0
+      }
+    }
+  },
+  {
+    "id": "484ccfa3-0ddc-49af-929a-a83b11c2a139",
+    "contact": {
+      "civilite": "M.",
+      "nom": "Deschamps",
+      "prenom": "Baptiste",
+      "adresse": "2 RUE DEBRAY",
+      "codePostal": "44300",
+      "ville": "NANTES",
+      "telephone": "06.99.79.67.14",
+      "email": "baptiste.deschamps@hotmail.fr"
+    },
+    "souscripteur": {
+      "dateNaissance": "1991-06-02",
+      "profession": "Chef d'entreprise",
+      "regimeSocial": "TNS",
+      "nombreEnfants": 3
+    },
+    "conjoint": {
+      "dateNaissance": "1992-09-11",
+      "profession": "En recherche d'emploi",
+      "regimeSocial": "Salarié"
+    },
+    "enfants": [
+      {
+        "dateNaissance": "2019-03-14"
+      },
+      {
+        "dateNaissance": "2021-05-05"
+      },
+      {
+        "dateNaissance": "2024-08-08"
+      }
+    ],
+    "besoins": {
+      "dateEffet": "2025-04-07",
+      "assureActuellement": false,
+      "niveaux": {
+        "soinsMedicaux": 3,
+        "hospitalisation": 3,
+        "optique": 3,
+        "dentaire": 3
+      }
+    },
+    "signature": null,
+    "source": {
+      "type": "gmail",
+      "emailId": "198a4c44d75e438a",
+      "subject": "Fiche trio Mutuelle Santé AssurProspect.fr",
+      "from": "Nathaniel Ohayon <ohayon.n@france-epargne.fr>",
+      "date": "Wed, 13 Aug 2025 21:49:08 +0300",
+      "fileName": "email_1755386491577_198a4c44d75e438a.json"
+    },
+    "extractedAt": "2025-08-16T23:21:43.957Z",
+    "rawSnippet": "...: DESCHAMPS\nPrénom : BAPTISTE\nAdresse : 2 RUE DEBRAY\nCode postal : 44300\nVille : NANTES\nTéléphone : 06.99.79.67.14\nEmail : baptiste.deschamps@hotmail.fr <mailto:baptiste.deschamps@hotmail.fr>\nSouscripteur\n\nDate de naissance : 02/06/1991\nProfession : Chef d'entreprise\nRégime Social : TNS : régime des...",
+    "fullContent": "\r\nCe message est envoyé par un automate.\r\nPour contacter AssurProspect.fr <http://assurprospect.fr/>, nous vous invitons à utiliser ce formulaire de contact <{SITE}/contact>\r\n\r\n\r\nTransmission d'une fiche\r\nVoici les éléments de la fiche trio :\r\n\r\n\r\nContact\r\n\r\n\r\nCivilité : M.\r\nNom : DESCHAMPS\r\nPrénom : BAPTISTE\r\nAdresse : 2 RUE DEBRAY\r\nCode postal : 44300\r\nVille : NANTES\r\nTéléphone : 06.99.79.67.14\r\nEmail : baptiste.deschamps@hotmail.fr <mailto:baptiste.deschamps@hotmail.fr>\r\nSouscripteur\r\n\r\n\r\nDate de naissance : 02/06/1991\r\nProfession : Chef d'entreprise\r\nRégime Social : TNS : régime des indépendants\r\nNombre d'enfants : 3\r\nConjoint\r\n\r\n\r\nDate de naissance : 11/09/1992\r\nProfession : En recherche d'emploi\r\nRégime Social : Salarié (ou retraité)\r\nEnfants\r\n\r\n\r\nDate de naissance du 1er enfant : 14/03/2019\r\nDate de naissance du 2ème enfant : 05/05/2021\r\nDate de naissance du 3ème enfant : 08/08/2024\r\nBesoin\r\n\r\n\r\nDate d'effet : 07/04/2025\r\nSouscripteur actuellement assuré : Non\r\nSoins médicaux : 3\r\nHospitalisation : 3\r\nOptique : 3\r\nDentaire : 3\r\n\r\n\r\n\r\nA noter : Cet email contient des données personnelles. Merci de le supprimer après traitement. \r\nDans le cadre du contrat qui nous lie, vous nous avez demandé l’envoi de ces données par e-mail simple. Nous vous rappelons que dans le cadre du Règlement sur la protection des données personnelles, vous pouvez accéder via nos services à des canaux de transmission plus sécurisés. Nous vous invitons à vous rapprocher de votre account manager pour toute demande d’évolution du canal de transmission ou à effectuer la manipulation vous - même dans votre espace client.\r\n\r\n\r\nA très bientôt sur AssurProspect.fr <http://assurprospect.fr/>\r\nL'équipe AssurProspect\r\nPS : Si vous avez des questions ou suggestions, n'hésitez pas à nous en faire part à l'adresse contact@assurprospect.fr <mailto:contact@assurprospect.fr>\r\n\r\n\r\n\t\r\nOHAYON Nathaniel\r\nFondateur\r\n+33 (0) 6 51 51 70 53  <tel:+33651517053>\r\nohayon.n@france-epargne.fr  <mailto:ohayon.n@france-epargne.fr>\r\nfrance-epargne.fr  <https://france-epargne.fr/>\r\n@franceepargne  <https://instagram.com/franceepargne>\r\nN° ORIAS : 23001687\r\n📊 Essayez notre simulateur d’épargne →  <https://www.france-epargne.fr/simulateurs/epargne>\t\r\n🌟 Découvrez nos comparateurs et offres →  <https://www.france-epargne.fr/comparateurs>\r\nPrévoyances | Mutuelles | Retraite | Placements\r\nSARL France Epargne – SIREN 917 632 465\r\nCourtier en assurance immatriculé à l’ORIAS n° 23001687 – www.orias.fr <https://www.orias.fr/> – Sous le contrôle de l’ACPR – RCP Prof n° 18375798 – Lloyd’s Insurance Company S.A.\r\n🔒 Confidentialité : ce message et ses pièces jointes sont confidentiels. Si vous n’êtes pas destinataire, supprimez-le et avertissez l’expéditeur.  🖨️ Merci de n’imprimer que si nécessaire.\r\n\r\n",
+    "emailSubject": "Fiche trio Mutuelle Santé AssurProspect.fr",
+    "emailDate": "Wed, 13 Aug 2025 21:49:08 +0300",
+    "score": 5,
+    "isDuplicate": false,
+    "notes": {
+      "parserUsed": "AssurProspectParser",
+      "extractionDetails": {
+        "hasContact": true,
+        "hasSouscripteur": true,
+        "hasConjoint": true,
+        "enfantsCount": 3,
+        "hasBesoins": true,
+        "hasSignature": false
+      },
+      "performance": {
+        "processingTime": 0,
+        "parserSelectionTime": 0,
+        "extractionTime": 0,
+        "scoringTime": 0
+      }
+    }
+  },
+  {
+    "id": "83e98092-aa87-4642-bcbb-a4cb570fbfb6",
+    "contact": {
+      "civilite": "Mme",
+      "nom": "Watras",
+      "prenom": "Marion",
+      "adresse": "13 rue charles vuillemin",
+      "codePostal": "29200",
+      "ville": "BREST",
+      "telephone": "06.24.20.72.73",
+      "email": "marion.watras@yahoo.fr"
+    },
+    "souscripteur": {
+      "dateNaissance": "1982-09-20",
+      "profession": "Profession libérale",
+      "regimeSocial": "TNS",
+      "nombreEnfants": 3
+    },
+    "conjoint": {
+      "dateNaissance": "1982-11-26",
+      "profession": "Profession libérale",
+      "regimeSocial": "TNS"
+    },
+    "enfants": [
+      {
+        "dateNaissance": "2008-12-13"
+      },
+      {
+        "dateNaissance": "2010-06-07"
+      },
+      {
+        "dateNaissance": "2013-10-25"
+      }
+    ],
+    "besoins": {
+      "dateEffet": "2025-01-01",
+      "assureActuellement": false,
+      "niveaux": {
+        "soinsMedicaux": 2,
+        "hospitalisation": 2,
+        "optique": 3,
+        "dentaire": 2
+      }
+    },
+    "signature": null,
+    "source": {
+      "type": "gmail",
+      "emailId": "198a4c2c0c835cab",
+      "subject": "Fiche trio Mutuelle Santé AssurProspect.fr",
+      "from": "Nathaniel Ohayon <ohayon.n@france-epargne.fr>",
+      "date": "Wed, 13 Aug 2025 21:47:29 +0300",
+      "fileName": "email_1755386491822_198a4c2c0c835cab.json"
+    },
+    "extractedAt": "2025-08-16T23:21:43.960Z",
+    "rawSnippet": "...as\nPrénom : marion\nAdresse : 13 rue charles vuillemin\nCode postal : 29200\nVille : BREST\nTéléphone : 06.24.20.72.73\nEmail : marion.watras@yahoo.fr <mailto:marion.watras@yahoo.fr>\nSouscripteur\n\nDate de naissance : 20/09/1982\nProfession : Profession libérale\nRégime Social : TNS : régime des indépendant...",
+    "fullContent": "\r\nCe message est envoyé par un automate.\r\nPour contacter AssurProspect.fr <http://assurprospect.fr/>, nous vous invitons à utiliser ce formulaire de contact <{SITE}/contact>\r\n\r\n\r\nTransmission d'une fiche\r\nVoici les éléments de la fiche trio :\r\n\r\n\r\nContact\r\n\r\n\r\nCivilité : Mme\r\nNom : watras\r\nPrénom : marion\r\nAdresse : 13 rue charles vuillemin\r\nCode postal : 29200\r\nVille : BREST\r\nTéléphone : 06.24.20.72.73\r\nEmail : marion.watras@yahoo.fr <mailto:marion.watras@yahoo.fr>\r\nSouscripteur\r\n\r\n\r\nDate de naissance : 20/09/1982\r\nProfession : Profession libérale\r\nRégime Social : TNS : régime des indépendants\r\nNombre d'enfants : 3\r\nConjoint\r\n\r\n\r\nDate de naissance : 26/11/1982\r\nProfession : Profession libérale\r\nRégime Social : TNS : régime des indépendants\r\nEnfants\r\n\r\n\r\nDate de naissance du 1er enfant : 13/12/2008\r\nDate de naissance du 2ème enfant : 07/06/2010\r\nDate de naissance du 3ème enfant : 25/10/2013\r\nBesoin\r\n\r\n\r\nDate d'effet : 01/01/2025\r\nSouscripteur actuellement assuré : Non\r\nSoins médicaux : 2\r\nHospitalisation : 2\r\nOptique : 3\r\nDentaire : 2\r\n\r\n\r\n\r\nA noter : Cet email contient des données personnelles. Merci de le supprimer après traitement. \r\nDans le cadre du contrat qui nous lie, vous nous avez demandé l’envoi de ces données par e-mail simple. Nous vous rappelons que dans le cadre du Règlement sur la protection des données personnelles, vous pouvez accéder via nos services à des canaux de transmission plus sécurisés. Nous vous invitons à vous rapprocher de votre account manager pour toute demande d’évolution du canal de transmission ou à effectuer la manipulation vous - même dans votre espace client.\r\n\r\n\r\nA très bientôt sur AssurProspect.fr <http://assurprospect.fr/>\r\nL'équipe AssurProspect\r\nPS : Si vous avez des questions ou suggestions, n'hésitez pas à nous en faire part à l'adresse contact@assurprospect.fr <mailto:contact@assurprospect.fr>\r\n\r\n\r\n\r\n\r\n",
+    "emailSubject": "Fiche trio Mutuelle Santé AssurProspect.fr",
+    "emailDate": "Wed, 13 Aug 2025 21:47:29 +0300",
+    "score": 5,
+    "isDuplicate": false,
+    "notes": {
+      "parserUsed": "AssurProspectParser",
+      "extractionDetails": {
+        "hasContact": true,
+        "hasSouscripteur": true,
+        "hasConjoint": true,
+        "enfantsCount": 3,
+        "hasBesoins": true,
+        "hasSignature": false
+      },
+      "performance": {
+        "processingTime": 1,
+        "parserSelectionTime": 0,
+        "extractionTime": 1,
+        "scoringTime": 0
+      }
+    }
+  },
+  {
+    "id": "ebe1d39c-bb3d-4961-90c4-78ac95057385",
+    "contact": {
+      "civilite": "M.",
+      "nom": "Dupont",
+      "prenom": "Ali",
+      "adresse": "3 rue de silly",
+      "codePostal": "92100",
+      "ville": "BOULOGNE BILLANCOURT",
+      "telephone": "01.96.35.26.32",
+      "email": "terracapa@gmail.com"
+    },
+    "souscripteur": {
+      "dateNaissance": "1988-01-04",
+      "profession": "Artisan",
+      "regimeSocial": "TNS"
+    },
+    "conjoint": null,
+    "enfants": [],
+    "besoins": {
+      "dateEffet": "2025-04-15",
+      "assureActuellement": false,
+      "niveaux": {
+        "soinsMedicaux": 3,
+        "hospitalisation": 3,
+        "optique": 2,
+        "dentaire": 2
+      }
+    },
+    "signature": null,
+    "source": {
+      "type": "gmail",
+      "emailId": "198a4c278413736e",
+      "subject": "Fiche trio Mutuelle Santé AssurProspect.fr",
+      "from": "Nathaniel Ohayon <ohayon.n@france-epargne.fr>",
+      "date": "Wed, 13 Aug 2025 21:47:12 +0300",
+      "fileName": "email_1755386492065_198a4c278413736e.json"
+    },
+    "extractedAt": "2025-08-16T23:21:43.962Z",
+    "rawSnippet": "...\nPrénom : Ali\nAdresse : 3 rue de silly\nCode postal : 92100\nVille : BOULOGNE BILLANCOURT\nTéléphone : 01.96.35.26.32\nEmail : terracapa@gmail.com <mailto:terracapa@gmail.com>\nSouscripteur\n\nDate de naissance : 04/01/1988\nProfession : Artisan\nRégime Social : TNS : régime des indépendants\nBesoin\n\nDate d'e...",
+    "fullContent": "\r\nCe message est envoyé par un automate.\r\nPour contacter AssurProspect.fr <http://assurprospect.fr/>, nous vous invitons à utiliser ce formulaire de contact <{SITE}/contact>\r\n\r\n\r\nTransmission d'une fiche\r\nVoici les éléments de la fiche trio :\r\n\r\n\r\nContact\r\n\r\n\r\nCivilité : M.\r\nNom : Dupont\r\nPrénom : Ali\r\nAdresse : 3 rue de silly\r\nCode postal : 92100\r\nVille : BOULOGNE BILLANCOURT\r\nTéléphone : 01.96.35.26.32\r\nEmail : terracapa@gmail.com <mailto:terracapa@gmail.com>\r\nSouscripteur\r\n\r\n\r\nDate de naissance : 04/01/1988\r\nProfession : Artisan\r\nRégime Social : TNS : régime des indépendants\r\nBesoin\r\n\r\n\r\nDate d'effet : 15/04/2025\r\nSouscripteur actuellement assuré : Non\r\nSoins médicaux : 3\r\nHospitalisation : 3\r\nOptique : 2\r\nDentaire : 2\r\n\r\n\r\n\r\nA noter : Cet email contient des données personnelles. Merci de le supprimer après traitement. \r\nDans le cadre du contrat qui nous lie, vous nous avez demandé l’envoi de ces données par e-mail simple. Nous vous rappelons que dans le cadre du Règlement sur la protection des données personnelles, vous pouvez accéder via nos services à des canaux de transmission plus sécurisés. Nous vous invitons à vous rapprocher de votre account manager pour toute demande d’évolution du canal de transmission ou à effectuer la manipulation vous - même dans votre espace client.\r\n\r\n\r\nA très bientôt sur AssurProspect.fr <http://assurprospect.fr/>\r\nL'équipe AssurProspect\r\nPS : Si vous avez des questions ou suggestions, n'hésitez pas à nous en faire part à l'adresse contact@assurprospect.fr <mailto:contact@assurprospect.fr>\r\n\r\n\r\n\r\n",
+    "emailSubject": "Fiche trio Mutuelle Santé AssurProspect.fr",
+    "emailDate": "Wed, 13 Aug 2025 21:47:12 +0300",
+    "score": 5,
+    "isDuplicate": false,
+    "notes": {
+      "parserUsed": "AssurProspectParser",
+      "extractionDetails": {
+        "hasContact": true,
+        "hasSouscripteur": true,
+        "hasConjoint": false,
+        "enfantsCount": 0,
+        "hasBesoins": true,
+        "hasSignature": false
+      },
+      "performance": {
+        "processingTime": 0,
+        "parserSelectionTime": 0,
+        "extractionTime": 0,
+        "scoringTime": 0
+      }
+    }
+  },
+  {
+    "id": "db34021a-7c89-4d86-8fcf-31a2aa217d1e",
+    "contact": {
+      "civilite": "M.",
+      "nom": "Deschamps",
+      "prenom": "Baptiste",
+      "adresse": "2 RUE DEBRAY",
+      "codePostal": "44300",
+      "ville": "NANTES",
+      "telephone": "06.99.79.67.14",
+      "email": "baptiste.deschamps@hotmail.fr"
+    },
+    "souscripteur": {
+      "dateNaissance": "1991-06-02",
+      "profession": "Chef d'entreprise",
+      "regimeSocial": "TNS",
+      "nombreEnfants": 3
+    },
+    "conjoint": {
+      "dateNaissance": "1992-09-11",
+      "profession": "En recherche d'emploi",
+      "regimeSocial": "Salarié"
+    },
+    "enfants": [
+      {
+        "dateNaissance": "2019-03-14"
+      },
+      {
+        "dateNaissance": "2021-05-05"
+      },
+      {
+        "dateNaissance": "2024-08-08"
+      }
+    ],
+    "besoins": {
+      "dateEffet": "2025-04-07",
+      "assureActuellement": false,
+      "niveaux": {
+        "soinsMedicaux": 3,
+        "hospitalisation": 3,
+        "optique": 3,
+        "dentaire": 3
+      }
+    },
+    "signature": null,
+    "source": {
+      "type": "gmail",
+      "emailId": "198a4c246037eae7",
+      "subject": "LEAD 1",
+      "from": "Nathaniel Ohayon <ohayon.n@france-epargne.fr>",
+      "date": "Wed, 13 Aug 2025 21:46:55 +0300",
+      "fileName": "email_1755386492308_198a4c246037eae7.json"
+    },
+    "extractedAt": "2025-08-16T23:21:43.964Z",
+    "rawSnippet": "...: DESCHAMPS\nPrénom : BAPTISTE\nAdresse : 2 RUE DEBRAY\nCode postal : 44300\nVille : NANTES\nTéléphone : 06.99.79.67.14\nEmail : baptiste.deschamps@hotmail.fr <mailto:baptiste.deschamps@hotmail.fr>\nSouscripteur\n\nDate de naissance : 02/06/1991\nProfession : Chef d'entreprise\nRégime Social : TNS : régime des...",
+    "fullContent": "\r\nCe message est envoyé par un automate.\r\nPour contacter AssurProspect.fr <http://assurprospect.fr/>, nous vous invitons à utiliser ce formulaire de contact <x-webdoc://EBFAD503-D51A-4AB7-9CBD-81C5F749F834/%7BSITE%7D/contact>\r\n\r\n\r\nTransmission d'une fiche\r\nVoici les éléments de la fiche trio :\r\n\r\n\r\nContact\r\n\r\n\r\nCivilité : M.\r\nNom : DESCHAMPS\r\nPrénom : BAPTISTE\r\nAdresse : 2 RUE DEBRAY\r\nCode postal : 44300\r\nVille : NANTES\r\nTéléphone : 06.99.79.67.14\r\nEmail : baptiste.deschamps@hotmail.fr <mailto:baptiste.deschamps@hotmail.fr>\r\nSouscripteur\r\n\r\n\r\nDate de naissance : 02/06/1991\r\nProfession : Chef d'entreprise\r\nRégime Social : TNS : régime des indépendants\r\nNombre d'enfants : 3\r\nConjoint\r\n\r\n\r\nDate de naissance : 11/09/1992\r\nProfession : En recherche d'emploi\r\nRégime Social : Salarié (ou retraité)\r\nEnfants\r\n\r\n\r\nDate de naissance du 1er enfant : 14/03/2019\r\nDate de naissance du 2ème enfant : 05/05/2021\r\nDate de naissance du 3ème enfant : 08/08/2024\r\nBesoin\r\n\r\n\r\nDate d'effet : 07/04/2025\r\nSouscripteur actuellement assuré : Non\r\nSoins médicaux : 3\r\nHospitalisation : 3\r\nOptique : 3\r\nDentaire : 3\r\n\r\n\r\n\r\nA noter : Cet email contient des données personnelles. Merci de le supprimer après traitement. \r\nDans le cadre du contrat qui nous lie, vous nous avez demandé l’envoi de ces données par e-mail simple. Nous vous rappelons que dans le cadre du Règlement sur la protection des données personnelles, vous pouvez accéder via nos services à des canaux de transmission plus sécurisés. Nous vous invitons à vous rapprocher de votre account manager pour toute demande d’évolution du canal de transmission ou à effectuer la manipulation vous - même dans votre espace client.\r\n\r\n\r\nA très bientôt sur AssurProspect.fr <http://assurprospect.fr/>\r\nL'équipe AssurProspect\r\nPS : Si vous avez des questions ou suggestions, n'hésitez pas à nous en faire part à l'adresse contact@assurprospect.fr <mailto:contact@assurprospect.fr>",
+    "emailSubject": "LEAD 1",
+    "emailDate": "Wed, 13 Aug 2025 21:46:55 +0300",
+    "score": 5,
+    "isDuplicate": false,
+    "notes": {
+      "parserUsed": "AssurProspectParser",
+      "extractionDetails": {
+        "hasContact": true,
+        "hasSouscripteur": true,
+        "hasConjoint": true,
+        "enfantsCount": 3,
+        "hasBesoins": true,
+        "hasSignature": false
+      },
+      "performance": {
+        "processingTime": 0,
+        "parserSelectionTime": 0,
+        "extractionTime": 0,
+        "scoringTime": 0
+      }
+    }
+  },
+  {
+    "id": "34c8dee9-3da8-4c01-b6bc-e33254dd1dd7",
+    "contact": {
+      "civilite": "Mme",
+      "nom": "Navoyan",
+      "prenom": "Liana",
+      "adresse": "149, rue des Myrtes",
+      "codePostal": "06000",
+      "ville": "NICE",
+      "telephone": "01.58.69.32.74",
+      "email": "chat@hotmail.fr"
+    },
+    "souscripteur": {
+      "dateNaissance": "1978-11-06",
+      "profession": "Chef d'entreprise",
+      "regimeSocial": "TNS",
+      "nombreEnfants": 1
+    },
+    "conjoint": {
+      "dateNaissance": "1973-09-12",
+      "profession": "Chef d'entreprise",
+      "regimeSocial": "TNS"
+    },
+    "enfants": [
+      {
+        "dateNaissance": "2019-01-06"
+      }
+    ],
+    "besoins": {
+      "dateEffet": "2025-06-03",
+      "assureActuellement": true,
+      "niveaux": {
+        "soinsMedicaux": 2,
+        "hospitalisation": 2,
+        "optique": 2,
+        "dentaire": 4
+      }
+    },
+    "signature": null,
+    "source": {
+      "type": "gmail",
+      "emailId": "1989fce468eb5368",
+      "subject": "LEAD",
+      "from": "Nathaniel Ohayon <ohayon.n@france-epargne.fr>",
+      "date": "Tue, 12 Aug 2025 22:42:00 +0300",
+      "fileName": "email_1755386492792_1989fce468eb5368.json"
+    },
+    "extractedAt": "2025-08-16T23:21:43.970Z",
+    "rawSnippet": "...: Navoyan\nPrénom : Liana\nAdresse : 149, rue des Myrtes\nCode postal : 06000\nVille : NICE\nTéléphone : 01.58.69.32.74\nEmail : chat@hotmail.fr\nSouscripteur\nDate de naissance : 06/11/1978\nProfession : Chef d'entreprise\nRégime Social : TNS : régime des indépendants\nNombre d'enfants : 1\nConjoint\nDate de na...",
+    "fullContent": "Ce message est envoyé par un automate.\nPour contacter AssurProspect.fr , nous vous invitons à utiliser ce formulaire de contact\nTransmission d'une fiche\nVoici les éléments de la fiche trio :\nContact\nCivilité : Mme\nNom : Navoyan\nPrénom : Liana\nAdresse : 149, rue des Myrtes\nCode postal : 06000\nVille : NICE\nTéléphone : 01.58.69.32.74\nEmail : chat@hotmail.fr\nSouscripteur\nDate de naissance : 06/11/1978\nProfession : Chef d'entreprise\nRégime Social : TNS : régime des indépendants\nNombre d'enfants : 1\nConjoint\nDate de naissance : 12/09/1973\nProfession : Chef d'entreprise\nRégime Social : TNS : régime des indépendants\nEnfants\nDate de naissance du 1er enfant : 06/01/2019\nBesoin\nDate d'effet : 03/06/2025\nSouscripteur actuellement assuré : Oui\nSoins médicaux : 2\nHospitalisation : 2\nOptique : 2\nDentaire : 4\nA noter : Cet email contient des données personnelles. Merci de le supprimer après traitement.\nDans le cadre du contrat qui nous lie, vous nous avez demandé l’envoi de ces données par e-mail simple. Nous vous rappelons que dans le cadre du Règlement sur la protection des données personnelles, vous pouvez accéder via nos services à des canaux de transmission plus sécurisés. Nous vous invitons à vous rapprocher de votre account manager pour toute demande d’évolution du canal de transmission ou à effectuer la manipulation vous - même dans votre espace client.\nA très bientôt sur AssurProspect.fr\nL'équipe AssurProspect\nPS : Si vous avez des questions ou suggestions, n'hésitez pas à nous en faire part à l'adresse contact@assurprospect.fr",
+    "emailSubject": "LEAD",
+    "emailDate": "Tue, 12 Aug 2025 22:42:00 +0300",
+    "score": 5,
+    "isDuplicate": false,
+    "notes": {
+      "parserUsed": "AssurProspectParser",
+      "extractionDetails": {
+        "hasContact": true,
+        "hasSouscripteur": true,
+        "hasConjoint": true,
+        "enfantsCount": 1,
+        "hasBesoins": true,
+        "hasSignature": false
+      },
+      "performance": {
+        "processingTime": 1,
+        "parserSelectionTime": 1,
+        "extractionTime": 0,
+        "scoringTime": 0
+      }
+    }
+  }
+]

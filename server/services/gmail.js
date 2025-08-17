@@ -3,6 +3,7 @@ import { oauth2Client } from '../config/oauth.js';
 import { MessageExtractor } from '../utils/message-extractor.js';
 import { ParsingService } from './parsing.js';
 import logger from '../logger.js';
+import { DeduplicationService } from './deduplication.js';
 
 export class GmailService {
   constructor() {
@@ -45,7 +46,8 @@ export class GmailService {
         'gmail',
         messageData.subject,
         messageData.content,
-        messageData.date
+        messageData.date,
+        fullMessage.data  // Passer le message original complet
       );
       
       return extractedLeads;
@@ -64,8 +66,13 @@ export class GmailService {
       leads.push(...messageLeads);
     }
     
-    logger.info(`Extracted ${leads.length} leads from Gmail`);
-    return leads;
+    logger.info(`Extracted ${leads.length} leads from Gmail (before deduplication)`);
+    
+    // Déduplication côté serveur
+    const deduplicatedLeads = DeduplicationService.deduplicateLeads(leads);
+    
+    logger.info(`Gmail extraction completed: ${deduplicatedLeads.length} leads (after deduplication, removed ${leads.length - deduplicatedLeads.length} duplicates)`);
+    return deduplicatedLeads;
   }
 
   async streamExtraction(days, sendEvent) {
@@ -95,14 +102,25 @@ export class GmailService {
         leads.push(...messageLeads);
       }
       
+      // Déduplication côté serveur
+      sendEvent({ 
+        phase: 'deduplicating', 
+        total,
+        leads: leads.length,
+        message: `Déduplication de ${leads.length} leads...`
+      });
+      
+      const deduplicatedLeads = DeduplicationService.deduplicateLeads(leads);
+      
       sendEvent({ 
         phase: 'completed', 
         total,
-        leads: leads.length,
+        leads: deduplicatedLeads.length,
+        duplicatesRemoved: leads.length - deduplicatedLeads.length,
         message: 'Extraction terminée'
       });
       
-      return leads;
+      return deduplicatedLeads;
     } catch (error) {
       logger.error('Error in Gmail stream extraction:', error);
       throw error;

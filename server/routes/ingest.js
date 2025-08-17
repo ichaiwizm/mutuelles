@@ -26,7 +26,7 @@ router.post('/gmail', checkAuth, async (req, res) => {
 
 // Route de parsing individuel avec routeur intelligent
 router.post('/parse', checkAuth, async (req, res) => {
-  const { content, subject, date, from, sourceHint } = req.body;
+  const { content, subject, date, from, sourceHint, originalMessage } = req.body;
   
   if (!content) {
     return res.status(400).json({ error: 'Content is required' });
@@ -36,7 +36,8 @@ router.post('/parse', checkAuth, async (req, res) => {
     contentLength: content.length,
     subject: subject?.substring(0, 50),
     from: from?.substring(0, 50),
-    sourceHint
+    sourceHint,
+    hasOriginalMessage: !!originalMessage
   });
   
   try {
@@ -49,7 +50,8 @@ router.post('/parse', checkAuth, async (req, res) => {
       subject: subject || '',
       date: date || new Date().toISOString(),
       from: from || '',
-      sourceHint: sourceHint || ''
+      sourceHint: sourceHint || '',
+      originalMessage: originalMessage || null
     });
     
     logger.info('Individual parsing completed successfully', {

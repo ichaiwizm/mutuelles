@@ -22,7 +22,8 @@ export function routeAndParseEmail(payload) {
     hint || from || 'email',
     subject,
     content,
-    payload.date || new Date().toISOString()
+    payload.date || new Date().toISOString(),
+    payload.originalMessage || null  // Message original si disponible
   );
 
   // Retourner le premier lead ou un résultat vide formaté

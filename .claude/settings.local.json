@@ -17,10 +17,16 @@
       "Bash(npm run typecheck:*)",
       "Bash(npm run:*)",
       "Bash(npm test)",
-      "Bash(LOG_LEVEL=debug node test_fix.js)"
+      "Bash(LOG_LEVEL=debug node test_fix.js)",
+      "Bash(curl:*)",
+      "Bash(cp:*)",
+      "Bash(echo:*)"
     ],
     "deny": [],
     "ask": [],
-    "defaultMode": "acceptEdits"
+    "defaultMode": "acceptEdits",
+    "additionalDirectories": [
+      "/mnt/c/Users/ichai/Pictures/Screenshots"
+    ]
   }
 }
