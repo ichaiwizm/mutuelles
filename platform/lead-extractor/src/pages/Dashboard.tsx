@@ -49,9 +49,9 @@ export function Dashboard() {
   // Handlers
   const handleExtractGmail = () => extractWithSSE('gmail', days);
   
-  const handleRefresh = async () => {
-    clearAllLeads();
-    await handleExtractGmail();
+  const handleRefresh = () => {
+    // Utiliser le mode replaceAll pour remplacer tous les leads existants
+    extractWithSSE('gmail', days, true);
   };
 
   const handleRowClick = (lead: Lead, allSortedData: Lead[], leadIndex: number) => {

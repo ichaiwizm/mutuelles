@@ -16,7 +16,7 @@ export const useSSEExtraction = (addLeads: any, checkAuthStatus: any) => {
   const end = () => setPendingOps(n => Math.max(0, n - 1));
   const busy = pendingOps > 0;
 
-  const extractWithSSE = async (source: any, days: any) => {
+  const extractWithSSE = async (source: any, days: any, replaceAll = false) => {
     const authOk = await checkAuthStatus();
     if (!authOk) {
       toast.error('Authentification requise. Redirection...');
@@ -45,13 +45,14 @@ export const useSSEExtraction = (addLeads: any, checkAuthStatus: any) => {
         eventSource.close();
         
         // Ajouter les leads avec statistiques détaillées
-        const { addedQualified, addedNon, totalAdded } = addLeads(collectedLeads);
+        const { addedQualified, addedNon, totalAdded } = addLeads(collectedLeads, replaceAll);
         StorageManager.updateLastSync(source);
 
         // Toast avec informations claires
-        toast.success(
-          `${addedQualified} lead(s) qualifié(s) et ${addedNon} non-lead(s) trouvés (${totalAdded} ajoutés après déduplication)`
-        );
+        const message = replaceAll 
+          ? `Base mise à jour : ${addedQualified} lead(s) qualifié(s) et ${addedNon} non-lead(s)`
+          : `${addedQualified} lead(s) qualifié(s) et ${addedNon} non-lead(s) trouvés (${totalAdded} ajoutés après déduplication)`;
+        toast.success(message);
 
         setShowProgress(false);
         end();

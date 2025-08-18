@@ -20,7 +20,9 @@
       "Bash(LOG_LEVEL=debug node test_fix.js)",
       "Bash(curl:*)",
       "Bash(cp:*)",
-      "Bash(echo:*)"
+      "Bash(echo:*)",
+      "Bash(cd:*)",
+      "Bash(cd:*)"
     ],
     "deny": [],
     "ask": [],

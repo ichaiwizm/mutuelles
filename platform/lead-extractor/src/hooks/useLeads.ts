@@ -23,10 +23,11 @@ export const useLeads = () => {
   );
 
   // Ajouter de nouveaux leads (déjà dédupliqués côté serveur)
-  const addLeads = (newLeads: Lead[]) => {
+  const addLeads = (newLeads: Lead[], replaceAll = false) => {
     console.log('🎯 useLeads.addLeads - DÉBUT (serveur a déjà fait la déduplication)', {
       leadsExistants: leads.length,
       nouveauxLeadsDejaDedup: newLeads.length,
+      replaceAll
     });
 
     console.log('🎯 Nouveaux leads (déjà dédupliqués par le serveur):', newLeads.map(l => ({
@@ -37,8 +38,8 @@ export const useLeads = () => {
       extractedAt: l.extractedAt
     })));
 
-    // Les leads viennent du serveur déjà dédupliqués, on les accepte directement
-    const allLeads = [...leads, ...newLeads];
+    // Si replaceAll est true, on remplace tout, sinon on ajoute aux existants
+    const allLeads = replaceAll ? newLeads : [...leads, ...newLeads];
 
     // Compter les statistiques
     const newQualifiedLeads = newLeads.filter(l => (l.score ?? 0) >= MIN_SCORE);

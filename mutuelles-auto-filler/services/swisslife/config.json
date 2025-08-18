@@ -1,0 +1,142 @@
+{
+  "fields": [
+    {
+      "id": "sante_oui",
+      "selector": "#projet-sante-individuelle-oui",
+      "type": "click",
+      "delay": 100
+    },
+    {
+      "id": "confort_non", 
+      "selector": "#projet-confort-hospitalisation-non",
+      "type": "click",
+      "delay": 100
+    },
+    {
+      "id": "simulation_type",
+      "selector_individual": "#simulation-individuelle",
+      "selector_couple": "#simulation-couple", 
+      "type": "conditional_click",
+      "condition": "simulationType",
+      "delay": 100
+    },
+    {
+      "id": "nom_projet",
+      "selector": "#nom-projet",
+      "type": "input",
+      "value": "projetNom",
+      "delay": 200
+    },
+    {
+      "id": "date_naissance_principal",
+      "selector": "#date-naissance-assure-principal", 
+      "type": "input",
+      "value": "principalDOB",
+      "delay": 100
+    },
+    {
+      "id": "departement_principal",
+      "selector": "#departement-assure-principal",
+      "type": "select_by_prefix",
+      "value": "cp",
+      "prefix_length": 2,
+      "delay": 100
+    },
+    {
+      "id": "regime_social_principal",
+      "selector": "#regime-social-assure-principal",
+      "type": "select_by_text",
+      "value": "Régime Général pour TNS (CPAM)",
+      "delay": 100
+    },
+    {
+      "id": "statut_principal",
+      "selector": "#statut-assure-principal",
+      "type": "select_by_text",
+      "value": "statutTexte",
+      "delay": 100
+    },
+    {
+      "id": "profession_principal",
+      "selector": "#profession-assure-principal",
+      "type": "select_by_text",
+      "value": "profTexte",
+      "delay": 500,
+      "wait_for_options": true
+    },
+    {
+      "id": "nombre_enfants",
+      "selector": "#sante-nombre-enfant-assures",
+      "type": "select_by_count",
+      "value": "enfantsDOB",
+      "delay": 100
+    },
+    {
+      "id": "enfants_dates",
+      "selector_pattern": "#enfants-{index}-dateNaissance",
+      "type": "input_array",
+      "value": "enfantsDOB",
+      "delay": 100
+    },
+    {
+      "id": "date_naissance_conjoint",
+      "selector": "#date-naissance-assure-conjoint",
+      "type": "input",
+      "value": "conjointDOB",
+      "condition": "simulationType === 'couple'",
+      "delay": 100,
+      "wait_for_element": true
+    },
+    {
+      "id": "regime_social_conjoint",
+      "selector": "#regime-social-assure-conjoint",
+      "type": "select_by_text", 
+      "value": "Régime Général pour TNS (CPAM)",
+      "condition": "simulationType === 'couple'",
+      "delay": 100,
+      "wait_for_options": true
+    },
+    {
+      "id": "statut_conjoint",
+      "selector": "#statut-assure-conjoint",
+      "type": "select_by_text",
+      "value": "statutTexte",
+      "condition": "simulationType === 'couple'",
+      "delay": 100,
+      "wait_for_options": true
+    },
+    {
+      "id": "gamme_produit",
+      "selector": "#selection-produit-sante",
+      "type": "select_by_text",
+      "value": "gammeTexte",
+      "delay": 100
+    },
+    {
+      "id": "date_effet",
+      "selector": "#contratSante-dateEffet",
+      "type": "input",
+      "value": "auto_next_month",
+      "delay": 100
+    },
+    {
+      "id": "loi_madelin",
+      "selector": "#loi-madelin-checkbox",
+      "type": "checkbox_check",
+      "delay": 100
+    },
+    {
+      "id": "resiliation_non",
+      "selector": "#resiliation-contrat-non",
+      "type": "click",
+      "delay": 100
+    }
+  ],
+  "settings": {
+    "iframe_wait_timeout": 5000,
+    "default_delay": 100,
+    "element_wait_timeout": 3000,
+    "select_options_wait_timeout": 5000,
+    "retry_attempts": 3
+  }
+}

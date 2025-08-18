@@ -1,5 +1,5 @@
-// Données de test pour les leads
-window.SWISSLIFE_LEADS = [
+// Données de test pour SwissLife One
+window.SERVICE_LEADS = [
   {
     id: 'clara',
     nom: 'Clara DUPONT',
