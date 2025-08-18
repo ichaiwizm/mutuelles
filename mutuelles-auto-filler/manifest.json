@@ -5,25 +5,18 @@
   "description": "Extension de remplissage automatique pour les sites de mutuelles",
   "permissions": ["activeTab"],
   "host_permissions": [
-    "https://*.swisslifeone.fr/*",
-    "https://*.alptis.fr/*"
+    "https://*.swisslifeone.fr/*"
   ],
   "content_scripts": [
     {
-      "matches": [
-        "https://*.swisslifeone.fr/*",
-        "https://*.alptis.fr/*"
-      ],
+      "matches": ["https://*.swisslifeone.fr/*"],
       "js": [
-        "shared/data-schema.js",
-        "shared/field-types.js",
-        "core/utils.js",
-        "core/messaging.js",
-        "core/engine.js",
-        "ui/components.js",
-        "services/service-registry.js",
-        "services/swisslife/detector.js",
-        "services/swisslife/transformer.js",
+        "services/swisslife/leads.js",
+        "services/swisslife/utils.js",
+        "services/swisslife/selectors.js", 
+        "services/swisslife/actions.js",
+        "services/swisslife/engine.js",
+        "services/swisslife/main.js",
         "content.js"
       ],
       "all_frames": true,
@@ -33,13 +26,9 @@
   "web_accessible_resources": [
     {
       "resources": [
-        "services/*/config.json",
-        "services/*/leads.js"
+        "services/swisslife/*.json"
       ],
-      "matches": [
-        "https://*.swisslifeone.fr/*",
-        "https://*.alptis.fr/*"
-      ]
+      "matches": ["https://*.swisslifeone.fr/*"]
     }
   ]
 }

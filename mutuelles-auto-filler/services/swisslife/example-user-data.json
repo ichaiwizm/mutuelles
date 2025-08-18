@@ -1,0 +1,312 @@
+{
+  "metadata": {
+    "version": "1.0.0",
+    "created": "2025-08-18T00:00:00.000Z",
+    "description": "Exemple de données utilisateur pour test SwissLife"
+  },
+  
+  "scenarios": {
+    
+    "scenario_individuel_tns": {
+      "description": "Professionnel TNS individuel sans enfants",
+      "workflow": "individuel",
+      "data": {
+        "project": {
+          "nom": "Assurance Santé Boulangerie Dubois"
+        },
+        "hospitalisation": {
+          "confortHospitalisation": "non"
+        },
+        "simulationType": {
+          "type": "individuel"
+        },
+        "principalInsured": {
+          "dateNaissance": "03/01/1980",
+          "departement": "75",
+          "regimeSocial": "TNS",
+          "statut": "TNS",
+          "profession": "AUTRE"
+        },
+        "loiMadelin": {
+          "applicable": "non"
+        },
+        "cancellation": {
+          "hasContract": "non"
+        },
+        "competition": {
+          "hasCompetitorContract": "non"
+        }
+      }
+    },
+    
+    "scenario_couple_salaries": {
+      "description": "Couple de salariés sans enfants",
+      "workflow": "couple",
+      "data": {
+        "project": {
+          "nom": "Mutuelle Famille Martin"
+        },
+        "hospitalisation": {
+          "confortHospitalisation": "oui"
+        },
+        "simulationType": {
+          "type": "couple"
+        },
+        "principalInsured": {
+          "dateNaissance": "15/03/1985",
+          "departement": "69",
+          "regimeSocial": "SECURITE_SOCIALE",
+          "statut": "SALARIE",
+          "profession": null
+        },
+        "spouse": {
+          "dateNaissance": "22/07/1987",
+          "regimeSocial": "SECURITE_SOCIALE",
+          "statut": "SALARIE",
+          "profession": null
+        },
+        "loiMadelin": {
+          "applicable": "non"
+        },
+        "cancellation": {
+          "hasContract": "oui"
+        },
+        "competition": {
+          "hasCompetitorContract": "non"
+        }
+      }
+    },
+    
+    "scenario_famille_complete": {
+      "description": "Famille complète : couple TNS + salarié avec 3 enfants",
+      "workflow": "coupleAvecEnfants",
+      "data": {
+        "project": {
+          "nom": "Protection Familiale Cabinet Médical Dr. Leroy"
+        },
+        "hospitalisation": {
+          "confortHospitalisation": "oui"
+        },
+        "simulationType": {
+          "type": "couple"
+        },
+        "principalInsured": {
+          "dateNaissance": "28/11/1978",
+          "departement": "13",
+          "regimeSocial": "TNS",
+          "statut": "TNS",
+          "profession": "MEDECIN"
+        },
+        "children": {
+          "nombre": 3,
+          "enfants": [
+            {
+              "dateNaissance": "10/02/2015",
+              "ayantDroit": "CLIENT"
+            },
+            {
+              "dateNaissance": "21/09/2018", 
+              "ayantDroit": "CLIENT"
+            },
+            {
+              "dateNaissance": "05/07/2022",
+              "ayantDroit": "CONJOINT"
+            }
+          ]
+        },
+        "spouse": {
+          "dateNaissance": "15/06/1982",
+          "regimeSocial": "SECURITE_SOCIALE",
+          "statut": "SALARIE",
+          "profession": null
+        },
+        "loiMadelin": {
+          "applicable": "oui"
+        },
+        "cancellation": {
+          "hasContract": "oui"
+        },
+        "competition": {
+          "hasCompetitorContract": "oui"
+        }
+      }
+    },
+    
+    "scenario_retraites": {
+      "description": "Couple de retraités",
+      "workflow": "couple",
+      "data": {
+        "project": {
+          "nom": "Complémentaire Santé Retraités Moreau"
+        },
+        "hospitalisation": {
+          "confortHospitalisation": "oui"
+        },
+        "simulationType": {
+          "type": "couple"
+        },
+        "principalInsured": {
+          "dateNaissance": "12/05/1955",
+          "departement": "06",
+          "regimeSocial": "SECURITE_SOCIALE",
+          "statut": "RETRAITE",
+          "profession": null
+        },
+        "spouse": {
+          "dateNaissance": "08/09/1957",
+          "regimeSocial": "SECURITE_SOCIALE",
+          "statut": "RETRAITE",
+          "profession": null
+        },
+        "loiMadelin": {
+          "applicable": "non"
+        },
+        "cancellation": {
+          "hasContract": "oui"
+        },
+        "competition": {
+          "hasCompetitorContract": "non"
+        }
+      }
+    },
+    
+    "scenario_alsace_moselle": {
+      "description": "Salarié en Alsace-Moselle avec régime spécial",
+      "workflow": "individuel",
+      "data": {
+        "project": {
+          "nom": "Santé Alsace - Jean Muller"
+        },
+        "hospitalisation": {
+          "confortHospitalisation": "non"
+        },
+        "simulationType": {
+          "type": "individuel"
+        },
+        "principalInsured": {
+          "dateNaissance": "18/04/1990",
+          "departement": "67",
+          "regimeSocial": "SECURITE_SOCIALE_ALSACE_MOSELLE",
+          "statut": "SALARIE",
+          "profession": null
+        },
+        "loiMadelin": {
+          "applicable": "non"
+        },
+        "cancellation": {
+          "hasContract": "non"
+        },
+        "competition": {
+          "hasCompetitorContract": "non"
+        }
+      }
+    },
+    
+    "scenario_agricole": {
+      "description": "Exploitant agricole avec régime AMEXA",
+      "workflow": "individuel", 
+      "data": {
+        "project": {
+          "nom": "Mutuelle Agricole Exploitation Durand"
+        },
+        "hospitalisation": {
+          "confortHospitalisation": "oui"
+        },
+        "simulationType": {
+          "type": "individuel"
+        },
+        "principalInsured": {
+          "dateNaissance": "07/10/1972",
+          "departement": "82",
+          "regimeSocial": "AMEXA",
+          "statut": "EXPLOITANT_AGRICOLE",
+          "profession": null
+        },
+        "loiMadelin": {
+          "applicable": "non"
+        },
+        "cancellation": {
+          "hasContract": "oui"
+        },
+        "competition": {
+          "hasCompetitorContract": "oui"
+        }
+      }
+    },
+    
+    "scenario_frontalier": {
+      "description": "Travailleur frontalier avec conjoint étudiant",
+      "workflow": "couple",
+      "data": {
+        "project": {
+          "nom": "Assurance Frontalier Suisse - Familie Weber"
+        },
+        "hospitalisation": {
+          "confortHospitalisation": "non"
+        },
+        "simulationType": {
+          "type": "couple"
+        },
+        "principalInsured": {
+          "dateNaissance": "25/12/1988",
+          "departement": "74",
+          "regimeSocial": "AUTRES_REGIME_SPECIAUX",
+          "statut": "TRAVAILLEUR_TRANSFRONTALIER",
+          "profession": null
+        },
+        "spouse": {
+          "dateNaissance": "03/06/1992",
+          "regimeSocial": "SECURITE_SOCIALE",
+          "statut": "ETUDIANT",
+          "profession": null
+        },
+        "loiMadelin": {
+          "applicable": "non"
+        },
+        "cancellation": {
+          "hasContract": "non"
+        },
+        "competition": {
+          "hasCompetitorContract": "non"
+        }
+      }
+    }
+  },
+  
+  "validationRules": {
+    "dateNaissance": {
+      "format": "DD/MM/YYYY",
+      "minAge": 16,
+      "maxAge": 80
+    },
+    "departement": {
+      "validCodes": ["01", "02", "03", "74", "75", "69", "13", "06", "67", "82", "2A", "2B"],
+      "pattern": "^(\\d{2}|2[AB])$"
+    },
+    "children": {
+      "maxNumber": 10,
+      "maxAgeYears": 25
+    }
+  },
+  
+  "testingInstructions": {
+    "setup": [
+      "Naviguer vers le formulaire SwissLife",
+      "S'assurer d'être dans le bon frame (oav-pool2)",
+      "Charger la configuration JSON",
+      "Sélectionner le scenario de test"
+    ],
+    "execution": [
+      "Exécuter le workflow correspondant au scenario",
+      "Vérifier chaque section après remplissage",
+      "Valider les dépendances entre champs",
+      "Tester les mécanismes de fallback"
+    ],
+    "validation": [
+      "Contrôler la cohérence des données saisies",
+      "Vérifier l'activation/désactivation des sections conditionnelles",
+      "Tester la gestion d'erreurs sur champs invalides",
+      "Valider les workflows complets"
+    ]
+  }
+}

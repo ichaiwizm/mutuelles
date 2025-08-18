@@ -1,0 +1,882 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Configuration de remplissage automatique SwissLife",
+  "description": "Architecture JSON pour automatiser le remplissage du formulaire SwissLife avec gestion des dépendances et conditions",
+  
+  "definitions": {
+    "selector": {
+      "type": "object",
+      "properties": {
+        "primary": { "type": "string", "description": "Sélecteur principal" },
+        "fallbacks": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Sélecteurs de fallback en ordre de préférence"
+        },
+        "context": {
+          "type": "string",
+          "description": "Contexte parent pour localiser l'élément"
+        }
+      },
+      "required": ["primary"]
+    },
+    
+    "action": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["input", "click", "select", "navigate", "wait", "expand"]
+        },
+        "value": { "type": "string", "description": "Valeur à saisir/sélectionner" },
+        "method": {
+          "type": "string",
+          "enum": ["type", "setValue", "humanType", "clickSequence"],
+          "default": "setValue"
+        },
+        "waitAfter": { "type": "integer", "minimum": 0, "default": 100 },
+        "waitStable": {
+          "type": "object",
+          "properties": {
+            "enabled": { "type": "boolean", "default": true },
+            "minQuiet": { "type": "integer", "default": 300 },
+            "maxWait": { "type": "integer", "default": 5000 }
+          }
+        }
+      },
+      "required": ["type"]
+    },
+    
+    "condition": {
+      "type": "object",
+      "properties": {
+        "field": { "type": "string", "description": "Champ de référence" },
+        "operator": {
+          "type": "string",
+          "enum": ["equals", "notEquals", "contains", "exists", "visible"]
+        },
+        "value": { "description": "Valeur de comparaison" },
+        "logicalOperator": {
+          "type": "string",
+          "enum": ["AND", "OR"],
+          "default": "AND"
+        }
+      },
+      "required": ["field", "operator"]
+    },
+    
+    "validation": {
+      "type": "object",
+      "properties": {
+        "required": { "type": "boolean", "default": false },
+        "format": {
+          "type": "string",
+          "enum": ["date", "email", "phone", "number", "text", "select"]
+        },
+        "pattern": { "type": "string", "description": "Regex de validation" },
+        "customValidator": { "type": "string", "description": "Nom de la fonction de validation custom" }
+      }
+    }
+  },
+  
+  "type": "object",
+  "properties": {
+    "metadata": {
+      "type": "object",
+      "properties": {
+        "version": { "type": "string" },
+        "provider": { "type": "string", "const": "SwissLife" },
+        "description": { "type": "string" },
+        "lastUpdated": { "type": "string", "format": "date-time" }
+      },
+      "required": ["version", "provider"]
+    },
+    
+    "executionOrder": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Ordre d'exécution des sections",
+      "default": [
+        "project",
+        "hospitalisation", 
+        "simulationType",
+        "principalInsured",
+        "children",
+        "spouse",
+        "loiMadelin",
+        "cancellation",
+        "competition"
+      ]
+    },
+    
+    "globalSettings": {
+      "type": "object",
+      "properties": {
+        "frameSelector": {
+          "type": "string",
+          "default": "iframe[src*='oav-pool2']",
+          "description": "Sélecteur du frame principal"
+        },
+        "defaultWaitTime": { "type": "integer", "default": 100 },
+        "overlaySelector": { "type": "string", "default": ".blockUI.blockOverlay, .blockUI.blockMsg" },
+        "maxRetries": { "type": "integer", "default": 3 },
+        "debugMode": { "type": "boolean", "default": false }
+      }
+    },
+    
+    "sections": {
+      "type": "object",
+      "properties": {
+        
+        "project": {
+          "type": "object",
+          "description": "📝 SECTION 1: NOM DU PROJET",
+          "properties": {
+            "enabled": { "type": "boolean", "default": true },
+            "order": { "type": "integer", "default": 1 },
+            "fields": {
+              "type": "object",
+              "properties": {
+                "nom": {
+                  "type": "object",
+                  "properties": {
+                    "selector": { "$ref": "#/definitions/selector" },
+                    "action": { "$ref": "#/definitions/action" },
+                    "validation": { "$ref": "#/definitions/validation" }
+                  }
+                }
+              }
+            }
+          }
+        },
+        
+        "hospitalisation": {
+          "type": "object",
+          "description": "🏥 SECTION 2: CONFORT HOSPITALISATION",
+          "properties": {
+            "enabled": { "type": "boolean", "default": true },
+            "order": { "type": "integer", "default": 2 },
+            "prerequisites": {
+              "type": "array",
+              "items": { "$ref": "#/definitions/condition" }
+            },
+            "fields": {
+              "type": "object",
+              "properties": {
+                "confortHospitalisation": {
+                  "type": "object",
+                  "properties": {
+                    "selector": { "$ref": "#/definitions/selector" },
+                    "action": { "$ref": "#/definitions/action" },
+                    "validation": { "$ref": "#/definitions/validation" },
+                    "options": {
+                      "type": "object",
+                      "properties": {
+                        "oui": { "type": "string", "default": "#projet-confort-hospitalisation-oui" },
+                        "non": { "type": "string", "default": "#projet-confort-hospitalisation-non" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        
+        "simulationType": {
+          "type": "object",
+          "description": "👥 SECTION 3: TYPE DE SIMULATION",
+          "properties": {
+            "enabled": { "type": "boolean", "default": true },
+            "order": { "type": "integer", "default": 3 },
+            "critical": { "type": "boolean", "default": true },
+            "description": "Détermine si c'est Individuel ou Couple - impact sur toutes les sections suivantes",
+            "fields": {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "object",
+                  "properties": {
+                    "selector": { "$ref": "#/definitions/selector" },
+                    "action": { "$ref": "#/definitions/action" },
+                    "validation": { "$ref": "#/definitions/validation" },
+                    "options": {
+                      "type": "object",
+                      "properties": {
+                        "individuel": {
+                          "type": "array",
+                          "items": { "type": "string" },
+                          "default": ["individu", "individual"]
+                        },
+                        "couple": {
+                          "type": "array", 
+                          "items": { "type": "string" },
+                          "default": ["couple", "pour le couple"]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "postActions": [
+              {
+                "type": "wait",
+                "waitStable": {
+                  "enabled": true,
+                  "minQuiet": 350,
+                  "maxWait": 5000
+                }
+              }
+            ]
+          }
+        },
+        
+        "principalInsured": {
+          "type": "object",
+          "description": "👤 SECTION 4: ASSURÉ PRINCIPAL",
+          "properties": {
+            "enabled": { "type": "boolean", "default": true },
+            "order": { "type": "integer", "default": 4 },
+            "fields": {
+              "type": "object",
+              "properties": {
+                "dateNaissance": {
+                  "type": "object",
+                  "properties": {
+                    "selector": {
+                      "type": "object",
+                      "properties": {
+                        "primary": { "type": "string", "default": "#date-naissance-assure-principal" },
+                        "fallbacks": {
+                          "type": "array",
+                          "default": [
+                            "[name=\"assurePrincipal.dateNaissance\"]",
+                            "input[id*=\"principal\"][id*=\"naiss\"]"
+                          ]
+                        }
+                      }
+                    },
+                    "action": {
+                      "type": "object",
+                      "properties": {
+                        "type": { "type": "string", "default": "input" },
+                        "method": { "type": "string", "default": "humanType" },
+                        "waitAfter": { "type": "integer", "default": 150 }
+                      }
+                    },
+                    "validation": {
+                      "type": "object",
+                      "properties": {
+                        "required": { "type": "boolean", "default": true },
+                        "format": { "type": "string", "default": "date" },
+                        "pattern": { "type": "string", "default": "^\\d{2}/\\d{2}/\\d{4}$" }
+                      }
+                    }
+                  }
+                },
+                "departement": {
+                  "type": "object",
+                  "properties": {
+                    "selector": {
+                      "type": "object", 
+                      "properties": {
+                        "primary": { "type": "string", "default": "#departement-assure-principal" },
+                        "fallbacks": {
+                          "type": "array",
+                          "default": [
+                            "[name=\"assurePrincipal.departement\"]",
+                            "select[id*=\"principal\"][id*=\"depart\"]"
+                          ]
+                        }
+                      }
+                    },
+                    "action": {
+                      "type": "object",
+                      "properties": {
+                        "type": { "type": "string", "default": "select" },
+                        "method": { "type": "string", "default": "setValue" }
+                      }
+                    },
+                    "validation": {
+                      "type": "object",
+                      "properties": {
+                        "required": { "type": "boolean", "default": true },
+                        "pattern": { "type": "string", "default": "^(\\d{2}|2[AB])$" }
+                      }
+                    }
+                  }
+                },
+                "regimeSocial": {
+                  "type": "object",
+                  "properties": {
+                    "selector": {
+                      "type": "object",
+                      "properties": {
+                        "primary": { "type": "string", "default": "#regime-social-assure-principal" },
+                        "fallbacks": {
+                          "type": "array",
+                          "default": [
+                            "[name=\"assurePrincipal.regimeSocial\"]",
+                            "select[id*=\"principal\"][id*=\"regime\"]"
+                          ]
+                        }
+                      }
+                    },
+                    "action": {
+                      "type": "object",
+                      "properties": {
+                        "type": { "type": "string", "default": "select" },
+                        "waitAfter": { "type": "integer", "default": 200 }
+                      }
+                    },
+                    "validation": {
+                      "type": "object",
+                      "properties": {
+                        "required": { "type": "boolean", "default": true }
+                      }
+                    },
+                    "enum": {
+                      "type": "object",
+                      "properties": {
+                        "values": {
+                          "type": "array",
+                          "default": [
+                            "SECURITE_SOCIALE",
+                            "SECURITE_SOCIALE_ALSACE_MOSELLE", 
+                            "TNS",
+                            "AMEXA",
+                            "AUTRES_REGIME_SPECIAUX"
+                          ]
+                        },
+                        "aliases": {
+                          "type": "object",
+                          "default": {
+                            "securite sociale": "SECURITE_SOCIALE",
+                            "rg cpam": "SECURITE_SOCIALE",
+                            "alsace moselle": "SECURITE_SOCIALE_ALSACE_MOSELLE",
+                            "tns": "TNS",
+                            "amexa": "AMEXA"
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "statut": {
+                  "type": "object",
+                  "properties": {
+                    "selector": {
+                      "type": "object",
+                      "properties": {
+                        "primary": { "type": "string", "default": "#statut-assure-principal" },
+                        "fallbacks": {
+                          "type": "array",
+                          "default": [
+                            "[name=\"assurePrincipal.statut\"]",
+                            "select[id*=\"principal\"][id*=\"statut\"]"
+                          ]
+                        }
+                      }
+                    },
+                    "action": {
+                      "type": "object",
+                      "properties": {
+                        "type": { "type": "string", "default": "select" },
+                        "waitAfter": { "type": "integer", "default": 200 }
+                      }
+                    },
+                    "validation": {
+                      "type": "object",
+                      "properties": {
+                        "required": { "type": "boolean", "default": true }
+                      }
+                    },
+                    "dependencies": {
+                      "type": "array",
+                      "items": { "type": "string" },
+                      "default": ["regimeSocial"]
+                    }
+                  }
+                },
+                "profession": {
+                  "type": "object",
+                  "properties": {
+                    "selector": {
+                      "type": "object",
+                      "properties": {
+                        "primary": { "type": "string", "default": "#profession-assure-principal" },
+                        "fallbacks": {
+                          "type": "array",
+                          "default": [
+                            "[name=\"assurePrincipal.profession\"]",
+                            "select[id*=\"principal\"][id*=\"profes\"]"
+                          ]
+                        }
+                      }
+                    },
+                    "action": {
+                      "type": "object",
+                      "properties": {
+                        "type": { "type": "string", "default": "select" }
+                      }
+                    },
+                    "validation": {
+                      "type": "object",
+                      "properties": {
+                        "required": { "type": "boolean", "default": false }
+                      }
+                    },
+                    "dependencies": {
+                      "type": "array",
+                      "items": { "type": "string" },
+                      "default": ["regimeSocial", "statut"]
+                    },
+                    "conditional": {
+                      "type": "object",
+                      "properties": {
+                        "showIf": {
+                          "type": "array",
+                          "items": { "$ref": "#/definitions/condition" },
+                          "default": [
+                            {
+                              "field": "regimeSocial",
+                              "operator": "equals", 
+                              "value": "TNS"
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        
+        "children": {
+          "type": "object",
+          "description": "👶 SECTION 5: ENFANTS",
+          "properties": {
+            "enabled": { "type": "boolean", "default": true },
+            "order": { "type": "integer", "default": 5 },
+            "expandSection": {
+              "type": "object",
+              "properties": {
+                "required": { "type": "boolean", "default": true },
+                "selectors": {
+                  "type": "array",
+                  "items": { "type": "string" },
+                  "default": [
+                    "button:contains('enfant')",
+                    ".panel-heading:contains('enfant')",
+                    "[role='button']:contains('enfant')"
+                  ]
+                }
+              }
+            },
+            "fields": {
+              "type": "object",
+              "properties": {
+                "nombre": {
+                  "type": "object",
+                  "properties": {
+                    "selector": {
+                      "type": "object",
+                      "properties": {
+                        "primary": { "type": "string", "default": "#sante-nombre-enfant-assures" },
+                        "fallbacks": {
+                          "type": "array",
+                          "default": [
+                            "#nb-enfant-moins-20-ans",
+                            "select[id*='enfant'][id*='nombre']"
+                          ]
+                        }
+                      }
+                    },
+                    "action": {
+                      "type": "object",
+                      "properties": {
+                        "type": { "type": "string", "default": "select" },
+                        "waitAfter": { "type": "integer", "default": 300 }
+                      }
+                    }
+                  }
+                },
+                "enfants": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "index": { "type": "integer" },
+                      "dateNaissance": {
+                        "type": "object",
+                        "properties": {
+                          "selector": {
+                            "type": "object",
+                            "properties": {
+                              "primary": { "type": "string" },
+                              "pattern": { "type": "string", "default": "#contrat-enfants-{index}-date-naissance" },
+                              "fallbacks": {
+                                "type": "array",
+                                "default": [
+                                  "[name=\"contrat.enfants[{index}].dateNaissance\"]",
+                                  "input[id*='enfant'][id*='{index}'][id*='naiss']"
+                                ]
+                              }
+                            }
+                          },
+                          "action": {
+                            "type": "object",
+                            "properties": {
+                              "type": { "type": "string", "default": "input" },
+                              "method": { "type": "string", "default": "humanType" }
+                            }
+                          }
+                        }
+                      },
+                      "ayantDroit": {
+                        "type": "object",
+                        "properties": {
+                          "selector": {
+                            "type": "object",
+                            "properties": {
+                              "primary": { "type": "string" },
+                              "pattern": { "type": "string", "default": "#enfants-{index}-idAyantDroit" },
+                              "fallbacks": {
+                                "type": "array",
+                                "default": [
+                                  "[name=\"contrat.enfants[{index}].idAyantDroit\"]",
+                                  "select[id*='ayant'][id*='{index}']"
+                                ]
+                              }
+                            }
+                          },
+                          "action": {
+                            "type": "object",
+                            "properties": {
+                              "type": { "type": "string", "default": "select" }
+                            }
+                          },
+                          "enum": {
+                            "type": "object",
+                            "properties": {
+                              "values": {
+                                "type": "array",
+                                "default": ["CLIENT", "CONJOINT"]
+                              },
+                              "aliases": {
+                                "type": "object",
+                                "default": {
+                                  "assure principal": "CLIENT",
+                                  "titulaire": "CLIENT",
+                                  "conjoint": "CONJOINT",
+                                  "partenaire": "CONJOINT"
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        
+        "spouse": {
+          "type": "object",
+          "description": "💑 SECTION 6: CONJOINT",
+          "properties": {
+            "enabled": { "type": "boolean", "default": true },
+            "order": { "type": "integer", "default": 6 },
+            "conditional": {
+              "type": "object",
+              "properties": {
+                "enabledIf": {
+                  "type": "array",
+                  "items": { "$ref": "#/definitions/condition" },
+                  "default": [
+                    {
+                      "field": "simulationType.type",
+                      "operator": "equals",
+                      "value": "couple"
+                    }
+                  ]
+                }
+              }
+            },
+            "navigation": {
+              "type": "object",
+              "properties": {
+                "required": { "type": "boolean", "default": true },
+                "tabSelector": {
+                  "type": "object",
+                  "properties": {
+                    "primary": { "type": "string", "default": "#tab-conjoint" },
+                    "fallbacks": {
+                      "type": "array",
+                      "default": [
+                        "#onglet-conjoint",
+                        "a[href*='conjoint']",
+                        "button:contains('Conjoint')"
+                      ]
+                    }
+                  }
+                }
+              }
+            },
+            "fields": {
+              "type": "object",
+              "properties": {
+                "dateNaissance": {
+                  "type": "object",
+                  "properties": {
+                    "selector": {
+                      "type": "object",
+                      "properties": {
+                        "primary": { "type": "string", "default": "#date-naissance-assure-conjoint" },
+                        "fallbacks": {
+                          "type": "array",
+                          "default": [
+                            "[name=\"conjoint.dateNaissance\"]",
+                            "input[id*='conjoint'][id*='naiss']"
+                          ]
+                        }
+                      }
+                    },
+                    "action": {
+                      "type": "object",
+                      "properties": {
+                        "type": { "type": "string", "default": "input" },
+                        "method": { "type": "string", "default": "humanType" }
+                      }
+                    },
+                    "validation": {
+                      "type": "object",
+                      "properties": {
+                        "required": { "type": "boolean", "default": true },
+                        "format": { "type": "string", "default": "date" }
+                      }
+                    }
+                  }
+                },
+                "regimeSocial": {
+                  "type": "object",
+                  "properties": {
+                    "selector": {
+                      "type": "object",
+                      "properties": {
+                        "primary": { "type": "string", "default": "#regime-social-assure-conjoint" },
+                        "fallbacks": {
+                          "type": "array",
+                          "default": [
+                            "[name=\"conjoint.regimeSocial\"]",
+                            "select[id*='conjoint'][id*='regime']"
+                          ]
+                        }
+                      }
+                    },
+                    "action": {
+                      "type": "object",
+                      "properties": {
+                        "type": { "type": "string", "default": "select" }
+                      }
+                    }
+                  }
+                },
+                "statut": {
+                  "type": "object",
+                  "properties": {
+                    "selector": {
+                      "type": "object",
+                      "properties": {
+                        "primary": { "type": "string", "default": "#statut-assure-conjoint" },
+                        "fallbacks": {
+                          "type": "array",
+                          "default": [
+                            "[name=\"conjoint.statut\"]",
+                            "select[id*='conjoint'][id*='statut']"
+                          ]
+                        }
+                      }
+                    },
+                    "action": {
+                      "type": "object",
+                      "properties": {
+                        "type": { "type": "string", "default": "select" }
+                      }
+                    },
+                    "dependencies": {
+                      "type": "array",
+                      "items": { "type": "string" },
+                      "default": ["regimeSocial"]
+                    }
+                  }
+                },
+                "profession": {
+                  "type": "object",
+                  "properties": {
+                    "selector": {
+                      "type": "object",
+                      "properties": {
+                        "primary": { "type": "string", "default": "#profession-assure-conjoint" },
+                        "fallbacks": {
+                          "type": "array",
+                          "default": [
+                            "[name=\"conjoint.profession\"]",
+                            "select[id*='conjoint'][id*='profes']"
+                          ]
+                        }
+                      }
+                    },
+                    "action": {
+                      "type": "object",
+                      "properties": {
+                        "type": { "type": "string", "default": "select" }
+                      }
+                    },
+                    "validation": {
+                      "type": "object",
+                      "properties": {
+                        "required": { "type": "boolean", "default": false }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        
+        "loiMadelin": {
+          "type": "object",
+          "description": "💰 SECTION 7: LOI MADELIN",
+          "properties": {
+            "enabled": { "type": "boolean", "default": true },
+            "order": { "type": "integer", "default": 7 },
+            "conditional": {
+              "type": "object",
+              "properties": {
+                "enabledIf": {
+                  "type": "array",
+                  "items": { "$ref": "#/definitions/condition" },
+                  "default": [
+                    {
+                      "field": "principalInsured.statut",
+                      "operator": "equals",
+                      "value": "TNS"
+                    }
+                  ]
+                }
+              }
+            },
+            "fields": {
+              "type": "object",
+              "properties": {
+                "applicable": {
+                  "type": "object",
+                  "description": "Choix Oui/Non pour l'application de la Loi Madelin"
+                }
+              }
+            }
+          }
+        },
+        
+        "cancellation": {
+          "type": "object", 
+          "description": "❌ SECTION 8: RÉSILIATION DE CONTRAT",
+          "properties": {
+            "enabled": { "type": "boolean", "default": true },
+            "order": { "type": "integer", "default": 8 },
+            "fields": {
+              "type": "object",
+              "properties": {
+                "hasContract": {
+                  "type": "object",
+                  "description": "Possède déjà un contrat à résilier"
+                }
+              }
+            }
+          }
+        },
+        
+        "competition": {
+          "type": "object",
+          "description": "🔄 SECTION 9: REPRISE DE CONCURRENCE", 
+          "properties": {
+            "enabled": { "type": "boolean", "default": true },
+            "order": { "type": "integer", "default": 9 },
+            "fields": {
+              "type": "object",
+              "properties": {
+                "hasCompetitorContract": {
+                  "type": "object",
+                  "description": "Reprise d'un contrat concurrent"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    
+    "workflows": {
+      "type": "object",
+      "description": "Workflows conditionnels basés sur les choix utilisateur",
+      "properties": {
+        "individuel": {
+          "type": "object",
+          "properties": {
+            "sections": {
+              "type": "array",
+              "items": { "type": "string" },
+              "default": ["project", "hospitalisation", "simulationType", "principalInsured", "loiMadelin", "cancellation", "competition"]
+            }
+          }
+        },
+        "couple": {
+          "type": "object", 
+          "properties": {
+            "sections": {
+              "type": "array",
+              "items": { "type": "string" },
+              "default": ["project", "hospitalisation", "simulationType", "principalInsured", "spouse", "loiMadelin", "cancellation", "competition"]
+            }
+          }
+        },
+        "coupleAvecEnfants": {
+          "type": "object",
+          "properties": {
+            "sections": {
+              "type": "array", 
+              "items": { "type": "string" },
+              "default": ["project", "hospitalisation", "simulationType", "principalInsured", "children", "spouse", "loiMadelin", "cancellation", "competition"]
+            }
+          }
+        }
+      }
+    },
+    
+    "errorHandling": {
+      "type": "object",
+      "properties": {
+        "retryAttempts": { "type": "integer", "default": 3 },
+        "retryDelay": { "type": "integer", "default": 1000 },
+        "fallbackStrategies": {
+          "type": "object",
+          "properties": {
+            "elementNotFound": { "type": "string", "default": "skip" },
+            "elementNotVisible": { "type": "string", "default": "scroll_and_retry" },
+            "validationFailed": { "type": "string", "default": "retry_with_fallback" }
+          }
+        }
+      }
+    }
+  },
+  
+  "required": ["metadata", "sections"]
+}

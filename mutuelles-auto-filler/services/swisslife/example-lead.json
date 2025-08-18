@@ -1,0 +1,61 @@
+{
+  "meta": {
+    "scenario": "famille-complete-tns",
+    "description": "Famille complète TNS avec 3 enfants",
+    "created": "2025-01-18"
+  },
+  "leadData": {
+    "projetNom": "Projet Boulangerie Familiale 2025",
+    "simulationType": "couple",
+    "confortHospitalisation": "non",
+    
+    "principalDOB": "15/03/1980",
+    "cp": "75015",
+    "regimeSocial": "TNS",
+    "statutTexte": "TNS",
+    "profTexte": "AUTRE",
+    
+    "conjointDOB": "22/07/1982",
+    "conjointRegimeSocial": "SECURITE_SOCIALE",
+    "conjointStatutTexte": "SALARIE",
+    "conjointProfTexte": "AUTRE",
+    
+    "enfantsDOB": [
+      "10/02/2015",
+      "21/09/2018", 
+      "05/07/2022"
+    ],
+    "enfantsAyantDroit": [
+      "CLIENT",
+      "CLIENT", 
+      "CONJOINT"
+    ],
+    
+    "loiMadelin": true,
+    "resiliation": "non",
+    "repriseConcurrence": "non",
+    
+    "gammeTexte": "SwissLife Santé"
+  },
+  
+  "expectedConditions": {
+    "simulationType": "couple",
+    "hasChildren": true,
+    "childrenCount": 3,
+    "showConjoint": true,
+    "showLoiMadelin": true,
+    "activateTabs": ["conjoint"]
+  },
+  
+  "executionFlow": [
+    "project",
+    "hospitalisation", 
+    "simulationType",
+    "principalInsured",
+    "children",
+    "spouse",
+    "loiMadelin",
+    "cancellation",
+    "competition"
+  ]
+}
