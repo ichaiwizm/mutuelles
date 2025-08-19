@@ -1509,6 +1509,442 @@
   
   
   
+
+
+  // ==== SLS_GAMMES v2 — Inspecter, rafraîchir et régler "Les Gammes" ====
+  // A coller dans l'iFrame tarificateur (oav-pool2…)
+
+(() => {
+  // -------- CONFIG (mets ton souhait ici) --------
+  const CFG = { want: "SwissLife Santé" }; // texte ou value attendue
+
+  // -------- utils --------
+  const T = s => (s||"").toString().replace(/\s+/g," ").trim();
+  const norm = s => T(s).normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
+  const q  = sel => { try { return document.querySelector(sel); } catch { return null; } };
+  const qa = sel => { try { return [...document.querySelectorAll(sel)]; } catch { return []; } };
+  const wait = (ms)=>new Promise(r=>setTimeout(r,ms));
+  async function waitStable({minQuiet=300,maxWait=6000}={}) {
+    let last = Date.now();
+    const mo = new MutationObserver(()=>{ last = Date.now(); });
+    mo.observe(document.body, {subtree:true, childList:true, attributes:true});
+    const start = Date.now();
+    while (Date.now()-start < maxWait) {
+      if (Date.now()-last >= minQuiet) { mo.disconnect(); return true; }
+      await wait(80);
+    }
+    mo.disconnect(); return false;
+  }
+  const overlay = () => !!q('.blockUI.blockOverlay, .blockUI.blockMsg');
+  async function waitOverlayGone(timeout=8000){
+    const t0=Date.now();
+    while(Date.now()-t0<timeout){ if(!overlay()) return true; await wait(80); }
+    return true;
+  }
+  function isVisible(el){
+    if (!el || !el.isConnected) return false;
+    let p=el;
+    while(p){
+      if (p.hidden || p.getAttribute?.('aria-hidden')==='true') return false;
+      const st=getComputedStyle(p);
+      if (st.display==='none'||st.visibility==='hidden'||st.opacity==='0') return false;
+      p=p.parentElement;
+    }
+    const r=el.getBoundingClientRect();
+    return r.width>0 && r.height>0;
+  }
+  function fire(el){ if(!el) return; el.dispatchEvent(new Event("input",{bubbles:true})); el.dispatchEvent(new Event("change",{bubbles:true})); }
+
+  // -------- localisateurs “prérequis” (pour forcer le peuplement) --------
+  function elDateNaissance(){ return q('#date-naissance-assure-principal,[name="client.dateNaissance"], input[id*="date-naiss"]'); }
+  function elDepartement(){
+    // VRAI département = options numériques 01..95/2A/2B
+    const all = qa('select');
+    const isDept = s => {
+      const texts=[...s.options].map(o=>T(o.text||""));
+      const good = texts.filter(t => /^([0-9]{2}|2A|2B)$/.test(t));
+      return good.length>=5; // heuristique
+    };
+    return all.find(s => isDept(s) && /d[ée]partement|residen/i.test((s.closest('label, .form-group, fieldset, section, .row, .col, div')?.innerText||'')));
+  }
+  function elRegime(){ return q('#regime-social-assure-principal,[name="client.regimeSocial"]'); }
+  function elStatut(){ return q('#statut-assure-principal,[name="client.statut"]'); }
+
+  function readSelect(sel){
+    const opt = sel?.selectedOptions?.[0] || sel?.options?.[sel.selectedIndex];
+    return sel ? {value: sel.value ?? "", text: T(opt?.text||"")} : null;
+  }
+
+  // -------- localisateurs Gammes (et filtrage anti-“département”) --------
+  function findGammeSelect() {
+    // 1) un select proche d’un libellé “Les Gammes / Gamme / Formule / Offre”
+    const nodes = qa("label, legend, .label, .form-group, section, fieldset, .panel, .card, div, span");
+    for(const n of nodes){
+      const txt=T(n.innerText||"");
+      if(!txt) continue;
+      if(/\bles?\s*gammes?\b|\bgamme\b|\bformule\b|\boffre\b/i.test(txt)){
+        const sel = n.querySelector?.("select") || n.nextElementSibling?.querySelector?.("select");
+        if(sel && isVisible(sel) && !looksLikeDepartement(sel)) return sel;
+      }
+    }
+    // 2) fallback: select dont les options ne sont PAS purement des codes départements
+    const cand = qa("select").find(s => isVisible(s) && !looksLikeDepartement(s) && maybeLooksLikeGamme(s));
+    return cand || null;
+  }
+  function maybeLooksLikeGamme(sel){
+    const texts = [...sel.options].map(o=>T(o.text||"").toLowerCase());
+    return texts.some(t => /\bgamme|\bformule|\boffre|\bswiss\s*life|sant[ée]/i.test(t));
+  }
+  function looksLikeDepartement(sel){
+    const texts = [...sel.options].map(o=>T(o.text||""));
+    const allDept = texts.length>=5 && texts.every(t => t==="" || /^([0-9]{2}|2A|2B)$/.test(t));
+    return allDept;
+  }
+
+  function findGammeRadiosOrTiles(){
+    // radios
+    const radios = qa('input[type="radio"][name]').filter(isVisible);
+    const byName = new Map();
+    for(const r of radios) (byName.get(r.name)||byName.set(r.name,[]).get(r.name)).push(r);
+    for(const list of byName.values()){
+      const labels = list.map(r=>{
+        const lab = r.id ? q(`label[for="${CSS.escape(r.id)}"]`) : r.closest("label");
+        return T((lab?.innerText)||r.value||"");
+      }).filter(Boolean);
+      const joined = labels.join(" | ").toLowerCase();
+      if (/\bgamme|\bformule|\boffre|\bswiss\s*life|sant[ée]/i.test(joined)) {
+        return {type:'radios', list};
+      }
+    }
+    // tuiles cliquables
+    const tiles = qa('a,button,[role="button"],.tile,.card,.option,.choice').filter(n=>{
+      const txt=T(n.innerText||"").toLowerCase();
+      return isVisible(n) && /\bgamme|\bformule|\boffre|\bswiss\s*life|sant[ée]/i.test(txt);
+    });
+    if(tiles.length) return {type:'tiles', list: tiles};
+    return null;
+  }
+
+  // -------- LIST / READ --------
+  function list() {
+    const sel = findGammeSelect();
+    if (sel) {
+      const opts = [...sel.options].map(o=>({value:o.value, text:T(o.text||""), disabled: !!o.disabled}));
+      console.table(opts);
+      return { kind:'select', id: sel.id||null, name: sel.name||null, options: opts, value: readSelect(sel) };
+    }
+    const grp = findGammeRadiosOrTiles();
+    if (grp?.type==='radios') {
+      const rows = grp.list.map(r=>{
+        const lab = r.id ? q(`label[for="${CSS.escape(r.id)}"]`) : r.closest("label");
+        return { id:r.id||null, name:r.name||null, text:T((lab?.innerText)||r.value||""), checked: !!r.checked };
+      });
+      console.table(rows);
+      return { kind:'radios', items: rows };
+    }
+    if (grp?.type==='tiles') {
+      const rows = grp.list.map(n=>({ text:T(n.innerText||""), role:n.getAttribute('role')||null }));
+      console.table(rows);
+      return { kind:'tiles', items: rows };
+    }
+    return { kind:'none' };
+  }
+
+  // -------- REFRESH (force le peuplement des gammes) --------
+  async function refresh() {
+    const date = elDateNaissance();
+    const dep  = elDepartement();
+    const reg  = elRegime();
+    const sta  = elStatut();
+
+    // Déclenche les “change” sur les prérequis connus
+    [date, dep, reg, sta].forEach(el => el && el.dispatchEvent(new Event("change",{bubbles:true})));
+
+    // Clique un éventuel CTA du bloc santé (souvent nécessaire)
+    const cta = [...document.querySelectorAll('a,button,[role="button"]')].find(n => /proposez\s*swiss\s*life\s*sant[ée]/i.test(n.innerText||""));
+    if (cta && isVisible(cta)) { cta.click(); }
+
+    await wait(120);
+    await waitOverlayGone();
+    await waitStable();
+
+    // Re-scan et retourne la liste
+    return list();
+  }
+
+  // -------- SET / CHECK / DIAG --------
+  function setSelect(sel, target) {
+    const w = norm(target);
+    const opts = [...sel.options];
+    let idx = opts.findIndex(o => norm(o.value||"")===w);
+    if (idx<0) idx = opts.findIndex(o => norm(o.text||"")===w);
+    if (idx<0) return {ok:false, reason:"option_not_found", options: opts.map(o=>({value:o.value, text:T(o.text||"")}))};
+    sel.selectedIndex = idx; fire(sel);
+    return {ok:true, got: readSelect(sel)};
+  }
+  async function setRadiosOrTiles(grp, target) {
+    const w = norm(target);
+    if (grp.type==='radios') {
+      const targetRadio = grp.list.find(r=>{
+        const lab = r.id ? q(`label[for="${CSS.escape(r.id)}"]`) : r.closest("label");
+        return norm(T((lab?.innerText)||r.value||""))===w;
+      }) || grp.list.find(r=>{
+        const lab = r.id ? q(`label[for="${CSS.escape(r.id)}"]`) : r.closest("label");
+        return norm(T((lab?.innerText)||r.value||"")).includes(w) || w.includes(norm(T((lab?.innerText)||r.value||"")));
+      });
+      if (!targetRadio) return {ok:false, reason:"radio_option_not_found"};
+      const clickable = targetRadio.id ? q(`label[for="${CSS.escape(targetRadio.id)}"]`) : targetRadio;
+      clickable?.click();
+      await wait(60); await waitOverlayGone(); await waitStable();
+      return {ok:true};
+    } else {
+      const btn = grp.list.find(n=>norm(n.innerText||"")===w) || grp.list.find(n=>norm(n.innerText||"").includes(w));
+      if (!btn) return {ok:false, reason:"tile_not_found"};
+      btn.click();
+      await wait(60); await waitOverlayGone(); await waitStable();
+      return {ok:true};
+    }
+  }
+
+  async function set(target = CFG.want){
+    const sel = findGammeSelect();
+    if (sel) return setSelect(sel, target);
+    const grp = findGammeRadiosOrTiles();
+    if (grp) return setRadiosOrTiles(grp, target);
+    return {ok:false, reason:"control_not_found", hint:"Rafraîchis d’abord : await SLS_GAMMES.refresh()"};
+  }
+
+  function read() {
+    const sel = findGammeSelect();
+    if (sel) return {kind:'select', value: readSelect(sel)};
+    const grp = findGammeRadiosOrTiles();
+    if (grp?.type==='radios') {
+      const c = grp.list.find(r=>r.checked);
+      const lab = c?.id ? q(`label[for="${CSS.escape(c.id)}"]`) : c?.closest("label");
+      return {kind:'radios', value: c ? T((lab?.innerText)||c.value||"") : null};
+    }
+    if (grp?.type==='tiles') return {kind:'tiles', value:null};
+    return {kind:'none', value:null};
+  }
+
+  function check(expected = CFG.want) {
+    const w = norm(expected);
+    const r = read();
+    let ok=false, got=null;
+    if (r.kind==='select') { got = r.value; ok = !!r.value && (norm(r.value.value)===w || norm(r.value.text)===w); }
+    else if (r.kind==='radios') { got = r.value; ok = !!r.value && (norm(r.value)===w || norm(r.value).includes(w)); }
+    console.table([{ champ:"principal.gammes", ok, got, expected }]);
+    return { champ:"principal.gammes", ok, got, expected };
+  }
+
+  function diagnose(expected = CFG.want) {
+    const sel = findGammeSelect();
+    const grp = sel ? null : findGammeRadiosOrTiles();
+    const issues = [];
+    if (!sel && !grp) issues.push({what:"gammes", why:"introuvable", hint:"Clique/affiche la section ‘Les Gammes’ puis SLS_GAMMES.refresh()."});
+    if (sel) {
+      const opts=[...sel.options].map(o=>({value:o.value, text:T(o.text||"")}));
+      if (!opts.length) issues.push({what:"gammes", why:"select_sans_options", hint:"Déclenche un refresh : SLS_GAMMES.refresh()", options:opts});
+    }
+    if (overlay()) issues.push({what:"overlay", why:"chargement en cours"});
+    // Pré-requis pour info
+    const prereq = {
+      dateNaissance: T(elDateNaissance()?.value||""),
+      departement: readSelect(elDepartement()),
+      regimeSocial: readSelect(elRegime()),
+      statut: readSelect(elStatut())
+    };
+    return { issues, prereq, current: read(), list: list() };
+  }
+
+  // -------- expose --------
+  window.SLS_GAMMES = {
+    cfg: CFG,
+    list, refresh, set, check, diagnose, read
+  };
+
+  console.log("✅ SLS_GAMMES prêt. Exemples :");
+  console.log("SLS_GAMMES.list();               // voir les options actuelles");
+  console.log("await SLS_GAMMES.refresh();      // forcer le peuplement des gammes");
+  console.log('SLS_GAMMES.cfg.want = \"SwissLife Santé\";');
+  console.log("await SLS_GAMMES.set();          // sélection par texte/value");
+  console.log("SLS_GAMMES.check();              // vérification");
+  console.log("SLS_GAMMES.diagnose();           // diagnostic détaillé");
+})();
+
+
+
+
+
+// ==== SLS_DATE_EFFET — Bouton & saisie "Date d'effet" ====
+// A coller dans l'iFrame tarificateur (oav-pool2…)
+// Trouve l'input + le bouton calendrier, clique le bouton, remplit la date, vérifie, diagnostique.
+
+(() => {
+  // ---------- utils ----------
+  const T = s => (s||"").toString().replace(/\s+/g," ").trim();
+  const q  = sel => { try { return document.querySelector(sel); } catch { return null; } };
+  const qa = sel => { try { return [...document.querySelectorAll(sel)]; } catch { return []; } };
+  const wait = (ms)=>new Promise(r=>setTimeout(r,ms));
+  const isVisible = (el) => {
+    if (!el || !el.isConnected) return false;
+    let p = el;
+    while (p) {
+      if (p.hidden || p.getAttribute?.('aria-hidden')==='true') return false;
+      const st = getComputedStyle(p);
+      if (st.display==='none' || st.visibility==='hidden' || st.opacity==='0') return false;
+      p = p.parentElement;
+    }
+    const r = el.getBoundingClientRect();
+    return (r.width>0 && r.height>0);
+  };
+  function overlay(){ return !!q('.blockUI.blockOverlay, .blockUI.blockMsg'); }
+  async function waitOverlayGone(timeout=8000){
+    const t0=Date.now();
+    while(Date.now()-t0<timeout){ if(!overlay()) return true; await wait(80); }
+    return true;
+  }
+  async function waitStable({minQuiet=300,maxWait=6000}={}) {
+    let last = Date.now();
+    const mo = new MutationObserver(()=>{ last = Date.now(); });
+    mo.observe(document.body, {subtree:true, childList:true, attributes:true});
+    const start = Date.now();
+    while (Date.now()-start < maxWait) {
+      if (Date.now()-last >= minQuiet) { mo.disconnect(); return true; }
+      await wait(80);
+    }
+    mo.disconnect(); return false;
+  }
+  function fire(el){
+    if (!el) return;
+    el.dispatchEvent(new Event('input',{bubbles:true}));
+    el.dispatchEvent(new Event('change',{bubbles:true}));
+    el.dispatchEvent(new Event('blur',{bubbles:true}));
+  }
+
+  // ---------- localisation ----------
+  function findInput(){
+    // IDs/Names vus dans tes scans + fallback sur libellé "Date d'effet"
+    const direct = q('#contratSante-dateEffet,[name="contratSante.dateEffet"]');
+    if (direct) return direct;
+
+    // Cherche via libellé proche
+    const nodes = qa("label, legend, .label, .form-group, section, fieldset, .panel, .card, div, span");
+    for (const n of nodes) {
+      const txt = T(n.innerText||"");
+      if (!txt) continue;
+      if (/date\s*d['’]effet/i.test(txt)) {
+        const inp = n.querySelector?.('input[type="text"], input, [type="date"]')
+                 || n.nextElementSibling?.querySelector?.('input[type="text"], input, [type="date"]');
+        if (inp) return inp;
+      }
+    }
+    // fallback: tout input texte avec placeholder/aria-label contenant "effet"
+    const maybe = qa('input[type="text"], input').find(x => /effet/i.test(`${x.placeholder||''} ${x.getAttribute?.('aria-label')||''}`));
+    return maybe || null;
+  }
+
+  function findButtonNear(input){
+    if (!input) return null;
+    // 1) bouton juste à côté (input-group-addon, icône calendrier)
+    const group = input.closest('.input-group, .form-group, .row, .col, div');
+    if (group) {
+      const btn = group.querySelector('button, .input-group-addon, .icon-calendar, .fa-calendar, .glyphicon-calendar, .ui-datepicker-trigger, [role="button"]');
+      if (btn) return btn.tagName ? btn : btn.closest('button,[role="button"],.input-group-addon');
+    }
+    // 2) label for + bouton suivant
+    const lab = input.id ? q(`label[for="${CSS.escape(input.id)}"]`) : null;
+    if (lab) {
+      const sibBtn = lab.nextElementSibling?.querySelector?.('button,[role="button"],.input-group-addon');
+      if (sibBtn) return sibBtn;
+    }
+    return null;
+  }
+
+  // ---------- lecture / saisie ----------
+  function read(){
+    const el = findInput();
+    return { found: !!el, visible: isVisible(el), value: el ? T(el.value||"") : null, id: el?.id||null, name: el?.name||null };
+  }
+
+  async function clickButton(){
+    const el = findInput();
+    const btn = findButtonNear(el);
+    if (!el)  return { ok:false, reason:'input_not_found' };
+    if (!btn) return { ok:false, reason:'button_not_found' };
+    if (!isVisible(btn)) return { ok:false, reason:'button_hidden' };
+    try { btn.scrollIntoView({behavior:'instant',block:'center'}); } catch {}
+    btn.click();
+    await wait(80);
+    await waitOverlayGone();
+    await waitStable();
+    return { ok:true };
+  }
+
+  function toDDMMYYYY(v){
+    if (!v) return null;
+    const s = T(v).toLowerCase();
+    if (s==='today' || s==='aujourdhui' || s==='aujourd\'hui') {
+      const d=new Date(); const dd=String(d.getDate()).padStart(2,'0'); const mm=String(d.getMonth()+1).padStart(2,'0'); const yy=d.getFullYear();
+      return `${dd}/${mm}/${yy}`;
+    }
+    // accepte déjà formatté
+    if (/^\d{2}\/\d{2}\/\d{4}$/.test(s)) return s;
+    // yyyy-mm-dd -> dd/mm/yyyy
+    const m = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (m) return `${m[3]}/${m[2]}/${m[1]}`;
+    return s; // on laisse tel quel
+  }
+
+  async function set(value /* "dd/mm/yyyy" | "today" */){
+    const el = findInput();
+    if (!el) return { ok:false, reason:'input_not_found' };
+    const val = toDDMMYYYY(value);
+    el.focus();
+    el.value = val || '';
+    fire(el);
+    await wait(60);
+    await waitOverlayGone();
+    await waitStable();
+    const r = read();
+    return { ok: r.value === val, after: r };
+  }
+
+  function check(expected){
+    const e = toDDMMYYYY(expected);
+    const r = read();
+    const ok = r.found && r.visible && T(r.value)===T(e);
+    console.table([{ champ:"principal.dateEffet", ok, got:r.value, expected:e }]);
+    return { champ:"principal.dateEffet", ok, got:r.value, expected:e };
+  }
+
+  function diagnose(expected){
+    const e = toDDMMYYYY(expected);
+    const r = read();
+    const issues = [];
+    if (!r.found) issues.push({what:'input', why:'introuvable', hint:'Vérifie la section/onglet et l’iFrame tarificateur.'});
+    else {
+      if (!r.visible) issues.push({what:'input', why:'masque', hint:'Déplie/affiche la zone "Date d’effet".'});
+      if (T(r.value)!==T(e)) issues.push({what:'valeur', why:'different', got:r.value, expected:e});
+    }
+    const btn = r.found ? findButtonNear(findInput()) : null;
+    if (!btn) issues.push({what:'button', why:'introuvable_proche', hint:'Icône calendrier/bouton absent ou markup différent.'});
+    else if (!isVisible(btn)) issues.push({what:'button', why:'masque'});
+    return { read:r, button: !!btn && {visible:isVisible(btn)}, expected:e, issues };
+  }
+
+  // ---------- expose ----------
+  window.SLS_DATE_EFFET = { read, clickButton, set, check, diagnose };
+
+  console.log("✅ SLS_DATE_EFFET prêt. Exemples :");
+  console.log("SLS_DATE_EFFET.read();");
+  console.log("await SLS_DATE_EFFET.clickButton();   // ouvre le calendrier (si présent)");
+  console.log('await SLS_DATE_EFFET.set(\"24/08/2025\");');
+  console.log('SLS_DATE_EFFET.check(\"24/08/2025\");');
+  console.log('SLS_DATE_EFFET.diagnose(\"24/08/2025\");');
+})();
+
+
   
 /*
 ==============================================================================
@@ -1950,3 +2386,198 @@
     console.log("await SLS_REPRISE_EXACT.setWithResiliation('oui','oui');");
   })();
   
+
+  // ==== SLS_NEXT — Bouton "Suivant" (trouver, vérifier, cliquer, diagnostiquer) ====
+  // A coller dans l'iFrame tarificateur (oav-pool2…)
+  // Couvre: #bt-suite-projet + variantes visibles "Suivant" / "Suite" / "Continuer"
+
+(() => {
+  // --- Utils ---
+  const T = s => (s||"").toString().replace(/\s+/g," ").trim();
+  const q  = sel => { try { return document.querySelector(sel); } catch { return null; } };
+  const qa = sel => { try { return [...document.querySelectorAll(sel)]; } catch { return []; } };
+  const wait = (ms)=>new Promise(r=>setTimeout(r,ms));
+  function isVisible(el){
+    if (!el || !el.isConnected) return false;
+    let p=el;
+    while(p){
+      if (p.hidden || p.getAttribute?.('aria-hidden')==='true') return false;
+      const st=getComputedStyle(p);
+      if (st.display==='none'||st.visibility==='hidden'||st.opacity==='0') return false;
+      p=p.parentElement;
+    }
+    const r=el.getBoundingClientRect();
+    return r.width>0 && r.height>0;
+  }
+  function isDisabled(el){
+    if (!el) return true;
+    const st = getComputedStyle(el);
+    return !!(el.disabled || el.getAttribute('aria-disabled')==='true' || /\b(disable|desactive|disabled)\b/i.test(el.className||'') || st.pointerEvents==='none');
+  }
+  function overlay(){ return !!q('.blockUI.blockOverlay, .blockUI.blockMsg'); }
+  async function waitOverlayGone(timeout=10000){
+    const t0=Date.now();
+    while(Date.now()-t0<timeout){ if(!overlay()) return true; await wait(80); }
+    return true;
+  }
+  async function waitStable({minQuiet=350,maxWait=8000}={}) {
+    let last = Date.now();
+    const mo = new MutationObserver(()=>{ last = Date.now(); });
+    mo.observe(document.body, {subtree:true, childList:true, attributes:true});
+    const start = Date.now();
+    while (Date.now()-start < maxWait) {
+      if (Date.now()-last >= minQuiet) { mo.disconnect(); return true; }
+      await wait(80);
+    }
+    mo.disconnect(); return false;
+  }
+  function clickHuman(el){
+    const mk = (type) => new MouseEvent(type,{bubbles:true,cancelable:true,view:window});
+    el.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true}));
+    el.dispatchEvent(mk('mousedown'));
+    el.dispatchEvent(mk('mouseup'));
+    el.dispatchEvent(mk('click'));
+  }
+
+  // --- Localisation du bouton Suivant ---
+  function findCandidates(){
+    const texts = /^(suivant|suite|continuer|page\s*suivante)$/i;
+    const ids   = /(bt-)?suite|suivant|next/i;
+
+    const cand = new Set();
+
+    // 1) ID connu vu dans tes captures
+    const known = ['#bt-suite-projet','#bt-suite-confortHospitalisation','#bt-souscription-suite']
+      .map(sel => q(sel)).filter(Boolean);
+    known.forEach(n => cand.add(n));
+
+    // 2) Boutons/inputs/links avec texte "Suivant"/"Suite"/"Continuer"
+    qa('button, a, [role="button"], input[type="button"], input[type="submit"]')
+      .forEach(n=>{
+        const label = T(n.innerText || n.value || n.getAttribute('aria-label') || '');
+        if (texts.test(label)) cand.add(n);
+      });
+
+    // 3) IDs/classes évoquant "suite/suivant"
+    qa('*[id], *[class]').forEach(n=>{
+      const id = n.id||'', cls = n.className||'';
+      if (ids.test(id) || ids.test(cls)) cand.add(n);
+    });
+
+    // Filtre: visibles, cliquables
+    return [...cand].filter(isVisible);
+  }
+
+  function bestCandidate(){
+    const list = findCandidates();
+    if (!list.length) return null;
+    // heuristique: privilégier <button> puis <a> puis <input>
+    const rank = el => el.tagName==='BUTTON' ? 0 : (el.tagName==='A'?1:2);
+    list.sort((a,b)=>rank(a)-rank(b));
+    return list[0];
+  }
+
+  // --- Erreurs de validation visibles (si le clic refuse d'avancer) ---
+  function listVisibleErrors(){
+    const sel =
+      'label.error, .error, .has-error, .field-error, .text-danger, .help-block, .message-erreur, .error-block, [aria-invalid="true"]';
+    const out = [];
+    qa(sel).forEach(n=>{
+      if (!isVisible(n)) return;
+      // remonter à la zone
+      let p=n, label=null, input=null;
+      for(let i=0;i<4 && p;i++,p=p.parentElement){
+        label = label || p.querySelector?.('label');
+        input = input || p.querySelector?.('input,select,textarea');
+      }
+      const msg = T(n.innerText || n.getAttribute('title') || n.getAttribute('data-original-title') || '');
+      if (msg) out.push({
+        msg,
+        nearLabel: T(label?.innerText||''),
+        inputId: input?.id||null,
+        inputName: input?.name||null
+      });
+    });
+    // attributs errormessagelbl (site SwissLife)
+    qa('input[errormessagelbl], select[errormessagelbl], textarea[errormessagelbl]').forEach(el=>{
+      const invalid = el.classList.contains('error') || el.getAttribute('aria-invalid')==='true';
+      if (invalid && isVisible(el)) {
+        out.push({ msg: T(el.getAttribute('errormessagelbl')), nearLabel: '', inputId: el.id||null, inputName: el.name||null });
+      }
+    });
+    return out;
+  }
+
+  // --- API ---
+  function read(){
+    const el = bestCandidate();
+    if (!el) return {found:false};
+    return {
+      found:true,
+      id: el.id||null,
+      tag: el.tagName.toLowerCase(),
+      text: T(el.innerText || el.value || el.getAttribute('aria-label') || ''),
+      visible: isVisible(el),
+      disabled: isDisabled(el),
+      className: el.className||''
+    };
+  }
+
+  async function click(){
+    const el = bestCandidate();
+    if (!el) return { ok:false, reason:'not_found', hint:'Bouton "Suivant" introuvable sur ce step.' };
+    if (isDisabled(el)) return { ok:false, reason:'disabled', detail: read() };
+
+    try {
+      el.scrollIntoView({behavior:'instant', block:'center'});
+    } catch {}
+    clickHuman(el);
+
+    await wait(100);
+    await waitOverlayGone();
+    await waitStable();
+
+    // Si des erreurs visibles → on les renvoie
+    const errors = listVisibleErrors();
+    return { ok: errors.length===0, after: read(), errors };
+  }
+
+  function checkAdvanced(){
+    const r = read();
+    const errors = listVisibleErrors();
+    console.table([{
+      champ:'ui.suivant',
+      present: r.found,
+      visible: !!r.visible,
+      disabled: !!r.disabled,
+      text: r.text||'(?)',
+      errors: errors.length
+    }]);
+    return { bouton: r, errors };
+  }
+
+  function diagnose(){
+    const r = read();
+    const issues = [];
+    if (!r.found) issues.push({what:'button', why:'introuvable', hint:'Assure-toi d’être dans la bonne iFrame/étape.'});
+    else {
+      if (!r.visible)  issues.push({what:'button', why:'masque', hint:'Déplie la section ou scrolle dans la page.'});
+      if (r.disabled)  issues.push({what:'button', why:'désactivé', hint:'Champ requis manquant ou étape non prête.'});
+    }
+    const errors = listVisibleErrors();
+    if (errors.length) issues.push({what:'validation', why:'erreurs_visibles', errors});
+    if (overlay()) issues.push({what:'ui', why:'overlay_en_cours'});
+    return { read:r, issues };
+  }
+
+  window.SLS_NEXT = { read, click, checkAdvanced, diagnose };
+
+  console.log("✅ SLS_NEXT prêt. Exemples :");
+  console.log("SLS_NEXT.read();          // état du bouton");
+  console.log("await SLS_NEXT.click();   // clique 'Suivant' + attend chargement");
+  console.log("SLS_NEXT.checkAdvanced(); // synthèse + erreurs visibles");
+  console.log("SLS_NEXT.diagnose();      // diagnostic détaillé");
+})();
+
+
+

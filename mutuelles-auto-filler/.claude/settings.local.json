@@ -1,7 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "Bash(convert:*)"
+      "Bash(convert:*)",
+      "Bash(mkdir:*)",
+      "Bash(mv:*)"
     ],
     "deny": [],
     "ask": []
