@@ -1,0 +1,124 @@
+{
+  "regimes": {
+    "SECURITE_SOCIALE": {
+      "label": "Régime Général (CPAM)",
+      "statuts": {
+        "SALARIE": {
+          "label": "Salarié et autres statuts",
+          "professions": ["MEDECIN","CHIRURGIEN","CHIRURGIEN_DENTISTE","PHARMACIEN","AUXILIAIRE_MEDICAL","AUTRE"]
+        },
+        "ETUDIANT": {
+          "label": "Etudiant",
+          "professions": ["MEDECIN","CHIRURGIEN","CHIRURGIEN_DENTISTE","PHARMACIEN","AUXILIAIRE_MEDICAL","AUTRE"]
+        },
+        "TRAVAILLEUR_TRANSFRONTALIER": {
+          "label": "Travailleur transfrontalier",
+          "professions": ["MEDECIN","CHIRURGIEN","CHIRURGIEN_DENTISTE","PHARMACIEN","AUXILIAIRE_MEDICAL","AUTRE"]
+        },
+        "FONCTIONNAIRE": {
+          "label": "Fonctionnaire",
+          "professions": ["MEDECIN","CHIRURGIEN","CHIRURGIEN_DENTISTE","PHARMACIEN","AUXILIAIRE_MEDICAL","AUTRE"]
+        }
+      }
+    },
+    "SECURITE_SOCIALE_ALSACE_MOSELLE": {
+      "label": "Régime Local (CPAM Alsace Moselle)",
+      "statuts": {
+        "SALARIE": { 
+          "label": "Salarié et autres statuts", 
+          "professions": [] 
+        },
+        "ETUDIANT": { 
+          "label": "Etudiant", 
+          "professions": [] 
+        },
+        "TRAVAILLEUR_TRANSFRONTALIER": { 
+          "label": "Travailleur transfrontalier", 
+          "professions": [] 
+        },
+        "FONCTIONNAIRE": { 
+          "label": "Fonctionnaire", 
+          "professions": [] 
+        }
+      }
+    },
+    "TNS": {
+      "label": "Régime Général pour TNS (CPAM)",
+      "statuts": {
+        "TNS": { 
+          "label": "Travailleur Non Salarié", 
+          "professions": ["MEDECIN","CHIRURGIEN","CHIRURGIEN_DENTISTE","PHARMACIEN","AUXILIAIRE_MEDICAL","AUTRE"] 
+        },
+        "RETRAITE": { 
+          "label": "Retraité", 
+          "professions": [] 
+        }
+      }
+    },
+    "AMEXA": {
+      "label": "Mutualité Sociale Agricole (MSA-Amexa)",
+      "statuts": {
+        "SALARIE_AGRICOLE": { 
+          "label": "Salarié agricole et autres statuts", 
+          "professions": [] 
+        },
+        "EXPLOITANT_AGRICOLE": { 
+          "label": "Exploitant agricole", 
+          "professions": [] 
+        },
+        "ETUDIANT": { 
+          "label": "Etudiant", 
+          "professions": [] 
+        },
+        "RETRAITE_ANCIEN_SALARIE": { 
+          "label": "Retraité (ancien salarié)", 
+          "professions": [] 
+        },
+        "RETRAITE_ANCIEN_EXPLOITANT": { 
+          "label": "Retraité (ancien exploitant)", 
+          "professions": [] 
+        }
+      }
+    },
+    "AUTRES_REGIME_SPECIAUX": {
+      "label": "Autres régimes spéciaux",
+      "statuts": {
+        "SALARIE": { 
+          "label": "Salarié et autres statuts", 
+          "professions": [] 
+        },
+        "RETRAITE": { 
+          "label": "Retraité", 
+          "professions": [] 
+        }
+      }
+    }
+  },
+  "mappings": {
+    "leadToProfil": {
+      "regimeSocial": {
+        "TNS : régime des indépendants": "TNS",
+        "Salarié (ou retraité)": "SECURITE_SOCIALE",
+        "TNS": "TNS",
+        "Salarié": "SECURITE_SOCIALE"
+      },
+      "profession": {
+        "Chef d'entreprise": "TNS",
+        "En recherche d'emploi": "SALARIE",
+        "Salarié": "SALARIE",
+        "Retraité": "RETRAITE",
+        "Etudiant": "ETUDIANT"
+      }
+    }
+  },
+  "labels": {
+    "professions": {
+      "MEDECIN": "Médecin",
+      "CHIRURGIEN": "Chirurgien", 
+      "CHIRURGIEN_DENTISTE": "Chirurgien dentiste",
+      "PHARMACIEN": "Pharmacien",
+      "AUXILIAIRE_MEDICAL": "Auxiliaire médical",
+      "AUTRE": "Non médicale"
+    }
+  }
+}

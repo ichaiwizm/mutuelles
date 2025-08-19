@@ -3,14 +3,18 @@
  * Fonctions communes pour manipulation du DOM
  */
 
-// Sélecteurs sécurisés
+// Sélecteurs sécurisés (utilisent document du contexte actuel)
 export const q = sel => { 
-  try { return document.querySelector(sel); } 
+  try { 
+    return document.querySelector(sel); 
+  } 
   catch { return null; } 
 };
 
 export const qa = sel => { 
-  try { return [...document.querySelectorAll(sel)]; } 
+  try { 
+    return [...document.querySelectorAll(sel)]; 
+  } 
   catch { return []; } 
 };
 

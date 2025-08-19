@@ -7,11 +7,11 @@ import { q, qa, isVisible, fireMultiple, highlight, hiddenReason, bringIntoView 
 import { T, findByLabelLike, findFirstExisting, aliasResolve, setSelectByValueOrText, readSelect } from '../utils/form-utils.js';
 import { wait, waitStable, waitOverlayGone } from '../utils/async-utils.js';
 
-// Configuration par défaut
+// Configuration par défaut - MISE À JOUR avec codes SwissLife exacts
 const DEFAULT_CONFIG = {
   dateNaissance: "01/01/1980",
-  regimeSocial: "general",
-  statut: "actif",
+  regimeSocial: "SECURITE_SOCIALE",  // Code SwissLife exact au lieu de 'general'
+  statut: "SALARIE",                 // Code SwissLife exact au lieu de 'actif'
   profession: null,
   departement: "75"
 };
@@ -58,11 +58,18 @@ function pickSelect(sel, wantedRaw) {
   if (!sel || !wantedRaw) return false;
   
   const domain = sel.name?.includes('regime') ? 'regimeSocial' :
-                 sel.name?.includes('statut') ? 'statut' : null;
+                 sel.name?.includes('statut') ? 'statut' :
+                 sel.name?.includes('profession') ? 'profession' : null;
+  
+  console.log('🔍 pickSelect - element:', sel.name, 'domain:', domain, 'wantedRaw:', wantedRaw);
   
   const wanted = domain ? aliasResolve(domain, wantedRaw) : wantedRaw;
+  console.log('🔍 pickSelect - après aliasResolve:', wanted);
   
-  return setSelectByValueOrText(sel, wanted);
+  const result = setSelectByValueOrText(sel, wanted);
+  console.log('🔍 pickSelect - résultat:', result, 'selectedIndex:', sel.selectedIndex);
+  
+  return result;
 }
 
 /**
@@ -116,7 +123,18 @@ export function ready() {
  * Remplit tous les champs
  */
 export async function fill(cfg = {}) {
-  const config = { ...DEFAULT_CONFIG, ...cfg };
+  // Mapping des clés : resolver → service  
+  const mappedCfg = { ...cfg };
+  if (cfg.regime && !cfg.regimeSocial) {
+    mappedCfg.regimeSocial = cfg.regime;
+    delete mappedCfg.regime;
+  }
+  
+  const config = { ...DEFAULT_CONFIG, ...mappedCfg };
+  
+  console.log('🔍 souscripteur-service.fill - config reçu:', cfg);
+  console.log('🔍 souscripteur-service.fill - config mappé:', mappedCfg);
+  console.log('🔍 souscripteur-service.fill - config final:', config);
   
   await waitOverlayGone();
   
@@ -138,6 +156,7 @@ export async function fill(cfg = {}) {
   
   // Régime social
   const selRegime = find_regimeSocial();
+  console.log('🔍 Régime social - element trouvé:', selRegime, 'config:', config.regimeSocial);
   if (selRegime && config.regimeSocial) {
     const ok = pickSelect(selRegime, config.regimeSocial);
     if (ok) actions.push({ field: 'regimeSocial', value: config.regimeSocial });
@@ -145,6 +164,7 @@ export async function fill(cfg = {}) {
   
   // Statut
   const selStatut = find_statut();
+  console.log('🔍 Statut - element trouvé:', selStatut, 'config:', config.statut);
   if (selStatut && config.statut) {
     const ok = pickSelect(selStatut, config.statut);
     if (ok) actions.push({ field: 'statut', value: config.statut });
@@ -152,6 +172,7 @@ export async function fill(cfg = {}) {
   
   // Profession (optionnel)
   const selProfession = find_profession();
+  console.log('🔍 Profession - element trouvé:', selProfession, 'config:', config.profession);
   if (selProfession && config.profession) {
     const ok = pickSelect(selProfession, config.profession);
     if (ok) actions.push({ field: 'profession', value: config.profession });

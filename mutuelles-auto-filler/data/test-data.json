@@ -1,0 +1,183 @@
+{
+  "lead": {
+    "id": "test-deschamps-001",
+    "nom": "DESCHAMPS",
+    "prenom": "BAPTISTE",
+    "contact": {
+      "adresse": "2 RUE DEBRAY",
+      "codePostal": "44300",
+      "ville": "NANTES",
+      "telephone": "06.99.79.67.14",
+      "email": "baptiste.deschamps@hotmail.fr"
+    },
+    "souscripteur": {
+      "civilite": "M.",
+      "dateNaissance": "02/06/1991",
+      "profession": "Chef d'entreprise",
+      "regimeSocial": "TNS : régime des indépendants",
+      "nombreEnfants": 3
+    },
+    "conjoint": {
+      "dateNaissance": "11/09/1992",
+      "profession": "En recherche d'emploi",
+      "regimeSocial": "Salarié (ou retraité)"
+    },
+    "enfants": [
+      {
+        "ordre": 1,
+        "dateNaissance": "14/03/2019"
+      },
+      {
+        "ordre": 2,
+        "dateNaissance": "05/05/2021"
+      },
+      {
+        "ordre": 3,
+        "dateNaissance": "08/08/2024"
+      }
+    ],
+    "besoins": {
+      "dateEffet": "07/04/2025",
+      "actuellementAssure": "Non",
+      "niveaux": {
+        "soins": 3,
+        "hospitalisation": 3,
+        "optique": 3,
+        "dentaire": 3
+      }
+    }
+  },
+  "workflow": {
+    "etapes": [
+      {
+        "order": 1,
+        "name": "projectName",
+        "service": "nom-projet-service",
+        "required": true,
+        "data": {
+          "value": "Simulation {{lead.nom}} {{lead.prenom}}"
+        }
+      },
+      {
+        "order": 2,
+        "name": "hospitalComfort",
+        "service": "confort-hospitalisation-service",
+        "required": true,
+        "data": {
+          "value": "non"
+        }
+      },
+      {
+        "order": 3,
+        "name": "simulationType",
+        "service": "simulation-type-service",
+        "required": true,
+        "data": {
+          "value": "couple"
+        }
+      },
+      {
+        "order": 4,
+        "name": "subscriberInfo",
+        "service": "souscripteur-service",
+        "required": true,
+        "autoResolve": true,
+        "validate": true,
+        "data": {
+          "regime": "{{resolver.regime}}",
+          "statut": "{{resolver.statut}}",
+          "profession": "{{resolver.profession}}",
+          "dateNaissance": "{{resolver.dateNaissance}}",
+          "departement": "{{resolver.departement}}"
+        }
+      },
+      {
+        "order": 5,
+        "name": "spouseInfo",
+        "service": "conjoint-service",
+        "required": false,
+        "condition": "{{lead.conjoint}}",
+        "autoResolve": true,
+        "validate": true,
+        "data": {
+          "regime": "{{spouseResolver.regime}}",
+          "statut": "{{spouseResolver.statut}}",
+          "profession": "{{spouseResolver.profession}}",
+          "dateNaissance": "{{lead.conjoint.dateNaissance}}",
+          "departement": "{{resolver.departement}}"
+        }
+      },
+      {
+        "ordre": 3,
+        "nom": "souscripteur",
+        "module": "souscripteur-service",
+        "obligatoire": true,
+        "data": {
+          "dateNaissance": "{{lead.souscripteur.dateNaissance}}",
+          "regimeSocial": "{{lead.souscripteur.regimeSocial | mapRegimeSocial}}",
+          "statut": "{{lead.souscripteur.profession | mapStatut}}",
+          "profession": "AUTRE",
+          "departement": "{{lead.contact.codePostal | substring:0:2}}"
+        }
+      },
+      {
+        "ordre": 4,
+        "nom": "enfants",
+        "module": "enfants-service",
+        "obligatoire": false,
+        "condition": "{{lead.souscripteur.nombreEnfants > 0}}",
+        "data": {
+          "nbEnfants": "{{lead.souscripteur.nombreEnfants}}",
+          "enfants": "{{lead.enfants | mapEnfants}}"
+        }
+      },
+      {
+        "ordre": 5,
+        "nom": "conjoint",
+        "module": "conjoint-service",
+        "obligatoire": false,
+        "condition": "{{lead.conjoint}}",
+        "data": {
+          "dateNaissance": "{{lead.conjoint.dateNaissance}}",
+          "regimeSocial": "{{lead.conjoint.regimeSocial | mapRegimeSocial}}",
+          "statut": "{{lead.conjoint.profession | mapStatut}}",
+          "profession": "AUTRE"
+        }
+      },
+      {
+        "ordre": 6,
+        "nom": "dateEffet",
+        "module": "date-effet-service",
+        "obligatoire": true,
+        "data": {
+          "valeur": "{{lead.besoins.dateEffet}}"
+        }
+      },
+      {
+        "ordre": 7,
+        "nom": "options",
+        "module": "options-service",
+        "obligatoire": true,
+        "data": {
+          "madelin": "{{lead.souscripteur.regimeSocial | contains:'TNS' ? 'oui' : 'non'}}",
+          "resiliation": "{{lead.besoins.actuellementAssure == 'Non' ? 'non' : 'oui'}}",
+          "reprise": "non"
+        }
+      }
+    ]
+  },
+  "mappings": {
+    "regimeSocial": {
+      "TNS : régime des indépendants": "TNS",
+      "Salarié (ou retraité)": "SECURITE_SOCIALE",
+      "TNS": "TNS",
+      "Salarié": "SECURITE_SOCIALE"
+    },
+    "statut": {
+      "Chef d'entreprise": "TNS",
+      "En recherche d'emploi": "SALARIE",
+      "TNS": "TNS",
+      "Salarié": "SALARIE"
+    }
+  }
+}

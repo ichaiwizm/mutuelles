@@ -7,11 +7,11 @@ import { q, isVisible, bringIntoView, clickHuman, dispatchHumanChange } from '..
 import { readSelect, setSelectByValueOrText, aliasResolve } from '../utils/form-utils.js';
 import { wait, waitStable, waitOverlayGone } from '../utils/async-utils.js';
 
-// Configuration par défaut
+// Configuration par défaut - MISE À JOUR avec codes SwissLife exacts
 const DEFAULT_CFG = {
   dateNaissance: "01/01/1985",
-  regimeSocial: "general",
-  statut: "actif",
+  regimeSocial: "SECURITE_SOCIALE",  // Code SwissLife exact
+  statut: "SALARIE",                 // Code SwissLife exact  
   profession: null
 };
 
@@ -120,6 +120,19 @@ export function readyCheck() {
  * Remplit tous les champs
  */
 export async function fillAll(cfg = DEFAULT_CFG) {
+  // Mapping des clés : resolver → service (même logique que souscripteur)
+  const mappedCfg = { ...cfg };
+  if (cfg.regime && !cfg.regimeSocial) {
+    mappedCfg.regimeSocial = cfg.regime;
+    delete mappedCfg.regime;
+  }
+  
+  const config = { ...DEFAULT_CFG, ...mappedCfg };
+  
+  console.log('🔍 conjoint-service.fillAll - config reçu:', cfg);
+  console.log('🔍 conjoint-service.fillAll - config mappé:', mappedCfg);
+  console.log('🔍 conjoint-service.fillAll - config final:', config);
+  
   await waitOverlayGone();
   
   // S'assurer que l'onglet est ouvert
@@ -132,44 +145,52 @@ export async function fillAll(cfg = DEFAULT_CFG) {
   
   // Date de naissance
   const dateEl = elDate();
-  if (dateEl && cfg.dateNaissance) {
+  if (dateEl && config.dateNaissance) {
     if (!isVisible(dateEl)) {
       bringIntoView(dateEl);
       await wait(200);
     }
     
     dateEl.focus();
-    dateEl.value = cfg.dateNaissance;
+    dateEl.value = config.dateNaissance;
     dispatchHumanChange(dateEl);
-    actions.push({ field: 'dateNaissance', value: cfg.dateNaissance });
+    actions.push({ field: 'dateNaissance', value: config.dateNaissance });
   }
   
   // Régime social
   const regimeEl = selRegime();
-  if (regimeEl && cfg.regimeSocial) {
-    const resolved = aliasResolve('regimeSocial', cfg.regimeSocial);
+  if (regimeEl && config.regimeSocial) {
+    const resolved = aliasResolve('regimeSocial', config.regimeSocial);
     const ok = setSelectByValueOrText(regimeEl, resolved);
     if (ok) actions.push({ field: 'regimeSocial', value: resolved });
   }
   
   // Statut
   const statutEl = selStatut();
-  if (statutEl && cfg.statut) {
-    const resolved = aliasResolve('statut', cfg.statut);
+  if (statutEl && config.statut) {
+    const resolved = aliasResolve('statut', config.statut);
     const ok = setSelectByValueOrText(statutEl, resolved);
     if (ok) actions.push({ field: 'statut', value: resolved });
   }
   
   // Profession (optionnel)
   const profEl = selProfession();
-  if (profEl && cfg.profession) {
-    const ok = setSelectByValueOrText(profEl, cfg.profession);
-    if (ok) actions.push({ field: 'profession', value: cfg.profession });
+  if (profEl && config.profession) {
+    const resolved = aliasResolve('profession', config.profession);
+    const ok = setSelectByValueOrText(profEl, resolved);
+    if (ok) actions.push({ field: 'profession', value: resolved });
   }
   
   await waitStable();
   
   return { ok: true, actions };
+}
+
+/**
+ * Alias pour compatibilité avec le bridge orchestrateur
+ */
+export async function fill(cfg) {
+  return await fillAll(cfg);
 }
 
 /**

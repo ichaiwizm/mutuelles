@@ -83,22 +83,52 @@ export const setSelectByValueOrText = (sel, wanted, synonyms = []) => {
   return false;
 };
 
-// Résolution d'alias
+// Résolution d'alias - MISE À JOUR pour les nouveaux codes SwissLife
 export const aliasResolve = (domain, wanted) => {
   const aliases = {
     regimeSocial: {
-      'general': ['Régime général', 'GENERAL', 'RG'],
-      'alsace-moselle': ['Alsace-Moselle', 'ALSACE_MOSELLE', 'AM'],
-      'agricole': ['MSA', 'Mutualité Sociale Agricole', 'AGRICOLE'],
-      'tns': ['TNS', 'Travailleur non salarié', 'INDEPENDANT'],
-      'autre': ['Autre', 'AUTRE']
+      // Nouveaux codes SwissLife exacts
+      'SECURITE_SOCIALE': ['SECURITE_SOCIALE', 'Régime Général (CPAM)'],
+      'SECURITE_SOCIALE_ALSACE_MOSELLE': ['SECURITE_SOCIALE_ALSACE_MOSELLE', 'Régime Local (CPAM Alsace Moselle)'],
+      'TNS': ['TNS', 'Régime Général pour TNS (CPAM)'],
+      'AMEXA': ['AMEXA', 'Mutualité Sociale Agricole (MSA-Amexa)'],
+      'AUTRES_REGIME_SPECIAUX': ['AUTRES_REGIME_SPECIAUX', 'Autres régimes spéciaux'],
+      
+      // Anciens alias pour compatibilité
+      'general': ['SECURITE_SOCIALE'],
+      'alsace-moselle': ['SECURITE_SOCIALE_ALSACE_MOSELLE'],
+      'agricole': ['AMEXA'],
+      'tns': ['TNS'],
+      'autre': ['AUTRES_REGIME_SPECIAUX']
     },
     statut: {
-      'actif': ['Actif', 'ACTIF', 'Salarié'],
-      'sans-emploi': ['Sans emploi', 'SANS_EMPLOI', 'Chômeur'],
-      'retraite': ['Retraité', 'RETRAITE'],
-      'etudiant': ['Étudiant', 'ETUDIANT'],
-      'autre': ['Autre', 'AUTRE']
+      // Nouveaux codes SwissLife exacts
+      'SALARIE': ['SALARIE', 'Salarié et autres statuts'],
+      'SALARIE_AGRICOLE': ['SALARIE_AGRICOLE', 'Salarié agricole et autres statuts'],
+      'EXPLOITANT_AGRICOLE': ['EXPLOITANT_AGRICOLE', 'Exploitant agricole'],
+      'TNS': ['TNS', 'Travailleur Non Salarié'],
+      'ETUDIANT': ['ETUDIANT', 'Etudiant'],
+      'RETRAITE': ['RETRAITE', 'Retraité'],
+      'RETRAITE_ANCIEN_SALARIE': ['RETRAITE_ANCIEN_SALARIE', 'Retraité (ancien salarié)'],
+      'RETRAITE_ANCIEN_EXPLOITANT': ['RETRAITE_ANCIEN_EXPLOITANT', 'Retraité (ancien exploitant)'],
+      'TRAVAILLEUR_TRANSFRONTALIER': ['TRAVAILLEUR_TRANSFRONTALIER', 'Travailleur transfrontalier'],
+      'FONCTIONNAIRE': ['FONCTIONNAIRE', 'Fonctionnaire'],
+      
+      // Anciens alias pour compatibilité
+      'actif': ['SALARIE'],
+      'sans-emploi': ['SALARIE'],
+      'retraite': ['RETRAITE'],
+      'etudiant': ['ETUDIANT'],
+      'autre': ['SALARIE']
+    },
+    profession: {
+      // Nouveaux codes SwissLife exacts
+      'MEDECIN': ['MEDECIN', 'Médecin'],
+      'CHIRURGIEN': ['CHIRURGIEN', 'Chirurgien'],
+      'CHIRURGIEN_DENTISTE': ['CHIRURGIEN_DENTISTE', 'Chirurgien dentiste'],
+      'PHARMACIEN': ['PHARMACIEN', 'Pharmacien'],
+      'AUXILIAIRE_MEDICAL': ['AUXILIAIRE_MEDICAL', 'Auxiliaire médical'],
+      'AUTRE': ['AUTRE', 'Non médicale']
     }
   };
   
@@ -107,7 +137,7 @@ export const aliasResolve = (domain, wanted) => {
   
   for (const [key, vals] of Object.entries(domainAliases)) {
     if (vals.some(v => norm(v) === wantedNorm)) {
-      return vals[0]; // Retourner la valeur canonique
+      return key; // Retourner le code SwissLife exact
     }
   }
   

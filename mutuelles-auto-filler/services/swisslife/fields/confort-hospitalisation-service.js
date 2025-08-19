@@ -37,8 +37,8 @@ function ctaSante() {
  * Lit la valeur des IJ (corrigée pour lire oui ET non)
  */
 export function readIJ() {
-  const inNon = q('#confort-hospitalisation-non, #ij-non, [name*="confort"][value="non"], [name*="ij"][value="non"]');
-  const inOui = q('#confort-hospitalisation-oui, #ij-oui, [name*="confort"][value="oui"], [name*="ij"][value="oui"]');
+  const inNon = q('#projet-confort-hospitalisation-non, #confort-hospitalisation-non, #ij-non, [name*="confort"][value="non"], [name*="ij"][value="non"]');
+  const inOui = q('#projet-confort-hospitalisation-oui, #confort-hospitalisation-oui, #ij-oui, [name*="confort"][value="oui"], [name*="ij"][value="oui"]');
   
   if (!inNon && !inOui) {
     return { found: false, value: null };
@@ -127,7 +127,7 @@ export function installProbes() {
  * Essaie de cliquer sur "Non" pour les IJ
  */
 export async function tryClickNon() {
-  const inNon = q('#confort-hospitalisation-non, #ij-non, [name*="confort"][value="non"], [name*="ij"][value="non"]');
+  const inNon = q('#projet-confort-hospitalisation-non, #confort-hospitalisation-non, #ij-non, [name*="confort"][value="non"], [name*="ij"][value="non"]');
   if (!inNon) return { ok: false, reason: "input_non_not_found" };
   
   const labNon = labelFor(inNon);
@@ -163,12 +163,15 @@ export async function tryClickNon() {
  * Définit la valeur des IJ
  */
 export async function setConfortHospitalisation(value) {
-  if (value === 'non') {
+  // Support objet ou string
+  const actualValue = typeof value === 'object' ? value.value : value;
+  
+  if (actualValue === 'non') {
     return await tryClickNon();
   }
   
   // Pour "oui", chercher l'input correspondant
-  const inOui = q('#confort-hospitalisation-oui, #ij-oui, [name*="confort"][value="oui"], [name*="ij"][value="oui"]');
+  const inOui = q('#projet-confort-hospitalisation-oui, #confort-hospitalisation-oui, #ij-oui, [name*="confort"][value="oui"], [name*="ij"][value="oui"]');
   if (!inOui) return { ok: false, reason: "input_oui_not_found" };
   
   const labOui = labelFor(inOui);
@@ -219,8 +222,8 @@ export function diagnoseConfortHospitalisation(expected) {
     };
   }
   
-  const inNon = q('#confort-hospitalisation-non, #ij-non');
-  const inOui = q('#confort-hospitalisation-oui, #ij-oui');
+  const inNon = q('#projet-confort-hospitalisation-non, #confort-hospitalisation-non, #ij-non');
+  const inOui = q('#projet-confort-hospitalisation-oui, #confort-hospitalisation-oui, #ij-oui');
   
   if (!isVisible(inNon) && !isVisible(inOui)) {
     return {
