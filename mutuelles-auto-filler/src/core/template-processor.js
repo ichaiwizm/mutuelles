@@ -12,6 +12,12 @@ export function processTemplate(template, data) {
         'lead.conjoint.dateNaissance': data.lead?.conjoint?.dateNaissance,
         // Conditions
         'lead.conjoint': !!data.lead?.conjoint,
+        'lead.souscripteur.nombreEnfants > 0': (data.lead?.souscripteur?.nombreEnfants || 0) > 0,
+        // Données enfants
+        'lead.souscripteur.nombreEnfants': data.lead?.souscripteur?.nombreEnfants || 0,
+        'lead.enfants.0.dateNaissance': data.lead?.enfants?.[0]?.dateNaissance,
+        'lead.enfants.1.dateNaissance': data.lead?.enfants?.[1]?.dateNaissance,
+        'lead.enfants.2.dateNaissance': data.lead?.enfants?.[2]?.dateNaissance,
         // Expressions resolver (souscripteur)
         'resolver.regime': data.resolver?.regime,
         'resolver.statut': data.resolver?.statut,

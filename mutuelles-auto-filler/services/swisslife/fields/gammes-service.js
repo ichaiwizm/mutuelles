@@ -3,9 +3,13 @@
  * Gère la sélection de gamme via select ou radios/tiles
  */
 
-import { q, qa, isVisible, clickHuman } from '../utils/dom-utils.js';
-import { readSelect, setSelectByValueOrText } from '../utils/form-utils.js';
+import { q, qa, isVisible, clickHuman, fireMultiple } from '../utils/dom-utils.js';
+import { readSelect } from '../utils/form-utils.js';
 import { wait, waitStable, waitOverlayGone } from '../utils/async-utils.js';
+
+// Fonctions de normalisation copiées du script manuel qui fonctionne
+const T = s => (s||"").toString().replace(/\s+/g," ").trim();
+const norm = s => T(s).normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
 
 const DEFAULT_CFG = { want: "SwissLife Santé" };
 
@@ -14,6 +18,8 @@ const DEFAULT_CFG = { want: "SwissLife Santé" };
  */
 function findGammeSelect() {
   const selectors = [
+    '#selection-produit-sante',  // Le vrai sélecteur SwissLife
+    '[name="contratSante.produitId"]',  // Le vrai name d'après ton script
     '#gamme-assurance', '#select-gamme', '[name="gamme"]',
     '[name="produit"]', '#produit-selection'
   ];
@@ -103,13 +109,23 @@ export async function refresh() {
 }
 
 /**
- * Définit la gamme via select
+ * Définit la gamme via select - LOGIQUE COPIÉE DU SCRIPT MANUEL QUI FONCTIONNE
  */
 function setSelect(sel, target) {
-  const success = setSelectByValueOrText(sel, target, [
-    'SwissLife Santé', 'Swiss Life Santé', 'SWISSLIFE_SANTE'
-  ]);
-  return { ok: success, method: 'select' };
+  const w = norm(target);
+  const opts = [...sel.options];
+  let idx = opts.findIndex(o => norm(o.value||"")===w);
+  if (idx<0) idx = opts.findIndex(o => norm(o.text||"")===w);
+  if (idx<0) {
+    console.log('❌ gammes-service.setSelect - option non trouvée:', target);
+    console.log('Options disponibles:', opts.map(o=>({value:o.value, text:T(o.text||"")})));
+    return {ok:false, reason:"option_not_found", options: opts.map(o=>({value:o.value, text:T(o.text||"")}))};
+  }
+  
+  console.log(`✅ gammes-service.setSelect - option trouvée à l'index ${idx}:`, {value: opts[idx].value, text: opts[idx].text});
+  sel.selectedIndex = idx; 
+  fireMultiple(sel);
+  return {ok:true, got: readSelect(sel)};
 }
 
 /**

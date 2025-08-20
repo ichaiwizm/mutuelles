@@ -3,11 +3,12 @@ import nomProjetService from './fields/nom-projet-service.js';
 import confortHospitalisationService from './fields/confort-hospitalisation-service.js';
 import simulationTypeService from './fields/simulation-type-service.js';
 import souscripteurService from './fields/souscripteur-service.js';
-import enfantsService from './fields/enfants-service.js';
-import conjointService from './fields/conjoint-service.js';
+import enfantsService from './fields/enfants/enfants-service.js';
+import conjointService from './fields/conjoint/conjoint-service.js';
 import gammesService from './fields/gammes-service.js';
 import dateEffetService from './fields/date-effet-service.js';
-import optionsService from './fields/options-service.js';
+import optionsService from './fields/options/options-service.js';
+import navigationService from './navigation/navigation-service.js';
 
 // Mapping simple action → service (support clés anglaises et françaises)
 const SERVICES = {
@@ -17,6 +18,7 @@ const SERVICES = {
   'simulationType': simulationTypeService,
   'subscriberInfo': souscripteurService,
   'spouseInfo': conjointService,
+  'childrenInfo': enfantsService,
   
   // Clés françaises (ancien format, pour compatibilité)
   'nom-projet': nomProjetService,
@@ -26,8 +28,11 @@ const SERVICES = {
   'enfants': enfantsService,
   'conjoint': conjointService,
   'gammes': gammesService,
-  'date-effet': dateEffetService,
-  'options': optionsService
+  'dateEffet': dateEffetService,    // Clé anglaise
+  'date-effet': dateEffetService,   // Clé française
+  'options': optionsService,
+  'navigation': navigationService,  // Clé anglaise
+  'bouton-suivant': navigationService  // Clé française
 };
 
 // Interface unifiée pour exécuter une action SwissLife
@@ -47,10 +52,16 @@ export async function executeSwissLifeAction(action, data) {
     throw new Error(`Service ${action} inexistant`);
   }
   
-  // Détecter la méthode disponible (set, fill, etc.)
-  const method = service.set || service.fill;
+  // Détecter la méthode disponible (set, fill, click pour navigation)
+  let method;
+  if (action === 'navigation' || action === 'bouton-suivant') {
+    method = service.click;
+  } else {
+    method = service.set || service.fill;
+  }
+  
   if (!method) {
-    throw new Error(`Service ${action} n'a pas de méthode set() ou fill()`);
+    throw new Error(`Service ${action} n'a pas de méthode appropriée`);
   }
   
   try {

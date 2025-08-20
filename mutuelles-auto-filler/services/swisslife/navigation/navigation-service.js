@@ -7,98 +7,119 @@ import { q, qa, isVisible, bringIntoView, clickHuman } from '../utils/dom-utils.
 import { overlayPresent, wait, waitStable, waitOverlayGone } from '../utils/async-utils.js';
 
 /**
- * Trouve les candidats pour le bouton "Suivant"
+ * Trouve les candidats pour le bouton "Suivant" - LOGIQUE DU SCRIPT MANUEL QUI FONCTIONNE
  */
 function findCandidates() {
-  const patterns = [
-    // Sélecteurs directs
-    'button[type="submit"]',
-    '#btn-suivant', '#bouton-suivant', 
-    '.btn-suivant', '.button-suivant',
-    '[data-action="next"]', '[data-step="next"]',
-    
-    // Boutons avec texte
-    'button', 'input[type="submit"]', 'input[type="button"]',
-    'a[role="button"]', '[role="button"]'
-  ];
+  const texts = /^(suivant|suite|continuer|page\s*suivante)$/i;
+  const ids   = /(bt-)?suite|suivant|next/i;
   
-  const candidates = [];
+  const cand = new Set();
   
-  for (const pattern of patterns) {
-    qa(pattern).forEach(el => {
-      const text = (el.innerText || el.value || el.textContent || '').toLowerCase().trim();
-      const hasNext = /suivant|next|continuer|continue|valider|validate/.test(text);
-      
-      if (hasNext || pattern.includes('submit') || pattern.includes('suivant')) {
-        candidates.push({
-          element: el,
-          text,
-          priority: hasNext ? 1 : (pattern.includes('submit') ? 2 : 3),
-          selector: pattern
-        });
-      }
+  // 1) IDs connus SwissLife vus dans les captures
+  const knownIds = ['#bt-suite-projet', '#bt-suite-confortHospitalisation', '#bt-souscription-suite'];
+  knownIds.forEach(sel => {
+    const el = q(sel);
+    if (el) cand.add(el);
+  });
+  
+  // 2) Boutons/inputs/links avec texte "Suivant"/"Suite"/"Continuer"
+  qa('button, a, [role="button"], input[type="button"], input[type="submit"]')
+    .forEach(n => {
+      const label = (n.innerText || n.value || n.getAttribute('aria-label') || '').replace(/\s+/g,' ').trim();
+      if (texts.test(label)) cand.add(n);
     });
-  }
   
-  return candidates.sort((a, b) => a.priority - b.priority);
+  // 3) IDs/classes évoquant "suite/suivant"
+  qa('*[id], *[class]').forEach(n => {
+    const id = n.id || '', cls = n.className || '';
+    if (ids.test(id) || ids.test(cls)) cand.add(n);
+  });
+  
+  // Filtre: visibles seulement
+  return [...cand].filter(isVisible);
 }
 
 /**
- * Sélectionne le meilleur candidat
+ * Sélectionne le meilleur candidat - LOGIQUE DU SCRIPT MANUEL
  */
 function bestCandidate() {
-  const candidates = findCandidates();
+  const list = findCandidates();
+  if (!list.length) return null;
   
-  // Priorité aux boutons visibles et non désactivés
-  const viable = candidates.filter(c => 
-    isVisible(c.element) && 
-    !c.element.disabled &&
-    !c.element.classList.contains('disabled')
-  );
+  // Fonction utilitaire pour vérifier si désactivé (comme script manuel)
+  function isDisabled(el) {
+    if (!el) return true;
+    const st = getComputedStyle(el);
+    return !!(
+      el.disabled || 
+      el.getAttribute('aria-disabled') === 'true' || 
+      /\b(disable|desactive|disabled)\b/i.test(el.className || '') || 
+      st.pointerEvents === 'none'
+    );
+  }
   
-  if (viable.length === 0) return null;
+  // Filtre: non désactivés
+  const viable = list.filter(el => !isDisabled(el));
+  if (!viable.length) return null;
   
-  // Le premier viable avec la meilleure priorité
+  // Heuristique: privilégier <button> puis <a> puis <input> (comme script manuel)
+  const rank = el => el.tagName === 'BUTTON' ? 0 : (el.tagName === 'A' ? 1 : 2);
+  viable.sort((a, b) => rank(a) - rank(b));
+  
   return viable[0];
 }
 
 /**
- * Liste les erreurs de validation visibles
+ * Liste les erreurs de validation visibles - LOGIQUE DU SCRIPT MANUEL SWISSLIFE
  */
 function listVisibleErrors() {
-  const errorSelectors = [
-    '.error', '.has-error', '.is-invalid', '.field-error',
-    '.alert-danger', '.alert-error', '.text-danger', '.text-error',
-    '[class*="error"]', '[class*="invalid"]'
-  ];
+  const sel = 'label.error, .error, .has-error, .field-error, .text-danger, .help-block, .message-erreur, .error-block, [aria-invalid="true"]';
+  const out = [];
   
-  const errors = [];
-  
-  errorSelectors.forEach(sel => {
-    qa(sel).forEach(el => {
-      if (isVisible(el)) {
-        const text = (el.innerText || '').trim();
-        if (text) {
-          errors.push({
-            element: el,
-            text,
-            selector: sel
-          });
-        }
-      }
-    });
+  qa(sel).forEach(n => {
+    if (!isVisible(n)) return;
+    
+    // Remonter à la zone (comme script manuel)
+    let p = n, label = null, input = null;
+    for (let i = 0; i < 4 && p; i++, p = p.parentElement) {
+      label = label || p.querySelector?.('label');
+      input = input || p.querySelector?.('input,select,textarea');
+    }
+    
+    const msg = (n.innerText || n.getAttribute('title') || n.getAttribute('data-original-title') || '').replace(/\s+/g, ' ').trim();
+    if (msg) {
+      out.push({
+        msg,
+        nearLabel: (label?.innerText || '').replace(/\s+/g, ' ').trim(),
+        inputId: input?.id || null,
+        inputName: input?.name || null
+      });
+    }
   });
   
-  return errors;
+  // Attributs errormessagelbl (site SwissLife spécifique)
+  qa('input[errormessagelbl], select[errormessagelbl], textarea[errormessagelbl]').forEach(el => {
+    const invalid = el.classList.contains('error') || el.getAttribute('aria-invalid') === 'true';
+    if (invalid && isVisible(el)) {
+      out.push({ 
+        msg: (el.getAttribute('errormessagelbl') || '').replace(/\s+/g, ' ').trim(), 
+        nearLabel: '', 
+        inputId: el.id || null, 
+        inputName: el.name || null 
+      });
+    }
+  });
+  
+  return out;
 }
 
 /**
  * Lit l'état du bouton "Suivant"
  */
 export function read() {
-  const candidate = bestCandidate();
+  const el = bestCandidate();
   
-  if (!candidate) {
+  if (!el) {
     return {
       found: false,
       visible: false,
@@ -107,12 +128,26 @@ export function read() {
     };
   }
   
+  // Fonction isDisabled locale (comme script manuel)
+  function isDisabled(element) {
+    if (!element) return true;
+    const st = getComputedStyle(element);
+    return !!(
+      element.disabled || 
+      element.getAttribute('aria-disabled') === 'true' || 
+      /\b(disable|desactive|disabled)\b/i.test(element.className || '') || 
+      st.pointerEvents === 'none'
+    );
+  }
+  
   return {
     found: true,
-    visible: isVisible(candidate.element),
-    disabled: candidate.element.disabled || candidate.element.classList.contains('disabled'),
-    text: candidate.text,
-    element: candidate.element
+    id: el.id || null,
+    tag: el.tagName.toLowerCase(),
+    text: (el.innerText || el.value || el.getAttribute('aria-label') || '').replace(/\s+/g, ' ').trim(),
+    visible: isVisible(el),
+    disabled: isDisabled(el),
+    className: el.className || ''
   };
 }
 
@@ -122,45 +157,33 @@ export function read() {
 export async function click() {
   await waitOverlayGone();
   
-  const candidate = bestCandidate();
+  const el = bestCandidate();
   
-  if (!candidate) {
+  if (!el) {
     return { ok: false, reason: 'button_not_found' };
   }
   
-  const { element } = candidate;
-  
-  if (!isVisible(element)) {
+  if (!isVisible(el)) {
     return { ok: false, reason: 'button_hidden' };
   }
   
-  if (element.disabled || element.classList.contains('disabled')) {
+  // Vérification d'état simple comme le script manuel
+  if (el.disabled) {
     return { ok: false, reason: 'button_disabled' };
   }
-  
-  // Vérifier les erreurs avant de cliquer
-  const errors = listVisibleErrors();
-  if (errors.length > 0) {
-    return {
-      ok: false,
-      reason: 'validation_errors',
-      errors: errors.map(e => e.text)
-    };
-  }
-  
-  bringIntoView(element);
-  await wait(200);
-  
-  clickHuman(element);
-  await wait(300);
-  
-  // Attendre la fin du chargement
+
+  // Clic avec logique exacte du script manuel
+  bringIntoView(el);
+  clickHuman(el);
+  await wait(100);
+  await waitOverlayGone();
   await waitStable();
   
+  const errors = listVisibleErrors();
   return { 
-    ok: true, 
-    clicked: candidate.text,
-    waited: true
+    ok: errors.length === 0, 
+    after: read(), 
+    errors 
   };
 }
 

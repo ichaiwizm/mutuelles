@@ -31,7 +31,7 @@ export async function runTest() {
   
   // Traiter les étapes disponibles dans l'ordre
   const etapes = testData.workflow.etapes
-    .filter(e => ['projectName', 'hospitalComfort', 'simulationType', 'subscriberInfo', 'spouseInfo', 'nomProjet'].includes(e.name || e.nom))  // Support anglais/français + conjoint
+    .filter(e => ['projectName', 'hospitalComfort', 'simulationType', 'subscriberInfo', 'spouseInfo', 'childrenInfo', 'gammes', 'options', 'dateEffet', 'navigation', 'nomProjet', 'bouton-suivant'].includes(e.name || e.nom))  // Support anglais/français + conjoint + enfants + gammes + options + dateEffet + navigation
     .sort((a, b) => (a.order || a.ordre) - (b.order || b.ordre));
   
   console.log(`🎯 ${etapes.length} étapes à traiter`);

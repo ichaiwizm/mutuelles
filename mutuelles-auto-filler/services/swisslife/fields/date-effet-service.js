@@ -3,16 +3,21 @@
  * Gère la sélection de date via input et bouton calendrier
  */
 
-import { q, qa, isVisible, bringIntoView, clickHuman } from '../utils/dom-utils.js';
+import { q, qa, isVisible, bringIntoView, clickHuman, fireMultiple } from '../utils/dom-utils.js';
 import { overlayPresent, wait, waitStable, waitOverlayGone } from '../utils/async-utils.js';
 
 /**
- * Trouve l'input de date d'effet
+ * Trouve l'input de date d'effet - LOGIQUE DU SCRIPT MANUEL QUI FONCTIONNE
  */
 function findInput() {
+  // Sélecteur principal SwissLife exact
+  const direct = q('#contratSante-dateEffet,[name="contratSante.dateEffet"]');
+  if (direct) return direct;
+  
+  // Fallback sur anciens sélecteurs
   const selectors = [
     '#date-effet',
-    '#date-effet-contrat',
+    '#date-effet-contrat', 
     '[name="dateEffet"]',
     '[name="date-effet"]',
     'input[id*="effet"]'
@@ -23,28 +28,46 @@ function findInput() {
     if (el) return el;
   }
   
-  // Recherche par proximité avec label
-  const labels = qa('label').filter(l => 
-    /date.*effet/i.test(l.innerText) || /effet/i.test(l.innerText)
-  );
-  
-  for (const label of labels) {
-    const input = label.querySelector('input') ||
-                  label.nextElementSibling?.querySelector?.('input') ||
-                  q(`#${label.getAttribute('for')}`);
-    if (input) return input;
+  // Recherche par libellé "Date d'effet"
+  const nodes = qa("label, legend, .label, .form-group, section, fieldset, .panel, .card, div, span");
+  for (const n of nodes) {
+    const txt = (n.innerText || "").replace(/\s+/g," ").trim();
+    if (!txt) continue;
+    if (/date\s*d['']effet/i.test(txt)) {
+      const inp = n.querySelector?.('input[type="text"], input, [type="date"]') ||
+                  n.nextElementSibling?.querySelector?.('input[type="text"], input, [type="date"]');
+      if (inp) return inp;
+    }
   }
   
-  return null;
+  // Fallback: input avec placeholder/aria-label contenant "effet"
+  const maybe = qa('input[type="text"], input').find(x => 
+    /effet/i.test(`${x.placeholder||''} ${x.getAttribute?.('aria-label')||''}`)
+  );
+  return maybe || null;
 }
 
 /**
- * Trouve le bouton calendrier associé
+ * Trouve le bouton calendrier associé - LOGIQUE DU SCRIPT MANUEL QUI FONCTIONNE
  */
 function findButtonNear(input) {
   if (!input) return null;
   
-  // Bouton immédiatement après
+  // 1) Cherche dans les conteneurs input-group et form-group (like manual script)
+  const group = input.closest('.input-group, .form-group, .row, .col, div');
+  if (group) {
+    const btn = group.querySelector('button, .input-group-addon, .icon-calendar, .fa-calendar, .glyphicon-calendar, .ui-datepicker-trigger, [role="button"]');
+    if (btn) return btn.tagName ? btn : btn.closest('button,[role="button"],.input-group-addon');
+  }
+  
+  // 2) label for + bouton suivant (like manual script)
+  const lab = input.id ? q(`label[for="${CSS.escape(input.id)}"]`) : null;
+  if (lab) {
+    const sibBtn = lab.nextElementSibling?.querySelector?.('button,[role="button"],.input-group-addon');
+    if (sibBtn) return sibBtn;
+  }
+  
+  // 3) Ancienne logique en fallback
   let sibling = input.nextElementSibling;
   while (sibling && sibling.nodeType === 1) {
     if (sibling.tagName === 'BUTTON' || 
@@ -55,16 +78,7 @@ function findButtonNear(input) {
     sibling = sibling.nextElementSibling;
   }
   
-  // Dans le parent
-  const parent = input.parentElement;
-  const btn = parent?.querySelector('button, .btn, [role="button"]');
-  if (btn) return btn;
-  
-  // Recherche par icône calendrier
-  return qa('button, .btn, [role="button"]').find(b => {
-    const txt = b.innerText || b.innerHTML || '';
-    return /📅|calendar|date/.test(txt.toLowerCase());
-  });
+  return null;
 }
 
 /**
@@ -126,36 +140,51 @@ function toDDMMYYYY(v) {
 }
 
 /**
- * Définit la date d'effet
+ * Définit la date d'effet - LOGIQUE DU SCRIPT MANUEL QUI FONCTIONNE
  */
 export async function set(value) {
+  console.log('🔍 date-effet set - valeur reçue:', value, typeof value);
+  
+  // Extraire la vraie valeur si c'est un objet 
+  let dateValue = value;
+  if (typeof value === 'object' && value !== null) {
+    dateValue = value.value || value.valeur || value;
+    console.log('🔍 date-effet set - valeur extraite de l\'objet:', dateValue);
+  }
+  
   const input = findInput();
+  console.log('🔍 date-effet set - input trouvé:', input);
   
   if (!input) {
+    console.log('❌ date-effet set - input non trouvé');
     return { ok: false, reason: 'input_not_found' };
   }
   
   if (!isVisible(input)) {
+    console.log('❌ date-effet set - input masqué');
     return { ok: false, reason: 'input_hidden' };
   }
   
-  const formatted = toDDMMYYYY(value);
+  const formatted = toDDMMYYYY(dateValue);
+  console.log('🔍 date-effet set - date formatée:', formatted);
   
-  bringIntoView(input);
-  await wait(100);
-  
+  // Logique du script manuel qui fonctionne
   input.focus();
-  input.value = formatted;
-  input.dispatchEvent(new Event('input', { bubbles: true }));
-  input.dispatchEvent(new Event('change', { bubbles: true }));
-  input.blur();
+  input.value = formatted || '';
+  fireMultiple(input); // Déclenche input + change + blur
   
+  await wait(60);
+  await waitOverlayGone();
   await waitStable();
   
+  const finalValue = input.value || '';
+  const ok = finalValue === formatted;
+  console.log('✅ date-effet set - résultat final:', { ok, got: finalValue, expected: formatted });
+  
   return { 
-    ok: true, 
+    ok,
     value: formatted,
-    actual: input.value 
+    actual: finalValue
   };
 }
 

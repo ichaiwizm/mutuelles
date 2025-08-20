@@ -104,7 +104,57 @@
           "statut": "{{spouseResolver.statut}}",
           "profession": "{{spouseResolver.profession}}",
           "dateNaissance": "{{lead.conjoint.dateNaissance}}",
-          "departement": "{{resolver.departement}}"
+          "departement": "{{spouseResolver.departement}}"
+        }
+      },
+      {
+        "order": 6,
+        "name": "childrenInfo",
+        "service": "enfants-service",
+        "required": false,
+        "condition": "{{lead.souscripteur.nombreEnfants > 0}}",
+        "data": {
+          "nbEnfants": "{{lead.souscripteur.nombreEnfants}}",
+          "enfant1": "{{lead.enfants.0.dateNaissance}}",
+          "enfant2": "{{lead.enfants.1.dateNaissance}}",
+          "enfant3": "{{lead.enfants.2.dateNaissance}}"
+        }
+      },
+      {
+        "order": 7,
+        "name": "gammes",
+        "service": "gammes-service",
+        "required": true,
+        "data": {
+          "value": "SwissLife Santé"
+        }
+      },
+      {
+        "order": 8,
+        "name": "options",
+        "service": "options-service",
+        "required": true,
+        "data": {
+          "madelin": "oui",
+          "resiliation": "non"
+        }
+      },
+      {
+        "order": 9,
+        "name": "dateEffet",
+        "service": "date-effet-service",
+        "required": true,
+        "data": {
+          "value": "07/04/2025"
+        }
+      },
+      {
+        "order": 10,
+        "name": "navigation",
+        "service": "navigation-service",
+        "required": true,
+        "data": {
+          "action": "next"
         }
       },
       {
@@ -142,26 +192,6 @@
           "regimeSocial": "{{lead.conjoint.regimeSocial | mapRegimeSocial}}",
           "statut": "{{lead.conjoint.profession | mapStatut}}",
           "profession": "AUTRE"
-        }
-      },
-      {
-        "ordre": 6,
-        "nom": "dateEffet",
-        "module": "date-effet-service",
-        "obligatoire": true,
-        "data": {
-          "valeur": "{{lead.besoins.dateEffet}}"
-        }
-      },
-      {
-        "ordre": 7,
-        "nom": "options",
-        "module": "options-service",
-        "obligatoire": true,
-        "data": {
-          "madelin": "{{lead.souscripteur.regimeSocial | contains:'TNS' ? 'oui' : 'non'}}",
-          "resiliation": "{{lead.besoins.actuellementAssure == 'Non' ? 'non' : 'oui'}}",
-          "reprise": "non"
         }
       }
     ]
