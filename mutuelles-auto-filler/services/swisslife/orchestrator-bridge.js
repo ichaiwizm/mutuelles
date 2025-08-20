@@ -10,29 +10,18 @@ import dateEffetService from './fields/date-effet-service.js';
 import optionsService from './fields/options/options-service.js';
 import navigationService from './navigation/navigation-service.js';
 
-// Mapping simple action → service (support clés anglaises et françaises)
+// Mapping action → service (clés anglaises uniquement)
 const SERVICES = {
-  // Clés anglaises (nouveau format)
   'projectName': nomProjetService,
   'hospitalComfort': confortHospitalisationService,
   'simulationType': simulationTypeService,
   'subscriberInfo': souscripteurService,
   'spouseInfo': conjointService,
   'childrenInfo': enfantsService,
-  
-  // Clés françaises (ancien format, pour compatibilité)
-  'nom-projet': nomProjetService,
-  'confort-hospitalisation': confortHospitalisationService,
-  'simulation-type': simulationTypeService,
-  'souscripteur': souscripteurService,
-  'enfants': enfantsService,
-  'conjoint': conjointService,
   'gammes': gammesService,
-  'dateEffet': dateEffetService,    // Clé anglaise
-  'date-effet': dateEffetService,   // Clé française
+  'dateEffet': dateEffetService,
   'options': optionsService,
-  'navigation': navigationService,  // Clé anglaise
-  'bouton-suivant': navigationService  // Clé française
+  'navigation': navigationService
 };
 
 // Interface unifiée pour exécuter une action SwissLife
@@ -54,7 +43,7 @@ export async function executeSwissLifeAction(action, data) {
   
   // Détecter la méthode disponible (set, fill, click pour navigation)
   let method;
-  if (action === 'navigation' || action === 'bouton-suivant') {
+  if (action === 'navigation') {
     method = service.click;
   } else {
     method = service.set || service.fill;

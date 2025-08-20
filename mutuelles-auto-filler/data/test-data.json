@@ -156,43 +156,6 @@
         "data": {
           "action": "next"
         }
-      },
-      {
-        "ordre": 3,
-        "nom": "souscripteur",
-        "module": "souscripteur-service",
-        "obligatoire": true,
-        "data": {
-          "dateNaissance": "{{lead.souscripteur.dateNaissance}}",
-          "regimeSocial": "{{lead.souscripteur.regimeSocial | mapRegimeSocial}}",
-          "statut": "{{lead.souscripteur.profession | mapStatut}}",
-          "profession": "AUTRE",
-          "departement": "{{lead.contact.codePostal | substring:0:2}}"
-        }
-      },
-      {
-        "ordre": 4,
-        "nom": "enfants",
-        "module": "enfants-service",
-        "obligatoire": false,
-        "condition": "{{lead.souscripteur.nombreEnfants > 0}}",
-        "data": {
-          "nbEnfants": "{{lead.souscripteur.nombreEnfants}}",
-          "enfants": "{{lead.enfants | mapEnfants}}"
-        }
-      },
-      {
-        "ordre": 5,
-        "nom": "conjoint",
-        "module": "conjoint-service",
-        "obligatoire": false,
-        "condition": "{{lead.conjoint}}",
-        "data": {
-          "dateNaissance": "{{lead.conjoint.dateNaissance}}",
-          "regimeSocial": "{{lead.conjoint.regimeSocial | mapRegimeSocial}}",
-          "statut": "{{lead.conjoint.profession | mapStatut}}",
-          "profession": "AUTRE"
-        }
       }
     ]
   },
