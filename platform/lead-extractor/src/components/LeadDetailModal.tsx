@@ -1,7 +1,6 @@
 import { useEffect } from 'react';
 import type { Lead } from '@/types/lead';
 import { Dialog, DialogContent, DialogDescription } from '@/components/ui/dialog';
-import { Code } from 'lucide-react';
 import { useLeadNavigation } from '@/hooks/useLeadNavigation';
 import { useLeadParsing } from '@/hooks/useLeadParsing';
 import { LeadDetailHeader } from './LeadDetailHeader';

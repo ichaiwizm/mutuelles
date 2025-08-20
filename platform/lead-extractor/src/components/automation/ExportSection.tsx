@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { DialogFooter } from '@/components/ui/dialog';
-import { Loader2 } from 'lucide-react';
+import { Loader2, FileJson } from 'lucide-react';
 import type { Lead } from '@/types/lead';
 
 interface ExportSectionProps {
@@ -43,7 +43,7 @@ export function ExportSection({
         </div>
       </div>
 
-      <DialogFooter>
+      <DialogFooter className="flex justify-between">
         <Button variant="outline" onClick={onCancel} disabled={isExporting}>
           Annuler
         </Button>

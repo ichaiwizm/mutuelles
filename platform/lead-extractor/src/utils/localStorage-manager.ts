@@ -1,76 +1,54 @@
-import type { SwissLifeLead } from '@/types/automation';
-import { SwissLifeRepository } from './storage/swisslife-repository';
-
 const SWISSLIFE_STORAGE_KEY = 'swisslife_converted_leads';
 const SWISSLIFE_METADATA_KEY = 'swisslife_conversion_metadata';
 
-// Re-export des types pour la compatibilité
-export type { ConversionMetadata } from './storage/metadata-manager';
-
-// Instance globale du repository
-const repository = new SwissLifeRepository(SWISSLIFE_STORAGE_KEY, SWISSLIFE_METADATA_KEY);
-
 /**
- * Gestionnaire du localStorage pour les leads SwissLife
- * @deprecated Utilisez directement SwissLifeRepository pour une meilleure modularité
+ * Gestionnaire du localStorage pour les leads SwissLife formatés
  */
 export class SwissLifeStorageManager {
-  static saveLeads(leads: SwissLifeLead[]): void {
-    repository.save(leads);
+  static saveLeads(leads: any[]): void {
+    const storageData = {
+      timestamp: new Date().toISOString(),
+      count: leads.length,
+      leads: leads
+    };
+    localStorage.setItem(SWISSLIFE_STORAGE_KEY, JSON.stringify(storageData));
   }
   
-  static getLeads(): SwissLifeLead[] {
-    return repository.get();
+  static getLeads(): any[] {
+    const stored = localStorage.getItem(SWISSLIFE_STORAGE_KEY);
+    if (!stored) return [];
+    
+    try {
+      const data = JSON.parse(stored);
+      return Array.isArray(data.leads) ? data.leads : [];
+    } catch {
+      return [];
+    }
   }
   
-  static appendLeads(newLeads: SwissLifeLead[]): SwissLifeLead[] {
-    return repository.append(newLeads);
-  }
-  
-  static replaceLeads(leads: SwissLifeLead[]): void {
-    repository.replace(leads);
-  }
-  
-  static removeLead(leadId: string): boolean {
-    return repository.remove(leadId);
+  static replaceLeads(leads: any[]): void {
+    this.saveLeads(leads);
   }
   
   static clearLeads(): void {
-    repository.clear();
+    localStorage.removeItem(SWISSLIFE_STORAGE_KEY);
+    localStorage.removeItem(SWISSLIFE_METADATA_KEY);
   }
   
   static hasLeads(): boolean {
-    return repository.has();
+    return this.getLeads().length > 0;
   }
   
   static getLeadsCount(): number {
-    return repository.count();
-  }
-  
-  static findLeadById(leadId: string): SwissLifeLead | undefined {
-    return repository.findById(leadId);
-  }
-  
-  static getMetadata() {
-    return repository.getMetadata();
+    return this.getLeads().length;
   }
   
   static exportToJSON(): string {
-    return repository.exportToJSON();
-  }
-  
-  static importFromJSON(jsonString: string) {
-    return repository.importFromJSON(jsonString);
-  }
-  
-  static getStorageSize(): number {
-    return repository.getStorageSize();
-  }
-  
-  static isStorageNearLimit(): boolean {
-    return repository.isStorageNearLimit();
+    const leads = this.getLeads();
+    return JSON.stringify({
+      timestamp: new Date().toISOString(),
+      count: leads.length,
+      leads: leads
+    }, null, 2);
   }
 }
-
-// Export du repository pour une utilisation moderne
-export { SwissLifeRepository };

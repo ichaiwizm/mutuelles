@@ -52,7 +52,7 @@ export function useLeadParsing() {
       toast.success('Parsing réalisé avec succès');
     } catch (error) {
       console.error('Parsing error:', error);
-      toast.error(`Erreur lors du parsing: ${error.message}`);
+      toast.error(`Erreur lors du parsing: ${error instanceof Error ? error.message : 'Erreur inconnue'}`);
     } finally {
       setParsing(false);
     }
