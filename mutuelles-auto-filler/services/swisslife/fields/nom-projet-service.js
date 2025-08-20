@@ -5,6 +5,7 @@
 
 import { q, qa, isVisible, fireMultiple } from '../utils/dom-utils.js';
 import { T, findZoneByLabel } from '../utils/form-utils.js';
+import { success, error, ERROR_CODES } from '../utils/response-format.js';
 
 /**
  * Trouve le champ de nom du projet
@@ -43,36 +44,24 @@ export function setNomProjet(value) {
   const el = findNomProjetInput();
   
   if (!el) {
-    return { 
-      ok: false, 
-      reason: "element_not_found", 
-      hint: "Vérifie que tu es dans le bon frame et que la section 'Nom du projet' est visible." 
-    };
+    return error(ERROR_CODES.NOT_FOUND, "Champ nom du projet non trouvé");
   }
   
   if (!isVisible(el)) {
-    return { 
-      ok: false, 
-      reason: "hidden", 
-      hint: "Déplie/affiche la section contenant 'Nom du projet'." 
-    };
+    return error(ERROR_CODES.HIDDEN, "Champ nom du projet masqué");
   }
   
   if (el.disabled || el.readOnly) {
-    return { 
-      ok: false, 
-      reason: "disabled_or_readonly", 
-      hint: "Le champ semble verrouillé. Renseigne le reste puis réessaie." 
-    };
+    return error(ERROR_CODES.DISABLED, "Champ nom du projet désactivé ou en lecture seule");
   }
 
   try {
     el.focus();
     el.value = value;
     fireMultiple(el);
-    return { ok: true };
+    return success({ value: el.value });
   } catch (e) {
-    return { ok: false, reason: "exception", detail: String(e) };
+    return error('EXCEPTION', `Erreur lors de la saisie: ${e.message}`);
   }
 }
 
@@ -81,19 +70,29 @@ export function setNomProjet(value) {
  */
 export function readNomProjet() {
   const el = findNomProjetInput();
-  if (!el) return null;
-  return el.value ?? "";
+  if (!el) {
+    return error(ERROR_CODES.NOT_FOUND, "Champ nom du projet non trouvé");
+  }
+  return success(el.value ?? "");
 }
 
 /**
  * Vérifie le nom du projet
  */
 export function checkNomProjet(expected) {
-  const got = readNomProjet();
-  const ok = (got !== null) && (T(got) === T(expected));
-  const res = { champ: "projet.nom", ok, got, expected };
-  console.table([res]);
-  return res;
+  const readResult = readNomProjet();
+  if (!readResult.ok) {
+    return readResult;
+  }
+  
+  const got = readResult.data;
+  const ok = T(got) === T(expected);
+  
+  if (ok) {
+    return success({ field: "projet.nom", current: got, expected });
+  } else {
+    return error(ERROR_CODES.VALUE_MISMATCH, `Valeur attendue: "${expected}", trouvée: "${got}"`);
+  }
 }
 
 /**
@@ -103,49 +102,37 @@ export function diagnoseNomProjet(expected) {
   const el = findNomProjetInput();
   const got = el ? (el.value ?? "") : null;
 
-  if (!el) {
-    return {
-      champ: "projet.nom",
-      got,
+  const diagnosis = {
+    field: "projet.nom",
+    element: {
+      found: !!el,
+      visible: el ? isVisible(el) : false,
+      disabled: el ? (el.disabled || el.readOnly) : false
+    },
+    value: {
+      current: got,
       expected,
-      why: "Champ introuvable. Vérifiez le frame et la visibilité de la section."
-    };
+      matches: got !== null && T(got) === T(expected)
+    }
+  };
+
+  if (!el) {
+    return error(ERROR_CODES.NOT_FOUND, "Champ introuvable");
   }
   
   if (!isVisible(el)) {
-    return {
-      champ: "projet.nom",
-      got,
-      expected,
-      why: "Champ présent mais masqué. Ouvrez la section contenant le nom du projet."
-    };
+    return error(ERROR_CODES.HIDDEN, "Champ présent mais masqué");
   }
   
   if (el.disabled || el.readOnly) {
-    return {
-      champ: "projet.nom",
-      got,
-      expected,
-      why: "Champ désactivé ou en lecture seule."
-    };
+    return error(ERROR_CODES.DISABLED, "Champ désactivé ou en lecture seule");
   }
   
   if (T(got) !== T(expected)) {
-    return {
-      champ: "projet.nom",
-      got,
-      expected,
-      why: "Valeur différente de celle attendue."
-    };
+    return error(ERROR_CODES.VALUE_MISMATCH, "Valeur différente de celle attendue");
   }
   
-  return {
-    champ: "projet.nom",
-    got,
-    expected,
-    why: null,
-    ok: true
-  };
+  return success(diagnosis);
 }
 
 // Export de l'API complète

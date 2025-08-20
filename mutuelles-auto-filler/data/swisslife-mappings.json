@@ -1,0 +1,47 @@
+{
+  "regimeSocial": {
+    "SECURITE_SOCIALE": ["SECURITE_SOCIALE", "Régime Général (CPAM)"],
+    "SECURITE_SOCIALE_ALSACE_MOSELLE": ["SECURITE_SOCIALE_ALSACE_MOSELLE", "Régime Local (CPAM Alsace Moselle)"],
+    "TNS": ["TNS", "Régime Général pour TNS (CPAM)"],
+    "AMEXA": ["AMEXA", "Mutualité Sociale Agricole (MSA-Amexa)"],
+    "AUTRES_REGIME_SPECIAUX": ["AUTRES_REGIME_SPECIAUX", "Autres régimes spéciaux"],
+    
+    "_aliases": {
+      "general": "SECURITE_SOCIALE",
+      "alsace-moselle": "SECURITE_SOCIALE_ALSACE_MOSELLE",
+      "agricole": "AMEXA",
+      "tns": "TNS",
+      "autre": "AUTRES_REGIME_SPECIAUX"
+    }
+  },
+  
+  "statut": {
+    "SALARIE": ["SALARIE", "Salarié et autres statuts"],
+    "SALARIE_AGRICOLE": ["SALARIE_AGRICOLE", "Salarié agricole et autres statuts"],
+    "EXPLOITANT_AGRICOLE": ["EXPLOITANT_AGRICOLE", "Exploitant agricole"],
+    "TNS": ["TNS", "Travailleur Non Salarié"],
+    "ETUDIANT": ["ETUDIANT", "Etudiant"],
+    "RETRAITE": ["RETRAITE", "Retraité"],
+    "RETRAITE_ANCIEN_SALARIE": ["RETRAITE_ANCIEN_SALARIE", "Retraité (ancien salarié)"],
+    "RETRAITE_ANCIEN_EXPLOITANT": ["RETRAITE_ANCIEN_EXPLOITANT", "Retraité (ancien exploitant)"],
+    "TRAVAILLEUR_TRANSFRONTALIER": ["TRAVAILLEUR_TRANSFRONTALIER", "Travailleur transfrontalier"],
+    "FONCTIONNAIRE": ["FONCTIONNAIRE", "Fonctionnaire"],
+    
+    "_aliases": {
+      "actif": "SALARIE",
+      "sans-emploi": "SALARIE", 
+      "retraite": "RETRAITE",
+      "etudiant": "ETUDIANT",
+      "autre": "SALARIE"
+    }
+  },
+  
+  "profession": {
+    "MEDECIN": ["MEDECIN", "Médecin"],
+    "CHIRURGIEN": ["CHIRURGIEN", "Chirurgien"],
+    "CHIRURGIEN_DENTISTE": ["CHIRURGIEN_DENTISTE", "Chirurgien dentiste"],
+    "PHARMACIEN": ["PHARMACIEN", "Pharmacien"],
+    "AUXILIAIRE_MEDICAL": ["AUXILIAIRE_MEDICAL", "Auxiliaire médical"],
+    "AUTRE": ["AUTRE", "Non médicale"]
+  }
+}

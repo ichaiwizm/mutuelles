@@ -4,7 +4,7 @@
  */
 
 import { isVisible, bringIntoView, dispatchHumanChange } from '../../../utils/dom-utils.js';
-import { setSelectByValueOrText, aliasResolve } from '../../../utils/form-utils.js';
+import { setSelectByValueOrText, aliasResolveSync } from '../../../utils/form-utils.js';
 import { wait, waitStable, waitOverlayGone } from '../../../utils/async-utils.js';
 import { 
   findDateElement, 
@@ -51,7 +51,7 @@ export async function fillAllConjointFields(cfg = DEFAULT_CONFIG) {
   // Régime social
   const regimeEl = findRegimeSelect();
   if (regimeEl && config.regimeSocial) {
-    const resolved = aliasResolve('regimeSocial', config.regimeSocial);
+    const resolved = aliasResolveSync('regimeSocial', config.regimeSocial);
     const ok = setSelectByValueOrText(regimeEl, resolved);
     if (ok) actions.push({ field: 'regimeSocial', value: resolved });
   }
@@ -59,7 +59,7 @@ export async function fillAllConjointFields(cfg = DEFAULT_CONFIG) {
   // Statut
   const statutEl = findStatutSelect();
   if (statutEl && config.statut) {
-    const resolved = aliasResolve('statut', config.statut);
+    const resolved = aliasResolveSync('statut', config.statut);
     const ok = setSelectByValueOrText(statutEl, resolved);
     if (ok) actions.push({ field: 'statut', value: resolved });
   }
@@ -67,7 +67,7 @@ export async function fillAllConjointFields(cfg = DEFAULT_CONFIG) {
   // Profession (optionnel)
   const profEl = findProfessionSelect();
   if (profEl && config.profession) {
-    const resolved = aliasResolve('profession', config.profession);
+    const resolved = aliasResolveSync('profession', config.profession);
     const ok = setSelectByValueOrText(profEl, resolved);
     if (ok) actions.push({ field: 'profession', value: resolved });
   }

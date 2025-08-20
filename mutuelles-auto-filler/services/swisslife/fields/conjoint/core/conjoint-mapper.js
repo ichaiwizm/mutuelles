@@ -3,7 +3,7 @@
  * Responsable de la normalisation et validation des configs conjoint
  */
 
-import { aliasResolve } from '../../../utils/form-utils.js';
+import { aliasResolveSync } from '../../../utils/form-utils.js';
 
 /**
  * Configuration par défaut - codes SwissLife exacts
@@ -51,7 +51,7 @@ export function checkConjointValues(currentValues, expectedConfig = DEFAULT_CONF
   
   // Régime
   if (expectedConfig.regimeSocial) {
-    const resolved = aliasResolve('regimeSocial', expectedConfig.regimeSocial);
+    const resolved = aliasResolveSync('regimeSocial', expectedConfig.regimeSocial);
     const ok = currentValues.regimeSocial?.text?.toLowerCase().includes(resolved.toLowerCase());
     results.push({
       field: 'regimeSocial',
@@ -63,7 +63,7 @@ export function checkConjointValues(currentValues, expectedConfig = DEFAULT_CONF
   
   // Statut
   if (expectedConfig.statut) {
-    const resolved = aliasResolve('statut', expectedConfig.statut);
+    const resolved = aliasResolveSync('statut', expectedConfig.statut);
     const ok = currentValues.statut?.text?.toLowerCase().includes(resolved.toLowerCase());
     results.push({
       field: 'statut',

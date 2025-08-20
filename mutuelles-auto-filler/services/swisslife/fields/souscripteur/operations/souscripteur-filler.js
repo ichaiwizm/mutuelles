@@ -4,7 +4,7 @@
  */
 
 import { isVisible, bringIntoView, fireMultiple } from '../../../utils/dom-utils.js';
-import { setSelectByValueOrText, aliasResolve } from '../../../utils/form-utils.js';
+import { setSelectByValueOrText, aliasResolveSync } from '../../../utils/form-utils.js';
 import { wait, waitStable, waitOverlayGone } from '../../../utils/async-utils.js';
 import { 
   findDateElement,
@@ -27,7 +27,7 @@ function pickSelectValue(sel, wantedRaw) {
   
   console.log('🔍 pickSelect - element:', sel.name, 'domain:', domain, 'wantedRaw:', wantedRaw);
   
-  const wanted = domain ? aliasResolve(domain, wantedRaw) : wantedRaw;
+  const wanted = domain ? aliasResolveSync(domain, wantedRaw) : wantedRaw;
   console.log('🔍 pickSelect - après aliasResolve:', wanted);
   
   const result = setSelectByValueOrText(sel, wanted);

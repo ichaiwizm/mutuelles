@@ -6,6 +6,7 @@
 import { q, qa, isVisible, clickHuman } from '../utils/dom-utils.js';
 import { norm, readSelect } from '../utils/form-utils.js';
 import { wait, waitStable } from '../utils/async-utils.js';
+import { success, error, ERROR_CODES } from '../utils/response-format.js';
 
 /**
  * Trouve le groupe de radios pour le type de simulation
@@ -114,12 +115,18 @@ function readFromSelect(sel) {
  */
 export function readSimulation() {
   const grp = findRadioGroup();
-  if (grp) return readFromRadio(grp);
+  if (grp) {
+    const value = readFromRadio(grp);
+    return success(value);
+  }
   
   const sel = findSelectVariant();
-  if (sel) return readFromSelect(sel);
+  if (sel) {
+    const value = readFromSelect(sel);
+    return success(value);
+  }
   
-  return null;
+  return error(ERROR_CODES.NOT_FOUND, 'Aucun contrôle de type de simulation trouvé');
 }
 
 /**
@@ -135,15 +142,15 @@ export async function setSimulation(value) {
   if (grp) {
     const target = isIndividuel ? grp.individuel : grp.couple;
     if (!target) {
-      return { ok: false, reason: 'radio_not_found', value: targetValue };
+      return error(ERROR_CODES.NOT_FOUND, `Radio ${targetValue} non trouvé`);
     }
     
     if (!isVisible(target)) {
-      return { ok: false, reason: 'radio_hidden', value: targetValue };
+      return error(ERROR_CODES.HIDDEN, `Radio ${targetValue} masqué`);
     }
     
     if (target.checked) {
-      return { ok: true, already: true };
+      return error(ERROR_CODES.ALREADY_SET, `Radio ${targetValue} déjà sélectionné`);
     }
     
     target.focus();
@@ -156,7 +163,7 @@ export async function setSimulation(value) {
     }
     
     await waitStable();
-    return { ok: true, method: 'radio' };
+    return success({ method: 'radio', value: targetValue });
   }
   
   // Essayer le select
@@ -168,27 +175,35 @@ export async function setSimulation(value) {
     });
     
     if (optIndex === -1) {
-      return { ok: false, reason: 'option_not_found', value: targetValue };
+      return error(ERROR_CODES.NOT_FOUND, `Option ${targetValue} non trouvée dans le select`);
     }
     
     sel.selectedIndex = optIndex;
     sel.dispatchEvent(new Event('change', { bubbles: true }));
     await waitStable();
-    return { ok: true, method: 'select' };
+    return success({ method: 'select', value: targetValue });
   }
   
-  return { ok: false, reason: 'no_control_found' };
+  return error(ERROR_CODES.NOT_FOUND, 'Aucun contrôle de type de simulation trouvé');
 }
 
 /**
  * Vérifie le type de simulation
  */
 export function checkSimulation(expected) {
-  const got = readSimulation();
-  const ok = norm(got || '') === norm(expected || '');
-  const res = { champ: "simulation.type", ok, got, expected };
-  console.table([res]);
-  return res;
+  const readResult = readSimulation();
+  if (!readResult.ok) {
+    return error(readResult.error.code, `Impossible de lire le type de simulation: ${readResult.error.message}`);
+  }
+  
+  const got = readResult.data;
+  const match = norm(got || '') === norm(expected || '');
+  
+  if (match) {
+    return success({ champ: "simulation.type", got, expected });
+  } else {
+    return error(ERROR_CODES.VALUE_MISMATCH, `Type de simulation incorrect. Attendu: ${expected}, obtenu: ${got}`);
+  }
 }
 
 /**
@@ -197,62 +212,62 @@ export function checkSimulation(expected) {
 export function diagnoseSimulation(expected) {
   const grp = findRadioGroup();
   const sel = findSelectVariant();
-  const got = readSimulation();
+  const readResult = readSimulation();
+  const got = readResult.ok ? readResult.data : null;
+  
+  const diagnosis = {
+    champ: "simulation.type",
+    got,
+    expected,
+    controls: {
+      radios: !!grp,
+      select: !!sel
+    }
+  };
   
   if (!grp && !sel) {
-    return {
-      champ: "simulation.type",
-      got,
-      expected,
-      why: "Aucun contrôle trouvé (ni radios ni select)"
-    };
+    diagnosis.why = "Aucun contrôle trouvé (ni radios ni select)";
+    return success(diagnosis);
   }
   
   if (grp) {
     if (!grp.individuel || !grp.couple) {
-      return {
-        champ: "simulation.type",
-        got,
-        expected,
-        why: "Groupe de radios incomplet"
-      };
+      diagnosis.why = "Groupe de radios incomplet";
+      return success(diagnosis);
     }
     
     if (!isVisible(grp.individuel) || !isVisible(grp.couple)) {
-      return {
-        champ: "simulation.type",
-        got,
-        expected,
-        why: "Radios masqués"
-      };
+      diagnosis.why = "Radios masqués";
+      return success(diagnosis);
+    }
+    
+    diagnosis.radioStates = {
+      individuel: { visible: isVisible(grp.individuel), checked: grp.individuel.checked },
+      couple: { visible: isVisible(grp.couple), checked: grp.couple.checked }
+    };
+  }
+  
+  if (sel) {
+    diagnosis.selectVisible = isVisible(sel);
+    if (!isVisible(sel)) {
+      diagnosis.why = "Select masqué";
+      return success(diagnosis);
     }
   }
   
-  if (sel && !isVisible(sel)) {
-    return {
-      champ: "simulation.type",
-      got,
-      expected,
-      why: "Select masqué"
-    };
+  if (!readResult.ok) {
+    diagnosis.why = `Erreur de lecture: ${readResult.error.message}`;
+    return success(diagnosis);
   }
   
   if (norm(got || '') !== norm(expected || '')) {
-    return {
-      champ: "simulation.type",
-      got,
-      expected,
-      why: "Valeur différente de celle attendue"
-    };
+    diagnosis.why = "Valeur différente de celle attendue";
+    return success(diagnosis);
   }
   
-  return {
-    champ: "simulation.type",
-    got,
-    expected,
-    why: null,
-    ok: true
-  };
+  diagnosis.why = null;
+  diagnosis.ok = true;
+  return success(diagnosis);
 }
 
 // Export de l'API complète

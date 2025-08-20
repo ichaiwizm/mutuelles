@@ -83,65 +83,75 @@ export const setSelectByValueOrText = (sel, wanted, synonyms = []) => {
   return false;
 };
 
-// Résolution d'alias - MISE À JOUR pour les nouveaux codes SwissLife
-export const aliasResolve = (domain, wanted) => {
-  const aliases = {
-    regimeSocial: {
-      // Nouveaux codes SwissLife exacts
-      'SECURITE_SOCIALE': ['SECURITE_SOCIALE', 'Régime Général (CPAM)'],
-      'SECURITE_SOCIALE_ALSACE_MOSELLE': ['SECURITE_SOCIALE_ALSACE_MOSELLE', 'Régime Local (CPAM Alsace Moselle)'],
-      'TNS': ['TNS', 'Régime Général pour TNS (CPAM)'],
-      'AMEXA': ['AMEXA', 'Mutualité Sociale Agricole (MSA-Amexa)'],
-      'AUTRES_REGIME_SPECIAUX': ['AUTRES_REGIME_SPECIAUX', 'Autres régimes spéciaux'],
-      
-      // Anciens alias pour compatibilité
-      'general': ['SECURITE_SOCIALE'],
-      'alsace-moselle': ['SECURITE_SOCIALE_ALSACE_MOSELLE'],
-      'agricole': ['AMEXA'],
-      'tns': ['TNS'],
-      'autre': ['AUTRES_REGIME_SPECIAUX']
-    },
-    statut: {
-      // Nouveaux codes SwissLife exacts
-      'SALARIE': ['SALARIE', 'Salarié et autres statuts'],
-      'SALARIE_AGRICOLE': ['SALARIE_AGRICOLE', 'Salarié agricole et autres statuts'],
-      'EXPLOITANT_AGRICOLE': ['EXPLOITANT_AGRICOLE', 'Exploitant agricole'],
-      'TNS': ['TNS', 'Travailleur Non Salarié'],
-      'ETUDIANT': ['ETUDIANT', 'Etudiant'],
-      'RETRAITE': ['RETRAITE', 'Retraité'],
-      'RETRAITE_ANCIEN_SALARIE': ['RETRAITE_ANCIEN_SALARIE', 'Retraité (ancien salarié)'],
-      'RETRAITE_ANCIEN_EXPLOITANT': ['RETRAITE_ANCIEN_EXPLOITANT', 'Retraité (ancien exploitant)'],
-      'TRAVAILLEUR_TRANSFRONTALIER': ['TRAVAILLEUR_TRANSFRONTALIER', 'Travailleur transfrontalier'],
-      'FONCTIONNAIRE': ['FONCTIONNAIRE', 'Fonctionnaire'],
-      
-      // Anciens alias pour compatibilité
-      'actif': ['SALARIE'],
-      'sans-emploi': ['SALARIE'],
-      'retraite': ['RETRAITE'],
-      'etudiant': ['ETUDIANT'],
-      'autre': ['SALARIE']
-    },
-    profession: {
-      // Nouveaux codes SwissLife exacts
-      'MEDECIN': ['MEDECIN', 'Médecin'],
-      'CHIRURGIEN': ['CHIRURGIEN', 'Chirurgien'],
-      'CHIRURGIEN_DENTISTE': ['CHIRURGIEN_DENTISTE', 'Chirurgien dentiste'],
-      'PHARMACIEN': ['PHARMACIEN', 'Pharmacien'],
-      'AUXILIAIRE_MEDICAL': ['AUXILIAIRE_MEDICAL', 'Auxiliaire médical'],
-      'AUTRE': ['AUTRE', 'Non médicale']
-    }
-  };
+// Cache pour les mappings chargés
+let mappingsCache = null;
+
+// Charge les mappings depuis le fichier JSON centralisé
+async function loadMappings() {
+  if (mappingsCache) {
+    return mappingsCache;
+  }
   
-  const domainAliases = aliases[domain] || {};
+  try {
+    const response = await fetch(chrome.runtime.getURL('data/swisslife-mappings.json'));
+    mappingsCache = await response.json();
+    return mappingsCache;
+  } catch (error) {
+    console.error('❌ Erreur chargement mappings SwissLife:', error);
+    // Fallback: mappings vides
+    return { regimeSocial: {}, statut: {}, profession: {} };
+  }
+}
+
+// Résolution d'alias - VERSION CENTRALISÉE
+export const aliasResolve = async (domain, wanted) => {
+  const mappings = await loadMappings();
+  const domainMappings = mappings[domain] || {};
   const wantedNorm = norm(wanted);
   
-  for (const [key, vals] of Object.entries(domainAliases)) {
-    if (vals.some(v => norm(v) === wantedNorm)) {
-      return key; // Retourner le code SwissLife exact
+  // 1. Chercher dans les alias directs
+  const aliases = domainMappings._aliases || {};
+  if (aliases[wanted]) {
+    return aliases[wanted];
+  }
+  
+  // 2. Chercher dans les valeurs des mappings principaux
+  for (const [key, vals] of Object.entries(domainMappings)) {
+    if (key.startsWith('_')) continue; // Ignorer les métadonnées
+    
+    if (Array.isArray(vals)) {
+      if (vals.some(v => norm(v) === wantedNorm)) {
+        return key; // Retourner le code SwissLife exact
+      }
     }
   }
   
   return wanted; // Pas d'alias trouvé
+};
+
+// Version synchrone pour compatibilité (avec mappings en dur comme fallback)
+export const aliasResolveSync = (domain, wanted) => {
+  // Mappings minimaux en dur pour compatibilité
+  const fallbackMappings = {
+    regimeSocial: {
+      'TNS': 'TNS',
+      'SECURITE_SOCIALE': 'SECURITE_SOCIALE',
+      'general': 'SECURITE_SOCIALE',
+      'tns': 'TNS'
+    },
+    statut: {
+      'SALARIE': 'SALARIE', 
+      'TNS': 'TNS',
+      'actif': 'SALARIE',
+      'retraite': 'RETRAITE'
+    },
+    profession: {
+      'AUTRE': 'AUTRE'
+    }
+  };
+  
+  const domainMappings = fallbackMappings[domain] || {};
+  return domainMappings[wanted] || wanted;
 };
 
 // Saisie avec masque

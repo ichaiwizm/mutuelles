@@ -112,7 +112,9 @@ export async function runTest() {
       console.log('✅ Succès étape:', stepName);
     } else {
       console.error('❌ Échec étape:', stepName, result);
-      throw new Error(`Échec étape ${stepName}: ${result.reason}`);
+      // Compatible avec nouveau format response-format.js et ancien format
+      const errorMessage = result.error?.message || result.reason || 'Erreur inconnue';
+      throw new Error(`Échec étape ${stepName}: ${errorMessage}`);
     }
   }
   

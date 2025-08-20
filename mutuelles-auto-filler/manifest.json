@@ -26,6 +26,7 @@
       "resources": [
         "data/test-data.json",
         "data/swisslife-rules.json",
+        "data/swisslife-mappings.json",
         "src/ui/ui.js",
         "src/core/orchestrator.js", 
         "src/core/template-processor.js",
@@ -33,6 +34,7 @@
         "src/core/iframe-bridge.js",
         "services/swisslife/orchestrator-bridge.js",
         "services/swisslife/fields/*.js",
+        "services/swisslife/fields/**/*.js",
         "services/swisslife/utils/*.js",
         "services/swisslife/navigation/*.js"
       ],

@@ -6,6 +6,7 @@
 import { q, qa, isVisible, clickHuman, fireMultiple } from '../utils/dom-utils.js';
 import { readSelect } from '../utils/form-utils.js';
 import { wait, waitStable, waitOverlayGone } from '../utils/async-utils.js';
+import { success, error, ERROR_CODES } from '../utils/response-format.js';
 
 // Fonctions de normalisation copiées du script manuel qui fonctionne
 const T = s => (s||"").toString().replace(/\s+/g," ").trim();
@@ -104,7 +105,7 @@ export async function refresh() {
   await waitStable({ minQuiet: 500 });
   
   const newList = list();
-  console.log("🔄 Gammes disponibles:", newList);
+  console.log('Gammes disponibles après refresh', newList);
   return newList;
 }
 
@@ -117,15 +118,16 @@ function setSelect(sel, target) {
   let idx = opts.findIndex(o => norm(o.value||"")===w);
   if (idx<0) idx = opts.findIndex(o => norm(o.text||"")===w);
   if (idx<0) {
-    console.log('❌ gammes-service.setSelect - option non trouvée:', target);
-    console.log('Options disponibles:', opts.map(o=>({value:o.value, text:T(o.text||"")})));
-    return {ok:false, reason:"option_not_found", options: opts.map(o=>({value:o.value, text:T(o.text||"")}))};
+    const availableOptions = opts.map(o=>({value:o.value, text:T(o.text||"")}));
+    console.error('Option non trouvée dans select', { target, availableOptions });
+    return error('OPTION_NOT_FOUND', `Option "${target}" non trouvée dans le select gamme`);
   }
   
-  console.log(`✅ gammes-service.setSelect - option trouvée à l'index ${idx}:`, {value: opts[idx].value, text: opts[idx].text});
+  const selectedOption = {value: opts[idx].value, text: opts[idx].text};
+  console.log('Option trouvée et sélectionnée', { index: idx, option: selectedOption });
   sel.selectedIndex = idx; 
   fireMultiple(sel);
-  return {ok:true, got: readSelect(sel)};
+  return success(readSelect(sel));
 }
 
 /**
@@ -148,11 +150,11 @@ async function setRadiosOrTiles(grp, target) {
       }
       
       await waitStable();
-      return { ok: true, method: grp.type, element: el.tagName };
+      return success({ method: grp.type, element: el.tagName, text: el.innerText || el.value });
     }
   }
   
-  return { ok: false, reason: 'no_matching_element' };
+  return error('NO_MATCHING_ELEMENT', 'Aucun élément correspondant à "SwissLife Santé" trouvé');
 }
 
 /**
@@ -171,7 +173,7 @@ export async function set(target = DEFAULT_CFG.want) {
     return await setRadiosOrTiles(group, target);
   }
   
-  return { ok: false, reason: 'no_control_found' };
+  return error(ERROR_CODES.NOT_FOUND, 'Aucun contrôle de gamme trouvé');
 }
 
 /**
@@ -181,13 +183,13 @@ export function read() {
   const select = findGammeSelect();
   if (select) {
     const selected = readSelect(select);
-    return selected?.text || null;
+    return success(selected?.text || null);
   }
   
   const group = findGammeRadiosOrTiles();
   if (group && group.type === 'radios') {
     const checked = group.elements.find(r => r.checked);
-    return checked ? (checked.innerText || checked.value) : null;
+    return success(checked ? (checked.innerText || checked.value) : null);
   }
   
   if (group && group.type === 'tiles') {
@@ -196,27 +198,29 @@ export function read() {
       el.classList.contains('selected') ||
       el.getAttribute('aria-selected') === 'true'
     );
-    return active ? active.innerText : null;
+    return success(active ? active.innerText : null);
   }
   
-  return null;
+  return error(ERROR_CODES.NOT_FOUND, 'Aucun contrôle de gamme trouvé pour lecture');
 }
 
 /**
  * Vérifie la gamme
  */
 export function check(expected = DEFAULT_CFG.want) {
-  const got = read();
+  const readResult = read();
+  if (!readResult.ok) {
+    return readResult;
+  }
+  
+  const got = readResult.data;
   const ok = got && got.toLowerCase().includes(expected.toLowerCase());
   
-  console.table([{ 
-    champ: 'gamme', 
-    ok, 
-    got, 
-    expected 
-  }]);
-  
-  return { champ: 'gamme', ok, got, expected };
+  if (ok) {
+    return success({ field: 'gamme', current: got, expected });
+  } else {
+    return error(ERROR_CODES.VALUE_MISMATCH, `Gamme attendue: "${expected}", trouvée: "${got || 'aucune'}"`);
+  }
 }
 
 /**
@@ -225,61 +229,44 @@ export function check(expected = DEFAULT_CFG.want) {
 export function diagnose(expected = DEFAULT_CFG.want) {
   const select = findGammeSelect();
   const group = findGammeRadiosOrTiles();
-  const got = read();
+  const readResult = read();
+  const got = readResult.ok ? readResult.data : null;
+  
+  const diagnosis = {
+    field: 'gamme',
+    controls: {
+      select: { found: !!select, visible: select ? isVisible(select) : false },
+      group: { found: !!group, visible: group ? group.elements.some(isVisible) : false }
+    },
+    value: {
+      current: got,
+      expected,
+      matches: got && got.toLowerCase().includes(expected.toLowerCase())
+    }
+  };
   
   if (!select && !group) {
-    return {
-      champ: 'gamme',
-      got,
-      expected,
-      why: "Aucun contrôle de gamme trouvé"
-    };
+    return error(ERROR_CODES.NOT_FOUND, 'Aucun contrôle de gamme trouvé');
   }
   
   if (select && !isVisible(select)) {
-    return {
-      champ: 'gamme',
-      got,
-      expected,
-      why: "Select de gamme masqué"
-    };
+    return error(ERROR_CODES.HIDDEN, 'Select de gamme masqué');
   }
   
   if (group && !group.elements.some(isVisible)) {
-    return {
-      champ: 'gamme',
-      got,
-      expected,
-      why: "Tous les éléments de gamme sont masqués"
-    };
+    return error(ERROR_CODES.HIDDEN, 'Tous les éléments de gamme sont masqués');
   }
   
   if (!got) {
-    return {
-      champ: 'gamme',
-      got,
-      expected,
-      why: "Aucune gamme sélectionnée"
-    };
+    return error('NO_SELECTION', 'Aucune gamme sélectionnée');
   }
   
   const match = got.toLowerCase().includes(expected.toLowerCase());
   if (!match) {
-    return {
-      champ: 'gamme',
-      got,
-      expected,
-      why: "Gamme différente de celle attendue"
-    };
+    return error(ERROR_CODES.VALUE_MISMATCH, 'Gamme différente de celle attendue');
   }
   
-  return {
-    champ: 'gamme',
-    got,
-    expected,
-    why: null,
-    ok: true
-  };
+  return success(diagnosis);
 }
 
 // Export de l'API complète

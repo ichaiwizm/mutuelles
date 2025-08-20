@@ -6,6 +6,7 @@
 import { q, qa, isVisible, labelFor, clickHuman } from '../utils/dom-utils.js';
 import { T } from '../utils/form-utils.js';
 import { wait, waitStable } from '../utils/async-utils.js';
+import { success, error, ERROR_CODES } from '../utils/response-format.js';
 
 /**
  * Trouve le nœud de navigation santé
@@ -41,18 +42,17 @@ export function readIJ() {
   const inOui = q('#projet-confort-hospitalisation-oui, #confort-hospitalisation-oui, #ij-oui, [name*="confort"][value="oui"], [name*="ij"][value="oui"]');
   
   if (!inNon && !inOui) {
-    return { found: false, value: null };
+    return error(ERROR_CODES.NOT_FOUND, 'Aucun contrôle de confort hospitalisation trouvé');
   }
   
   const value = inOui?.checked ? 'oui' : (inNon?.checked ? 'non' : null);
   
-  return {
-    found: true,
+  return success({
     value,
     checkedOui: !!inOui?.checked,
     checkedNon: !!inNon?.checked,
     elements: { oui: inOui, non: inNon }
-  };
+  });
 }
 
 /**
@@ -63,16 +63,18 @@ export function readIJExact() {
   console.warn('readIJExact() est deprecated, utilisez readIJ()');
   const result = readIJ();
   
-  if (!result.found) return { found: false, checked: null };
+  if (!result.ok) {
+    return error(result.error.code, result.error.message);
+  }
   
-  return {
+  return success({
     found: true,
-    checked: result.checkedNon,
-    value: result.value || "unknown",
+    checked: result.data.checkedNon,
+    value: result.data.value || "unknown",
     labelText: "",
-    inputId: result.elements.non?.id || null,
-    inputName: result.elements.non?.name || null
-  };
+    inputId: result.data.elements.non?.id || null,
+    inputName: result.data.elements.non?.name || null
+  });
 }
 
 /**
@@ -128,13 +130,19 @@ export function installProbes() {
  */
 export async function tryClickNon() {
   const inNon = q('#projet-confort-hospitalisation-non, #confort-hospitalisation-non, #ij-non, [name*="confort"][value="non"], [name*="ij"][value="non"]');
-  if (!inNon) return { ok: false, reason: "input_non_not_found" };
+  if (!inNon) {
+    return error(ERROR_CODES.NOT_FOUND, 'Input "Non" pour confort hospitalisation non trouvé');
+  }
   
   const labNon = labelFor(inNon);
   const target = (labNon && isVisible(labNon)) ? labNon : inNon;
   
   if (!isVisible(target)) {
-    return { ok: false, reason: "target_not_visible" };
+    return error(ERROR_CODES.HIDDEN, 'Contrôle "Non" pour confort hospitalisation masqué');
+  }
+  
+  if (inNon.disabled) {
+    return error(ERROR_CODES.DISABLED, 'Input "Non" pour confort hospitalisation désactivé');
   }
   
   // Click humain complet
@@ -151,12 +159,11 @@ export async function tryClickNon() {
   
   await waitStable();
   
-  return {
-    ok: true,
+  return success({
     clicked: target === labNon ? "label" : "input",
     nowChecked: inNon.checked,
     navEnabled: navSanteEnabled()
-  };
+  });
 }
 
 /**
@@ -170,75 +177,114 @@ export async function setConfortHospitalisation(value) {
     return await tryClickNon();
   }
   
-  // Pour "oui", chercher l'input correspondant
-  const inOui = q('#projet-confort-hospitalisation-oui, #confort-hospitalisation-oui, #ij-oui, [name*="confort"][value="oui"], [name*="ij"][value="oui"]');
-  if (!inOui) return { ok: false, reason: "input_oui_not_found" };
-  
-  const labOui = labelFor(inOui);
-  const target = (labOui && isVisible(labOui)) ? labOui : inOui;
-  
-  if (!isVisible(target)) {
-    return { ok: false, reason: "target_not_visible" };
+  if (actualValue === 'oui') {
+    // Pour "oui", chercher l'input correspondant
+    const inOui = q('#projet-confort-hospitalisation-oui, #confort-hospitalisation-oui, #ij-oui, [name*="confort"][value="oui"], [name*="ij"][value="oui"]');
+    if (!inOui) {
+      return error(ERROR_CODES.NOT_FOUND, 'Input "Oui" pour confort hospitalisation non trouvé');
+    }
+    
+    const labOui = labelFor(inOui);
+    const target = (labOui && isVisible(labOui)) ? labOui : inOui;
+    
+    if (!isVisible(target)) {
+      return error(ERROR_CODES.HIDDEN, 'Contrôle "Oui" pour confort hospitalisation masqué');
+    }
+    
+    if (inOui.disabled) {
+      return error(ERROR_CODES.DISABLED, 'Input "Oui" pour confort hospitalisation désactivé');
+    }
+    
+    target.focus?.();
+    clickHuman(target);
+    
+    await wait(100);
+    
+    if (!inOui.checked) {
+      inOui.checked = true;
+      inOui.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+    
+    await waitStable();
+    
+    return success({
+      clicked: target === labOui ? "label" : "input",
+      nowChecked: inOui.checked,
+      value: 'oui'
+    });
   }
   
-  target.focus?.();
-  clickHuman(target);
-  
-  await wait(100);
-  
-  if (!inOui.checked) {
-    inOui.checked = true;
-    inOui.dispatchEvent(new Event('change', { bubbles: true }));
-  }
-  
-  await waitStable();
-  
-  return {
-    ok: true,
-    clicked: target === labOui ? "label" : "input",
-    nowChecked: inOui.checked
-  };
+  return error(ERROR_CODES.VALIDATION_ERROR, `Valeur invalide pour confort hospitalisation: ${actualValue}. Valeurs acceptées: "oui", "non"`);
 }
 
 /**
  * Vérifie la valeur des IJ
  */
 export function checkConfortHospitalisation(expected) {
-  const state = readIJ();
-  const ok = state.found && state.value === expected;
-  return { champ: "confort.hospitalisation", ok, got: state.value, expected };
+  const readResult = readIJ();
+  if (!readResult.ok) {
+    return error(readResult.error.code, `Impossible de lire le confort hospitalisation: ${readResult.error.message}`);
+  }
+  
+  const got = readResult.data.value;
+  const match = got === expected;
+  
+  if (match) {
+    return success({ champ: "confort.hospitalisation", got, expected });
+  } else {
+    return error(ERROR_CODES.VALUE_MISMATCH, `Confort hospitalisation incorrect. Attendu: ${expected}, obtenu: ${got}`);
+  }
 }
 
 /**
  * Diagnostique les IJ
  */
 export function diagnoseConfortHospitalisation(expected) {
-  const state = readIJ();
+  const readResult = readIJ();
+  const got = readResult.ok ? readResult.data.value : null;
   
-  if (!state.found) {
-    return {
-      champ: "confort.hospitalisation",
-      why: "Aucun contrôle trouvé"
-    };
+  const diagnosis = {
+    champ: "confort.hospitalisation",
+    got,
+    expected,
+    navEnabled: navSanteEnabled()
+  };
+  
+  if (!readResult.ok) {
+    diagnosis.why = `Erreur de lecture: ${readResult.error.message}`;
+    return success(diagnosis);
   }
   
   const inNon = q('#projet-confort-hospitalisation-non, #confort-hospitalisation-non, #ij-non');
   const inOui = q('#projet-confort-hospitalisation-oui, #confort-hospitalisation-oui, #ij-oui');
   
-  if (!isVisible(inNon) && !isVisible(inOui)) {
-    return {
-      champ: "confort.hospitalisation",
-      why: "Contrôles masqués"
-    };
+  diagnosis.controls = {
+    hasNon: !!inNon,
+    hasOui: !!inOui,
+    nonVisible: inNon ? isVisible(inNon) : false,
+    ouiVisible: inOui ? isVisible(inOui) : false,
+    nonDisabled: inNon ? inNon.disabled : false,
+    ouiDisabled: inOui ? inOui.disabled : false
+  };
+  
+  if (!inNon && !inOui) {
+    diagnosis.why = "Aucun contrôle trouvé";
+    return success(diagnosis);
   }
   
-  return {
-    champ: "confort.hospitalisation",
-    got: state.value,
-    expected,
-    ok: state.value === expected,
-    navEnabled: navSanteEnabled()
-  };
+  if (!isVisible(inNon) && !isVisible(inOui)) {
+    diagnosis.why = "Contrôles masqués";
+    return success(diagnosis);
+  }
+  
+  if (got !== expected) {
+    diagnosis.why = "Valeur différente de celle attendue";
+    return success(diagnosis);
+  }
+  
+  diagnosis.why = null;
+  diagnosis.ok = true;
+  return success(diagnosis);
 }
 
 // Export de l'API complète

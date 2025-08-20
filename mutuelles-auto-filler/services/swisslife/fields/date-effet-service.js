@@ -5,6 +5,7 @@
 
 import { q, qa, isVisible, bringIntoView, clickHuman, fireMultiple } from '../utils/dom-utils.js';
 import { overlayPresent, wait, waitStable, waitOverlayGone } from '../utils/async-utils.js';
+import { success, error, ERROR_CODES } from '../utils/response-format.js';
 
 /**
  * Trouve l'input de date d'effet - LOGIQUE DU SCRIPT MANUEL QUI FONCTIONNE
@@ -86,7 +87,11 @@ function findButtonNear(input) {
  */
 export function read() {
   const input = findInput();
-  return input ? (input.value || "") : null;
+  if (!input) {
+    return error(ERROR_CODES.NOT_FOUND, 'Input de date d\'effet non trouvé');
+  }
+  
+  return success(input.value || "");
 }
 
 /**
@@ -97,11 +102,11 @@ export async function clickButton() {
   const button = findButtonNear(input);
   
   if (!button) {
-    return { ok: false, reason: 'button_not_found' };
+    return error(ERROR_CODES.NOT_FOUND, 'Bouton calendrier non trouvé');
   }
   
   if (!isVisible(button)) {
-    return { ok: false, reason: 'button_hidden' };
+    return error(ERROR_CODES.HIDDEN, 'Bouton calendrier masqué');
   }
   
   bringIntoView(button);
@@ -110,7 +115,7 @@ export async function clickButton() {
   clickHuman(button);
   await wait(200);
   
-  return { ok: true, clicked: true };
+  return success({ clicked: true });
 }
 
 /**
@@ -157,12 +162,16 @@ export async function set(value) {
   
   if (!input) {
     console.log('❌ date-effet set - input non trouvé');
-    return { ok: false, reason: 'input_not_found' };
+    return error(ERROR_CODES.NOT_FOUND, 'Input de date d\'effet non trouvé');
   }
   
   if (!isVisible(input)) {
     console.log('❌ date-effet set - input masqué');
-    return { ok: false, reason: 'input_hidden' };
+    return error(ERROR_CODES.HIDDEN, 'Input de date d\'effet masqué');
+  }
+  
+  if (input.disabled) {
+    return error(ERROR_CODES.DISABLED, 'Input de date d\'effet désactivé');
   }
   
   const formatted = toDDMMYYYY(dateValue);
@@ -181,27 +190,34 @@ export async function set(value) {
   const ok = finalValue === formatted;
   console.log('✅ date-effet set - résultat final:', { ok, got: finalValue, expected: formatted });
   
-  return { 
-    ok,
+  if (!ok) {
+    return error(ERROR_CODES.VALUE_MISMATCH, `Date non définie correctement. Attendu: ${formatted}, obtenu: ${finalValue}`);
+  }
+  
+  return success({ 
     value: formatted,
     actual: finalValue
-  };
+  });
 }
 
 /**
  * Vérifie la date d'effet
  */
 export function check(expected) {
-  const got = read();
-  const expectedFormatted = toDDMMYYYY(expected);
-  const ok = got === expectedFormatted;
+  const readResult = read();
+  if (!readResult.ok) {
+    return error(readResult.error.code, `Impossible de lire la date d'effet: ${readResult.error.message}`);
+  }
   
-  return { 
-    champ: "date.effet", 
-    ok, 
-    got, 
-    expected: expectedFormatted 
-  };
+  const got = readResult.data;
+  const expectedFormatted = toDDMMYYYY(expected);
+  const match = got === expectedFormatted;
+  
+  if (match) {
+    return success({ champ: "date.effet", got, expected: expectedFormatted });
+  } else {
+    return error(ERROR_CODES.VALUE_MISMATCH, `Date d'effet incorrecte. Attendu: ${expectedFormatted}, obtenu: ${got}`);
+  }
 }
 
 /**
@@ -210,62 +226,56 @@ export function check(expected) {
 export function diagnose(expected) {
   const input = findInput();
   const button = findButtonNear(input);
-  const got = read();
+  const readResult = read();
+  const got = readResult.ok ? readResult.data : null;
   const expectedFormatted = toDDMMYYYY(expected);
   
-  if (!input) {
-    return {
-      champ: "date.effet",
-      got,
-      expected: expectedFormatted,
-      why: "Input de date d'effet introuvable"
-    };
-  }
-  
-  if (!isVisible(input)) {
-    return {
-      champ: "date.effet",
-      got,
-      expected: expectedFormatted,
-      why: "Input de date masqué"
-    };
-  }
-  
-  if (input.disabled || input.readOnly) {
-    return {
-      champ: "date.effet",
-      got,
-      expected: expectedFormatted,
-      why: "Input désactivé ou en lecture seule"
-    };
-  }
-  
-  if (overlayPresent()) {
-    return {
-      champ: "date.effet",
-      got,
-      expected: expectedFormatted,
-      why: "Overlay présent, attendre la fin du chargement"
-    };
-  }
-  
-  if (got !== expectedFormatted) {
-    return {
-      champ: "date.effet",
-      got,
-      expected: expectedFormatted,
-      why: "Date différente de celle attendue"
-    };
-  }
-  
-  return {
+  const diagnosis = {
     champ: "date.effet",
     got,
     expected: expectedFormatted,
-    why: null,
-    ok: true,
+    hasInput: !!input,
     hasButton: !!button
   };
+  
+  if (!input) {
+    diagnosis.why = "Input de date d'effet introuvable";
+    return success(diagnosis);
+  }
+  
+  diagnosis.inputVisible = isVisible(input);
+  diagnosis.inputDisabled = input.disabled;
+  diagnosis.inputReadOnly = input.readOnly;
+  
+  if (!isVisible(input)) {
+    diagnosis.why = "Input de date masqué";
+    return success(diagnosis);
+  }
+  
+  if (input.disabled || input.readOnly) {
+    diagnosis.why = "Input désactivé ou en lecture seule";
+    return success(diagnosis);
+  }
+  
+  if (overlayPresent()) {
+    diagnosis.why = "Overlay présent, attendre la fin du chargement";
+    diagnosis.overlayPresent = true;
+    return success(diagnosis);
+  }
+  
+  if (!readResult.ok) {
+    diagnosis.why = `Erreur de lecture: ${readResult.error.message}`;
+    return success(diagnosis);
+  }
+  
+  if (got !== expectedFormatted) {
+    diagnosis.why = "Date différente de celle attendue";
+    return success(diagnosis);
+  }
+  
+  diagnosis.why = null;
+  diagnosis.ok = true;
+  return success(diagnosis);
 }
 
 // Export de l'API complète

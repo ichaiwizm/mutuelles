@@ -5,6 +5,7 @@
 
 import { q, qa, isVisible, bringIntoView, clickHuman } from '../utils/dom-utils.js';
 import { overlayPresent, wait, waitStable, waitOverlayGone } from '../utils/async-utils.js';
+import { success, error, ERROR_CODES } from '../utils/response-format.js';
 
 /**
  * Trouve les candidats pour le bouton "Suivant" - LOGIQUE DU SCRIPT MANUEL QUI FONCTIONNE
@@ -120,12 +121,7 @@ export function read() {
   const el = bestCandidate();
   
   if (!el) {
-    return {
-      found: false,
-      visible: false,
-      disabled: null,
-      text: null
-    };
+    return error(ERROR_CODES.NOT_FOUND, 'Bouton de navigation "Suivant" non trouvé');
   }
   
   // Fonction isDisabled locale (comme script manuel)
@@ -140,8 +136,7 @@ export function read() {
     );
   }
   
-  return {
-    found: true,
+  const data = {
     id: el.id || null,
     tag: el.tagName.toLowerCase(),
     text: (el.innerText || el.value || el.getAttribute('aria-label') || '').replace(/\s+/g, ' ').trim(),
@@ -149,6 +144,8 @@ export function read() {
     disabled: isDisabled(el),
     className: el.className || ''
   };
+  
+  return success(data);
 }
 
 /**
@@ -160,16 +157,16 @@ export async function click() {
   const el = bestCandidate();
   
   if (!el) {
-    return { ok: false, reason: 'button_not_found' };
+    return error(ERROR_CODES.NOT_FOUND, 'Bouton de navigation "Suivant" non trouvé');
   }
   
   if (!isVisible(el)) {
-    return { ok: false, reason: 'button_hidden' };
+    return error(ERROR_CODES.HIDDEN, 'Bouton de navigation "Suivant" masqué');
   }
   
   // Vérification d'état simple comme le script manuel
   if (el.disabled) {
-    return { ok: false, reason: 'button_disabled' };
+    return error(ERROR_CODES.DISABLED, 'Bouton de navigation "Suivant" désactivé');
   }
 
   // Clic avec logique exacte du script manuel
@@ -180,46 +177,61 @@ export async function click() {
   await waitStable();
   
   const errors = listVisibleErrors();
-  return { 
-    ok: errors.length === 0, 
-    after: read(), 
+  const afterReadResult = read();
+  
+  if (errors.length > 0) {
+    return error(ERROR_CODES.VALIDATION_ERROR, `Erreurs de validation après clic: ${errors.map(e => e.msg).join(', ')}`);
+  }
+  
+  return success({ 
+    clicked: true,
+    after: afterReadResult.ok ? afterReadResult.data : null,
     errors 
-  };
+  });
 }
 
 /**
  * Vérification avancée avec synthèse
  */
 export function checkAdvanced() {
-  const r = read();
+  const readResult = read();
   const errors = listVisibleErrors();
   
-  console.table([{
-    present: r.found,
-    visible: !!r.visible,
-    disabled: !!r.disabled,
-    text: r.text || '(?)',
-    errors: errors.length
-  }]);
+  const data = {
+    button: readResult.ok ? readResult.data : null,
+    errors,
+    summary: {
+      present: readResult.ok,
+      visible: readResult.ok ? readResult.data.visible : false,
+      disabled: readResult.ok ? readResult.data.disabled : true,
+      text: readResult.ok ? readResult.data.text || '(?)' : null,
+      errorCount: errors.length
+    }
+  };
   
-  return { bouton: r, errors };
+  console.table([data.summary]);
+  
+  return success(data);
 }
 
 /**
  * Diagnostique détaillé
  */
 export function diagnose() {
-  const r = read();
+  const readResult = read();
   const issues = [];
   
-  if (!r.found) {
+  if (!readResult.ok) {
     issues.push({
       what: 'button',
       why: 'introuvable',
-      hint: 'Assure-toi d\'être dans la bonne iFrame/étape.'
+      hint: 'Assure-toi d\'être dans la bonne iFrame/étape.',
+      error: readResult.error.message
     });
   } else {
-    if (!r.visible) {
+    const buttonData = readResult.data;
+    
+    if (!buttonData.visible) {
       issues.push({
         what: 'button',
         why: 'masqué',
@@ -227,7 +239,7 @@ export function diagnose() {
       });
     }
     
-    if (r.disabled) {
+    if (buttonData.disabled) {
       issues.push({
         what: 'button',
         why: 'désactivé',
@@ -241,7 +253,7 @@ export function diagnose() {
     issues.push({
       what: 'validation',
       why: 'erreurs_visibles',
-      errors: errors.map(e => e.text)
+      errors: errors.map(e => e.msg)
     });
   }
   
@@ -252,7 +264,14 @@ export function diagnose() {
     });
   }
   
-  return { read: r, issues };
+  const diagnosis = {
+    button: readResult.ok ? readResult.data : null,
+    issues,
+    hasIssues: issues.length > 0,
+    overlayPresent: overlayPresent()
+  };
+  
+  return success(diagnosis);
 }
 
 /**
@@ -262,19 +281,22 @@ export async function waitReady(timeout = 10000) {
   const start = Date.now();
   
   while (Date.now() - start < timeout) {
-    const state = read();
+    const readResult = read();
     
-    if (state.found && state.visible && !state.disabled) {
-      const errors = listVisibleErrors();
-      if (errors.length === 0 && !overlayPresent()) {
-        return { ready: true, waited: Date.now() - start };
+    if (readResult.ok) {
+      const state = readResult.data;
+      if (state.visible && !state.disabled) {
+        const errors = listVisibleErrors();
+        if (errors.length === 0 && !overlayPresent()) {
+          return success({ ready: true, waited: Date.now() - start });
+        }
       }
     }
     
     await wait(200);
   }
   
-  return { ready: false, timeout: true };
+  return error(ERROR_CODES.TIMEOUT, `Bouton de navigation non prêt après ${timeout}ms`);
 }
 
 /**
@@ -285,11 +307,11 @@ export async function smartClick(maxRetries = 3) {
     console.log(`🔄 Tentative ${attempt}/${maxRetries} de navigation...`);
     
     // Attendre que le bouton soit prêt
-    const readyState = await waitReady(5000);
-    if (!readyState.ready) {
-      console.log(`⏳ Bouton non prêt après attente`);
+    const readyResult = await waitReady(5000);
+    if (!readyResult.ok) {
+      console.log(`⏳ Bouton non prêt après attente:`, readyResult.error.message);
       if (attempt === maxRetries) {
-        return { ok: false, reason: 'button_not_ready', attempts: attempt };
+        return error('BUTTON_NOT_READY', `Bouton non prêt après ${maxRetries} tentatives`);
       }
       continue;
     }
@@ -298,17 +320,17 @@ export async function smartClick(maxRetries = 3) {
     const clickResult = await click();
     if (clickResult.ok) {
       console.log(`✅ Navigation réussie`);
-      return { ok: true, attempts: attempt, ...clickResult };
+      return success({ attempts: attempt, ...clickResult.data });
     }
     
-    console.log(`❌ Échec tentative ${attempt}:`, clickResult.reason);
+    console.log(`❌ Échec tentative ${attempt}:`, clickResult.error.message);
     
     if (attempt < maxRetries) {
       await wait(1000);
     }
   }
   
-  return { ok: false, reason: 'max_retries_exceeded', attempts: maxRetries };
+  return error('MAX_RETRIES_EXCEEDED', `Navigation échouée après ${maxRetries} tentatives`);
 }
 
 // Export de l'API complète

@@ -4,6 +4,7 @@
  */
 
 import { waitOverlayGone, overlayPresent } from '../../utils/async-utils.js';
+import { success, error, ERROR_CODES } from '../../utils/response-format.js';
 import { 
   readMadelin, 
   setMadelin, 
@@ -38,25 +39,29 @@ export async function setAll(options = {}) {
   const validation = validateAllOptions(options);
   if (!validation.valid) {
     console.error('❌ Configuration options invalide:', validation.errors);
-    return { ok: false, errors: validation.errors };
+    return error(ERROR_CODES.VALIDATION_ERROR, `Configuration invalide: ${validation.errors.join(', ')}`);
   }
   
   const results = {};
+  let hasErrors = false;
   
   // Traitement séquentiel des options
   if (options.madelin !== undefined) {
     console.log('🔧 Traitement option Madelin:', options.madelin);
     results.madelin = await setMadelin(options.madelin);
+    if (results.madelin && !results.madelin.ok) hasErrors = true;
   }
   
   if (options.resiliation !== undefined) {
     console.log('🔧 Traitement option Résiliation:', options.resiliation);
     results.resiliation = await setResiliation(options.resiliation);
+    if (results.resiliation && !results.resiliation.ok) hasErrors = true;
   }
   
   if (options.reprise !== undefined) {
     console.log('🔧 Traitement option Reprise:', options.reprise);
     results.reprise = await setReprise(options.reprise);
+    if (results.reprise && !results.reprise.ok) hasErrors = true;
   }
   
   // Logique métier : gestion combinée résiliation + reprise
@@ -65,106 +70,151 @@ export async function setAll(options = {}) {
     if (/^oui$/i.test(options.reprise) && /^non$/i.test(options.resiliation)) {
       console.log("⚠️ Correction automatique: reprise=oui implique résiliation=oui");
       results.resiliation = await setResiliation('oui');
+      if (results.resiliation && !results.resiliation.ok) hasErrors = true;
     }
   }
   
-  // Vérification finale
-  const allSuccess = Object.values(results).every(r => r?.ok !== false);
-  
-  return { 
-    ok: allSuccess, 
-    results,
-    summary: {
-      processed: Object.keys(results).length,
-      successful: Object.values(results).filter(r => r?.ok === true).length
-    }
+  const summary = {
+    processed: Object.keys(results).length,
+    successful: Object.values(results).filter(r => r?.ok === true).length,
+    failed: Object.values(results).filter(r => r?.ok === false).length
   };
+  
+  if (hasErrors) {
+    return error(ERROR_CODES.VALIDATION_ERROR, 'Certaines options n\'ont pas pu être définies correctement', {
+      results,
+      summary
+    });
+  }
+  
+  return success({ 
+    results,
+    summary
+  });
 }
 
 /**
  * Lit toutes les options disponibles
  */
 export function readAll() {
-  return {
-    madelin: readMadelin(),
-    resiliation: readResiliation(),
-    reprise: readReprise()
-  };
+  try {
+    const data = {
+      madelin: readMadelin(),
+      resiliation: readResiliation(),
+      reprise: readReprise()
+    };
+    
+    return success(data);
+  } catch (err) {
+    return error(ERROR_CODES.NOT_FOUND, `Erreur lors de la lecture des options: ${err.message}`);
+  }
 }
 
 /**
  * Vérifie la cohérence des options par rapport aux attentes
  */
 export function checkAll(expected = {}) {
-  const got = readAll();
+  const readResult = readAll();
+  if (!readResult.ok) {
+    return error(readResult.error.code, `Impossible de lire les options: ${readResult.error.message}`);
+  }
+  
+  const got = readResult.data;
   const results = [];
+  let allMatch = true;
   
   if (expected.madelin !== undefined) {
     const expectedBool = /^(true|1|oui|yes)$/i.test(String(expected.madelin));
+    const match = got.madelin.found && got.madelin.checked === expectedBool;
     results.push({
       option: 'madelin',
-      ok: got.madelin.found && got.madelin.checked === expectedBool,
+      ok: match,
       got: got.madelin.checked,
       expected: expectedBool
     });
+    if (!match) allMatch = false;
   }
   
   if (expected.resiliation !== undefined) {
+    const match = got.resiliation.found && got.resiliation.value === expected.resiliation;
     results.push({
       option: 'resiliation',
-      ok: got.resiliation.found && got.resiliation.value === expected.resiliation,
+      ok: match,
       got: got.resiliation.value,
       expected: expected.resiliation
     });
+    if (!match) allMatch = false;
   }
   
   if (expected.reprise !== undefined) {
+    const match = got.reprise.found && got.reprise.value === expected.reprise;
     results.push({
       option: 'reprise',
-      ok: got.reprise.found && got.reprise.value === expected.reprise,
+      ok: match,
       got: got.reprise.value,
       expected: expected.reprise
     });
+    if (!match) allMatch = false;
   }
   
   console.table(results);
-  return results;
+  
+  if (!allMatch) {
+    const mismatches = results.filter(r => !r.ok).map(r => `${r.option}: attendu ${r.expected}, obtenu ${r.got}`);
+    return error(ERROR_CODES.VALUE_MISMATCH, `Options incorrectes: ${mismatches.join(', ')}`);
+  }
+  
+  return success({ results, allMatch: true });
 }
 
 /**
  * Diagnostique détaillé de tous les problèmes
  */
 export function diagnoseAll(expected = {}) {
-  const state = readAll();
+  const readResult = readAll();
   const health = healthCheckAllOptions();
   const issues = [];
   
-  // Vérifications par option
-  if (expected.madelin !== undefined && !state.madelin.found) {
-    issues.push({ option: 'madelin', severity: 'error', issue: 'not_found' });
-  } else if (state.madelin.found && !state.madelin.visible) {
-    issues.push({ option: 'madelin', severity: 'warning', issue: 'hidden' });
-  }
-  
-  if (expected.resiliation !== undefined && !state.resiliation.found) {
-    issues.push({ option: 'resiliation', severity: 'error', issue: 'not_found' });
-  }
-  
-  if (expected.reprise !== undefined && !state.reprise.found) {
-    issues.push({ option: 'reprise', severity: 'error', issue: 'not_found' });
+  let state = null;
+  if (readResult.ok) {
+    state = readResult.data;
+    
+    // Vérifications par option
+    if (expected.madelin !== undefined && !state.madelin.found) {
+      issues.push({ option: 'madelin', severity: 'error', issue: 'not_found' });
+    } else if (state.madelin.found && !state.madelin.visible) {
+      issues.push({ option: 'madelin', severity: 'warning', issue: 'hidden' });
+    }
+    
+    if (expected.resiliation !== undefined && !state.resiliation.found) {
+      issues.push({ option: 'resiliation', severity: 'error', issue: 'not_found' });
+    }
+    
+    if (expected.reprise !== undefined && !state.reprise.found) {
+      issues.push({ option: 'reprise', severity: 'error', issue: 'not_found' });
+    }
+  } else {
+    issues.push({ 
+      severity: 'error', 
+      issue: 'read_failed', 
+      message: readResult.error.message 
+    });
   }
   
   if (overlayPresent()) {
     issues.push({ severity: 'warning', issue: 'overlay_present' });
   }
   
-  return { 
+  const diagnosis = {
     state, 
     issues,
     health,
     available: detectAvailableOptions(),
-    visible: detectVisibleOptions()
+    visible: detectVisibleOptions(),
+    hasIssues: issues.length > 0
   };
+  
+  return success(diagnosis);
 }
 
 /**
@@ -213,13 +263,19 @@ export function validateAllOptions(options) {
  * Interface de diagnostic rapide
  */
 export function quickDiagnose() {
-  const health = healthCheckAllOptions();
-  return {
-    healthy: health.status === 'healthy',
-    score: health.score,
-    status: health.status,
-    summary: health.summary
-  };
+  try {
+    const health = healthCheckAllOptions();
+    const data = {
+      healthy: health.status === 'healthy',
+      score: health.score,
+      status: health.status,
+      summary: health.summary
+    };
+    
+    return success(data);
+  } catch (err) {
+    return error(ERROR_CODES.NOT_FOUND, `Erreur lors du diagnostic rapide: ${err.message}`);
+  }
 }
 
 // Exports pour compatibilité avec l'ancien code
