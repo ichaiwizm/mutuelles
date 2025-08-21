@@ -25,7 +25,6 @@
   "web_accessible_resources": [
     {
       "resources": [
-        "data/test-data.json",
         "data/swisslife-rules.json",
         "data/swisslife-mappings.json",
         "src/ui/ui.js",

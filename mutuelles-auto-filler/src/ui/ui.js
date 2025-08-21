@@ -1,5 +1,5 @@
-// Interface utilisateur simple
-export function createUI(onTestClick) {
+// Interface utilisateur pour sélection des leads
+export function createUI(leads, onTestClick) {
   // Éviter les doublons
   if (document.getElementById('orchestrator-panel')) {
     return;
@@ -30,6 +30,14 @@ export function createUI(onTestClick) {
     .orch-content {
       padding: 16px;
     }
+    .orch-select {
+      width: 100%;
+      padding: 8px;
+      margin-bottom: 12px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+    }
     .orch-button {
       background: #28a745;
       color: white;
@@ -44,10 +52,19 @@ export function createUI(onTestClick) {
     .orch-button:hover {
       background: #218838;
     }
+    .orch-button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
     .orch-status {
       padding: 8px 0;
       font-size: 12px;
       color: #666;
+    }
+    .orch-error {
+      color: #dc3545;
+      font-size: 12px;
+      padding: 8px 0;
     }
   `;
   document.head.appendChild(style);
@@ -55,31 +72,82 @@ export function createUI(onTestClick) {
   // Panel HTML
   const panel = document.createElement('div');
   panel.id = 'orchestrator-panel';
-  panel.innerHTML = `
-    <div class="orch-header">🎼 Orchestrateur</div>
-    <div class="orch-content">
-      <button class="orch-button" id="orch-test-btn">
-        🚀 Test DESCHAMPS
-      </button>
-      <div class="orch-status" id="orch-status">
-        Prêt...
+  
+  if (!leads || leads.length === 0) {
+    // Aucun lead disponible
+    panel.innerHTML = `
+      <div class="orch-header">🎼 Orchestrateur</div>
+      <div class="orch-content">
+        <div class="orch-error">
+          ❌ Aucun lead disponible<br>
+          Veuillez d'abord synchroniser depuis le dashboard localhost:5174
+        </div>
       </div>
-    </div>
-  `;
+    `;
+  } else {
+    // Leads disponibles
+    const leadOptions = leads.map((lead, index) => {
+      const nom = lead.lead?.nom || 'Nom inconnu';
+      const prenom = lead.lead?.prenom || 'Prénom inconnu';
+      const dateNaissance = lead.lead?.souscripteur?.dateNaissance || 'Date inconnue';
+      return `<option value="${index}">${nom} ${prenom} (${dateNaissance})</option>`;
+    }).join('');
+    
+    panel.innerHTML = `
+      <div class="orch-header">🎼 Orchestrateur (${leads.length} leads)</div>
+      <div class="orch-content">
+        <select class="orch-select" id="orch-lead-select">
+          <option value="">Sélectionner un lead...</option>
+          ${leadOptions}
+        </select>
+        <button class="orch-button" id="orch-test-btn" disabled>
+          🚀 Lancer le traitement
+        </button>
+        <div class="orch-status" id="orch-status">
+          Sélectionnez un lead pour commencer
+        </div>
+      </div>
+    `;
+  }
 
   document.body.appendChild(panel);
 
-  // Event listener
-  document.getElementById('orch-test-btn').addEventListener('click', async () => {
+  // Event listeners seulement si des leads sont disponibles
+  if (leads && leads.length > 0) {
+    const selectEl = document.getElementById('orch-lead-select');
+    const buttonEl = document.getElementById('orch-test-btn');
     const statusEl = document.getElementById('orch-status');
-    statusEl.textContent = 'Exécution...';
     
-    try {
-      await onTestClick();
-      statusEl.textContent = 'Succès ✅';
-    } catch (error) {
-      statusEl.textContent = 'Erreur ❌';
-      console.error(error);
-    }
-  });
+    // Activer/désactiver le bouton selon la sélection
+    selectEl.addEventListener('change', () => {
+      const selectedIndex = selectEl.value;
+      if (selectedIndex !== '') {
+        buttonEl.disabled = false;
+        const selectedLead = leads[parseInt(selectedIndex)];
+        statusEl.textContent = `Lead sélectionné: ${selectedLead.lead?.nom} ${selectedLead.lead?.prenom}`;
+      } else {
+        buttonEl.disabled = true;
+        statusEl.textContent = 'Sélectionnez un lead pour commencer';
+      }
+    });
+    
+    // Lancer le traitement
+    buttonEl.addEventListener('click', async () => {
+      const selectedIndex = parseInt(selectEl.value);
+      if (selectedIndex >= 0) {
+        statusEl.textContent = 'Traitement en cours...';
+        buttonEl.disabled = true;
+        
+        try {
+          await onTestClick(selectedIndex);
+          statusEl.textContent = 'Traitement terminé ✅';
+        } catch (error) {
+          statusEl.textContent = 'Erreur ❌';
+          console.error(error);
+        } finally {
+          buttonEl.disabled = false;
+        }
+      }
+    });
+  }
 }

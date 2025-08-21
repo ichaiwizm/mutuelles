@@ -35,16 +35,12 @@
         
         try {
           const { createUI } = await import(chrome.runtime.getURL('src/ui/ui.js'));
-          const { loadTestData, runTest } = await import(chrome.runtime.getURL('src/core/orchestrator.js'));
+          const { loadLeads, runTestWithLead } = await import(chrome.runtime.getURL('src/core/orchestrator.js'));
           
-          const loaded = await loadTestData();
-          if (!loaded) {
-            console.error('❌ Impossible de charger les données de test');
-            return;
-          }
+          const leads = await loadLeads();
           
-          createUI(async () => {
-            await runTest();
+          createUI(leads, async (leadIndex) => {
+            await runTestWithLead(leadIndex);
           });
           
           console.log('✅ Orchestrateur SwissLife prêt');

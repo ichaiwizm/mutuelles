@@ -3,54 +3,52 @@ import { processTemplate } from './template-processor.js';
 import { executeSwissLifeAction } from '../../services/swisslife/orchestrator-bridge.js';
 import { getResolver } from './dependency-resolver.js';
 
-let testData = null;
+let availableLeads = [];
 
-// Fonction pour vérifier les leads depuis chrome.storage
-async function checkChromeStorageLeads() {
+// Charger les leads depuis chrome.storage
+export async function loadLeads() {
   try {
     const result = await chrome.storage.local.get(['swisslife_leads']);
     
     if (result.swisslife_leads && Array.isArray(result.swisslife_leads)) {
-      console.log('✅ Leads trouvés dans chrome.storage:', result.swisslife_leads.length, 'leads');
-    } else if (result.swisslife_leads) {
-      console.log('⚠️ Données trouvées dans chrome.storage mais format inattendu:', typeof result.swisslife_leads);
+      availableLeads = result.swisslife_leads;
+      console.log('✅ Leads chargés depuis chrome.storage:', availableLeads.length, 'leads');
+      return availableLeads;
     } else {
+      availableLeads = [];
       console.log('❌ Aucun lead trouvé dans chrome.storage');
+      return [];
     }
   } catch (error) {
-    console.log('❌ Erreur lecture chrome.storage:', error.message);
+    console.error('❌ Erreur chargement leads:', error.message);
+    availableLeads = [];
+    return [];
   }
 }
 
-// Charger les données de test
-export async function loadTestData() {
-  // Vérification des leads depuis chrome.storage
-  await checkChromeStorageLeads();
-
-  try {
-    const response = await fetch(chrome.runtime.getURL('data/test-data.json'));
-    testData = await response.json();
-    console.log('📊 Données de test chargées');
-    return true;
-  } catch (error) {
-    console.error('❌ Erreur chargement données test:', error);
-    return false;
-  }
+// Obtenir la liste des leads disponibles
+export function getAvailableLeads() {
+  return availableLeads;
 }
 
-// Exécuter le test complet
-export async function runTest() {
-  if (!testData) {
-    throw new Error('Données de test non chargées');
+// Exécuter le traitement avec un lead spécifique
+export async function runTestWithLead(leadIndex) {
+  if (!availableLeads || availableLeads.length === 0) {
+    throw new Error('Aucun lead disponible');
+  }
+  
+  if (leadIndex < 0 || leadIndex >= availableLeads.length) {
+    throw new Error(`Index lead invalide: ${leadIndex}`);
   }
 
-  console.log('🚀 Démarrage test orchestrateur...');
+  const selectedLead = availableLeads[leadIndex];
+  console.log('🚀 Démarrage traitement lead:', `${selectedLead.lead.nom} ${selectedLead.lead.prenom}`);
   
   // Charger le résolveur de dépendances
   const resolver = await getResolver();
   
   // Traiter les étapes disponibles dans l'ordre
-  const etapes = testData.workflow.etapes
+  const etapes = selectedLead.workflow.etapes
     .filter(e => ['projectName', 'hospitalComfort', 'simulationType', 'subscriberInfo', 'spouseInfo', 'childrenInfo', 'gammes', 'options', 'dateEffet', 'navigation', 'nomProjet', 'bouton-suivant'].includes(e.name || e.nom))  // Support anglais/français + conjoint + enfants + gammes + options + dateEffet + navigation
     .sort((a, b) => (a.order || a.ordre) - (b.order || b.ordre));
   
@@ -64,7 +62,7 @@ export async function runTest() {
     
     // Vérifier condition (ex: conjoint existe)
     if (etape.condition) {
-      const conditionResult = processTemplate(etape.condition, testData);
+      const conditionResult = processTemplate(etape.condition, selectedLead);
       if (!conditionResult || conditionResult === 'false') {
         console.log('⏭️ Condition non remplie, skip étape');
         continue;
@@ -80,7 +78,7 @@ export async function runTest() {
       
       if (stepName === 'spouseInfo') {
         // Résolution spécifique pour le conjoint
-        const spouseData = resolver.resolveSpouse(testData);
+        const spouseData = resolver.resolveSpouse(selectedLead);
         if (!spouseData) {
           console.log('⏭️ Pas de données conjoint, skip étape');
           continue;
@@ -90,14 +88,14 @@ export async function runTest() {
         console.log('👫 Données conjoint résolues:', resolvedData);
       } else {
         // Résolution normale pour le souscripteur
-        resolvedData = resolver.resolveSubscriber(testData);
+        resolvedData = resolver.resolveSubscriber(selectedLead);
         resolverContext = { resolver: resolvedData };
         console.log('🎯 Données souscripteur résolues:', resolvedData);
       }
       
       // Enrichir les données avec les valeurs résolues
       for (const [key, value] of Object.entries(stepData)) {
-        stepData[key] = processTemplate(value, { ...testData, ...resolverContext });
+        stepData[key] = processTemplate(value, { ...selectedLead, ...resolverContext });
       }
       
       console.log('🎯 Données finales après template:', stepData);
@@ -117,7 +115,7 @@ export async function runTest() {
     } else {
       // Traitement normal des templates
       for (const [key, value] of Object.entries(stepData)) {
-        stepData[key] = processTemplate(value, testData);
+        stepData[key] = processTemplate(value, selectedLead);
       }
     }
 
