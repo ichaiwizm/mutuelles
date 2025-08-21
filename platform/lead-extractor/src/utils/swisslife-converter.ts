@@ -4,16 +4,19 @@ export { formatLeadForSwissLife as convertLeadToSwissLife, formatMultipleLeads, 
 // Import des fonctions pour usage interne
 import { formatLeadForSwissLife, validateFormattedLead } from './lead-formatter';
 
+// Import des types depuis lead-formatter
+import type { TestDataFormat } from './lead-formatter';
+
 // Types simplifiés pour l'export
 export interface BatchConversionResult {
-  successful: any[];
+  successful: TestDataFormat[];
   failed: { lead: any; errors: string[] }[];
   totalWarnings: string[];
 }
 
 // Fonction de conversion en batch utilisant le formatter unifié
 export function convertLeadsToSwissLife(leads: any[]): BatchConversionResult {
-  const successful: any[] = [];
+  const successful: TestDataFormat[] = [];
   const failed: { lead: any; errors: string[] }[] = [];
   const totalWarnings: string[] = [];
   

@@ -8,14 +8,15 @@
     "storage"
   ],
   "host_permissions": [
-    "https://*.swisslifeone.fr/*"
+    "https://*.swisslifeone.fr/*",
+    "http://localhost:5174/*"
   ],
   "action": {
     "default_title": "SwissLife Orchestrateur"
   },
   "content_scripts": [
     {
-      "matches": ["https://*.swisslifeone.fr/*"],
+      "matches": ["https://*.swisslifeone.fr/*", "http://localhost:5174/*"],
       "js": ["content.js"],
       "all_frames": true,
       "run_at": "document_end"

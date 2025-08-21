@@ -2,10 +2,12 @@
 (() => {
   'use strict';
   
-  // Vérifications de base
+  // Vérifications de base - autoriser SwissLife et localhost:5174
   const isSwissLife = window.location.hostname.includes('swisslifeone.fr');
-  if (!isSwissLife) {
-    console.log('❌ Pas sur SwissLife, exit');
+  const isLocalhost = window.location.hostname === 'localhost' && window.location.port === '5174';
+  
+  if (!isSwissLife && !isLocalhost) {
+    console.log('❌ Pas sur SwissLife ni localhost:5174, exit');
     return;
   }
   
@@ -18,7 +20,7 @@
     window.name === 'iFrameTarificateur'
   );
   
-  // Frame principal : UI et orchestrateur
+  // Frame principal : UI et orchestrateur sur SwissLife, synchronisation sur localhost
   if (isMainFrame) {
     if (window.orchestratorInitialized) {
       console.log('🔄 Orchestrateur déjà initialisé');
@@ -27,25 +29,53 @@
     window.orchestratorInitialized = true;
     
     async function initializeMain() {
-      console.log('🎼 Initialisation orchestrateur (frame principal)...');
-      
-      try {
-        const { createUI } = await import(chrome.runtime.getURL('src/ui/ui.js'));
-        const { loadTestData, runTest } = await import(chrome.runtime.getURL('src/core/orchestrator.js'));
+      if (isSwissLife) {
+        // Mode complet pour SwissLife
+        console.log('🎼 Initialisation orchestrateur SwissLife (frame principal)...');
         
-        const loaded = await loadTestData();
-        if (!loaded) {
-          console.error('❌ Impossible de charger les données de test');
-          return;
+        try {
+          const { createUI } = await import(chrome.runtime.getURL('src/ui/ui.js'));
+          const { loadTestData, runTest } = await import(chrome.runtime.getURL('src/core/orchestrator.js'));
+          
+          const loaded = await loadTestData();
+          if (!loaded) {
+            console.error('❌ Impossible de charger les données de test');
+            return;
+          }
+          
+          createUI(async () => {
+            await runTest();
+          });
+          
+          console.log('✅ Orchestrateur SwissLife prêt');
+        } catch (error) {
+          console.error('❌ Erreur initialisation SwissLife:', error);
         }
+      } else if (isLocalhost) {
+        // Mode synchronisation pour localhost
+        console.log('📡 Initialisation synchronisation localhost:5174...');
         
-        createUI(async () => {
-          await runTest();
+        // Signaler que l'extension est prête pour la communication
+        window.postMessage({
+          type: 'EXTENSION_READY',
+          source: 'mutuelles-extension'
+        }, '*');
+        
+        // Écouter les messages de la page
+        window.addEventListener('message', async (event) => {
+          if (event.source !== window) return;
+          
+          if (event.data.type === 'EXTENSION_STORAGE_SET' && event.data.source === 'mutuelles-platform') {
+            try {
+              await chrome.storage.local.set(event.data.data);
+              console.log('✅ Leads synchronisés dans chrome.storage');
+            } catch (error) {
+              console.error('❌ Erreur sauvegarde chrome.storage:', error);
+            }
+          }
         });
         
-        console.log('✅ Orchestrateur prêt');
-      } catch (error) {
-        console.error('❌ Erreur initialisation:', error);
+        console.log('✅ Extension active sur localhost - synchronisation chrome.storage disponible');
       }
     }
     

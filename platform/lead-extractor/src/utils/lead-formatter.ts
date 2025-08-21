@@ -1,36 +1,47 @@
 import type { Lead } from '@/types/lead';
 import { ServiceConfigManager, ConfigValueHelper, type SwissLifeConfig } from './service-config';
 
-// Structure du schéma SwissLife
-interface SwissLifeSchema {
-  projectName: string;
-  hospitalComfort: 'oui' | 'non';
-  simulationType: 'individuel' | 'couple';
+// Structure du format test-data.json
+export interface TestDataLead {
+  nom: string;
+  prenom: string;
+  contact: {
+    codePostal: string;
+  };
   souscripteur: {
     dateNaissance: string;
-    regimeSocial: string;
-    statut: string;
     profession: string;
-    departement: string;
+    regimeSocial: string;
+    nombreEnfants: number;
   };
   conjoint?: {
     dateNaissance: string;
-    regimeSocial: string;
-    statut: string;
     profession: string;
-    departement: string;
+    regimeSocial: string;
   };
   enfants?: Array<{
     dateNaissance: string;
-    ayantDroit?: 'souscripteur' | 'conjoint';
   }>;
-  gammes: string;
-  options: {
-    madelin: 'oui' | 'non';
-    resiliation: 'oui' | 'non';
-    reprise: 'oui' | 'non';
-  };
-  dateEffet: string;
+}
+
+export interface WorkflowEtape {
+  order: number;
+  name: string;
+  service: string;
+  required: boolean;
+  condition?: string;
+  autoResolve?: boolean;
+  validate?: boolean;
+  data: Record<string, any>;
+}
+
+export interface TestDataWorkflow {
+  etapes: WorkflowEtape[];
+}
+
+export interface TestDataFormat {
+  lead: TestDataLead;
+  workflow: TestDataWorkflow;
 }
 
 // Mappings de conversion
@@ -168,6 +179,20 @@ function mapRegimeSocial(regimeSocial?: string): string {
   return 'SECURITE_SOCIALE';
 }
 
+// Fonction pour mapper le régime social pour test-data.json (format original)
+function mapRegimeSocialForTestData(regimeSocial?: string): string {
+  if (!regimeSocial) return 'Salarié (ou retraité)';
+  
+  // Normaliser vers le format test-data
+  if (regimeSocial.toLowerCase().includes('tns') || 
+      regimeSocial.toLowerCase().includes('indépendant') ||
+      regimeSocial.toLowerCase().includes('non salarié')) {
+    return 'TNS : régime des indépendants';
+  }
+  
+  return 'Salarié (ou retraité)';
+}
+
 // Fonction pour mapper le statut
 function mapStatut(profession?: string, regimeSocial?: string): string {
   const regime = mapRegimeSocial(regimeSocial);
@@ -231,8 +256,8 @@ function getSimulationType(lead: Lead): 'individuel' | 'couple' {
 }
 
 // Fonction pour déterminer les options avec configuration
-function getOptions(_lead: Lead, _statut: string, config: SwissLifeConfig): SwissLifeSchema['options'] {
-  const options: SwissLifeSchema['options'] = {
+function getOptions(_lead: Lead, _statut: string, config: SwissLifeConfig): { madelin: 'oui' | 'non'; resiliation: 'oui' | 'non'; reprise: 'oui' | 'non' } {
+  const options = {
     // Madelin pour tous selon la configuration
     madelin: config.options.madelin,
     resiliation: config.options.resiliation,
@@ -247,76 +272,202 @@ function getOptions(_lead: Lead, _statut: string, config: SwissLifeConfig): Swis
   return options;
 }
 
+// Fonction pour générer le workflow dynamique
+function generateWorkflow(lead: TestDataLead, config: SwissLifeConfig): TestDataWorkflow {
+  const etapes: WorkflowEtape[] = [];
+  let order = 1;
+
+  // Étape 1: projectName (toujours)
+  etapes.push({
+    order: order++,
+    name: 'projectName',
+    service: 'nom-projet-service',
+    required: true,
+    data: {
+      value: `Simulation {{lead.nom}} {{lead.prenom}}`
+    }
+  });
+
+  // Étape 2: hospitalComfort (toujours)
+  etapes.push({
+    order: order++,
+    name: 'hospitalComfort',
+    service: 'confort-hospitalisation-service',
+    required: true,
+    data: {
+      value: config.forceValues.hospitalComfort || 'non'
+    }
+  });
+
+  // Étape 3: simulationType (seulement pour les couples)
+  const simulationType = lead.conjoint ? 'couple' : 'individuel';
+  if (simulationType === 'couple') {
+    etapes.push({
+      order: order++,
+      name: 'simulationType',
+      service: 'simulation-type-service',
+      required: true,
+      data: {
+        value: 'couple'
+      }
+    });
+  }
+
+  // Étape 4: subscriberInfo (toujours)
+  etapes.push({
+    order: order++,
+    name: 'subscriberInfo',
+    service: 'souscripteur-service',
+    required: true,
+    autoResolve: true,
+    validate: true,
+    data: {
+      regime: '{{resolver.regime}}',
+      statut: '{{resolver.statut}}',
+      profession: '{{resolver.profession}}',
+      dateNaissance: '{{resolver.dateNaissance}}',
+      departement: '{{resolver.departement}}'
+    }
+  });
+
+  // Étape 5: spouseInfo (si conjoint)
+  if (lead.conjoint) {
+    etapes.push({
+      order: order++,
+      name: 'spouseInfo',
+      service: 'conjoint-service',
+      required: false,
+      condition: '{{lead.conjoint}}',
+      autoResolve: true,
+      validate: true,
+      data: {
+        regime: '{{spouseResolver.regime}}',
+        statut: '{{spouseResolver.statut}}',
+        profession: '{{spouseResolver.profession}}',
+        dateNaissance: '{{lead.conjoint.dateNaissance}}',
+        departement: '{{spouseResolver.departement}}'
+      }
+    });
+  }
+
+  // Étape 6: childrenInfo (si enfants)
+  if (lead.souscripteur.nombreEnfants > 0) {
+    const childrenData: Record<string, any> = {
+      nbEnfants: '{{lead.souscripteur.nombreEnfants}}'
+    };
+    
+    // Ajouter jusqu'à 3 enfants
+    for (let i = 0; i < Math.min(3, lead.souscripteur.nombreEnfants); i++) {
+      childrenData[`enfant${i + 1}`] = `{{lead.enfants.${i}.dateNaissance}}`;
+    }
+    
+    etapes.push({
+      order: order++,
+      name: 'childrenInfo',
+      service: 'enfants-service',
+      required: false,
+      condition: '{{lead.souscripteur.nombreEnfants > 0}}',
+      data: childrenData
+    });
+  }
+
+  // Étape 7: gammes (toujours)
+  etapes.push({
+    order: order++,
+    name: 'gammes',
+    service: 'gammes-service',
+    required: true,
+    data: {
+      value: config.forceValues.gammes || 'SwissLife Santé'
+    }
+  });
+
+  // Étape 8: options (toujours)
+  const options = getOptions({} as Lead, 'TNS', config);
+  etapes.push({
+    order: order++,
+    name: 'options',
+    service: 'options-service',
+    required: true,
+    data: {
+      madelin: options.madelin,
+      resiliation: options.resiliation
+    }
+  });
+
+  // Étape 9: dateEffet (toujours)
+  etapes.push({
+    order: order++,
+    name: 'dateEffet',
+    service: 'date-effet-service',
+    required: true,
+    data: {
+      value: ConfigValueHelper.resolveDateEffet(config.forceValues.dateEffet)
+    }
+  });
+
+  // Étape 10: navigation (toujours)
+  etapes.push({
+    order: order++,
+    name: 'navigation',
+    service: 'navigation-service',
+    required: true,
+    data: {
+      action: 'next'
+    }
+  });
+
+  return { etapes };
+}
+
 // Fonction principale de formatage
-export function formatLeadForSwissLife(lead: Lead): SwissLifeSchema {
+export function formatLeadForSwissLife(lead: Lead): TestDataFormat {
   // Charger la configuration SwissLife
   const config = ServiceConfigManager.getServiceConfig('swisslife');
   
-  // Déterminer le régime social
-  const regimeSocial = mapRegimeSocial(lead.souscripteur?.regimeSocial);
-  const statut = mapStatut(lead.souscripteur?.profession, lead.souscripteur?.regimeSocial);
-  const profession = mapProfession(lead.souscripteur?.profession, statut);
-  const departement = getDepartementFromCodePostal(lead.contact?.codePostal);
-  
-  // Type de simulation
-  const simulationType = getSimulationType(lead);
-  
-  // Construire le schéma formaté
-  const formatted: SwissLifeSchema = {
-    projectName: `Simulation ${lead.contact?.nom || ''} ${lead.contact?.prenom || ''}`.trim(),
-    hospitalComfort: config.forceValues.hospitalComfort || 'non',
-    simulationType,
+  // Construire le lead formaté
+  const formattedLead: TestDataLead = {
+    nom: lead.contact?.nom || '',
+    prenom: lead.contact?.prenom || '',
+    contact: {
+      codePostal: lead.contact?.codePostal || ''
+    },
     souscripteur: {
       dateNaissance: formatDate(lead.souscripteur?.dateNaissance) || '',
-      regimeSocial,
-      statut,
-      profession,
-      departement
-    },
-    gammes: config.forceValues.gammes || 'SwissLife Santé',
-    options: getOptions(lead, statut, config),
-    dateEffet: getDateEffet(lead, config)
+      profession: lead.souscripteur?.profession || '',
+      regimeSocial: mapRegimeSocialForTestData(lead.souscripteur?.regimeSocial),
+      nombreEnfants: lead.enfants?.length || 0
+    }
   };
   
-  // Ajouter le conjoint si simulation couple
-  if (simulationType === 'couple' && lead.conjoint) {
-    const conjointRegime = mapRegimeSocial(lead.conjoint.regimeSocial);
-    const conjointStatut = mapStatut(lead.conjoint.profession, lead.conjoint.regimeSocial);
-    const conjointProfession = mapProfession(lead.conjoint.profession, conjointStatut);
-    
-    formatted.conjoint = {
-      dateNaissance: formatDate(lead.conjoint.dateNaissance) || '',
-      regimeSocial: conjointRegime,
-      statut: conjointStatut,
-      profession: conjointProfession,
-      departement // Même département que le souscripteur
+  // Ajouter le conjoint si présent
+  if (lead.conjoint?.dateNaissance) {
+    formattedLead.conjoint = {
+      dateNaissance: formatDate(lead.conjoint.dateNaissance),
+      profession: lead.conjoint.profession || '',
+      regimeSocial: mapRegimeSocialForTestData(lead.conjoint.regimeSocial)
     };
   }
   
   // Ajouter les enfants si présents
   if (lead.enfants && lead.enfants.length > 0) {
-    formatted.enfants = lead.enfants
-      .slice(0, 4) // Maximum 4 enfants
-      .map(enfant => {
-        const enfantFormatted: any = {
-          dateNaissance: formatDate(enfant.dateNaissance) || ''
-        };
-        
-        // Ajouter ayantDroit seulement pour les couples
-        if (simulationType === 'couple') {
-          enfantFormatted.ayantDroit = 'souscripteur';
-        }
-        
-        return enfantFormatted;
-      });
+    formattedLead.enfants = lead.enfants.map(enfant => ({
+      dateNaissance: formatDate(enfant.dateNaissance) || ''
+    }));
   }
   
-  return formatted;
+  // Générer le workflow
+  const workflow = generateWorkflow(formattedLead, config);
+  
+  return {
+    lead: formattedLead,
+    workflow
+  };
 }
 
 // Fonction pour formater plusieurs leads
-export function formatMultipleLeads(leads: Lead[]): Record<string, SwissLifeSchema> {
-  const formattedLeads: Record<string, SwissLifeSchema> = {};
+export function formatMultipleLeads(leads: Lead[]): Record<string, TestDataFormat> {
+  const formattedLeads: Record<string, TestDataFormat> = {};
   
   for (const lead of leads) {
     if (lead.id) {
@@ -345,7 +496,7 @@ export function saveFormattedLeadsToStorage(leads: Lead[]): void {
 }
 
 // Fonction pour récupérer les leads formatés du localStorage
-export function getFormattedLeadsFromStorage(): Record<string, SwissLifeSchema> | null {
+export function getFormattedLeadsFromStorage(): Record<string, TestDataFormat> | null {
   const stored = localStorage.getItem('swisslife_formatted_leads');
   if (!stored) return null;
   
@@ -358,7 +509,7 @@ export function getFormattedLeadsFromStorage(): Record<string, SwissLifeSchema> 
 }
 
 // Fonction pour valider un lead formaté
-export function validateFormattedLead(lead: SwissLifeSchema): {
+export function validateFormattedLead(testData: TestDataFormat): {
   isValid: boolean;
   errors: string[];
   warnings: string[];
@@ -366,26 +517,38 @@ export function validateFormattedLead(lead: SwissLifeSchema): {
   const errors: string[] = [];
   const warnings: string[] = [];
   
-  // Validation basique du schéma formaté
-  if (!lead.projectName || lead.projectName.trim() === '') {
-    warnings.push('Nom du projet manquant');
+  // Validation de la structure lead
+  if (!testData.lead?.nom || testData.lead.nom.trim() === '') {
+    warnings.push('Nom du lead manquant');
   }
   
-  if (!lead.souscripteur?.dateNaissance) {
+  if (!testData.lead?.souscripteur?.dateNaissance) {
     errors.push('Date de naissance du souscripteur manquante');
   }
   
-  if (!lead.dateEffet) {
-    errors.push('Date d\'effet manquante');
+  // Validation du workflow
+  if (!testData.workflow?.etapes || testData.workflow.etapes.length === 0) {
+    errors.push('Workflow manquant ou vide');
   }
   
-  if (lead.simulationType === 'couple' && !lead.conjoint?.dateNaissance) {
+  // Vérifier la cohérence entre lead et workflow
+  const simulationType = testData.lead.conjoint ? 'couple' : 'individuel';
+  const simulationTypeEtape = testData.workflow.etapes.find(e => e.name === 'simulationType');
+  
+  if (simulationTypeEtape && simulationTypeEtape.data.value !== simulationType) {
+    warnings.push('Incohérence entre lead et type de simulation dans le workflow');
+  }
+  
+  // Validation conjoint
+  if (testData.lead.conjoint && !testData.lead.conjoint.dateNaissance) {
     errors.push('Date de naissance du conjoint manquante pour une simulation couple');
   }
   
-  // Validation logique métier
-  if (lead.options?.reprise === 'oui' && lead.options?.resiliation === 'non') {
-    errors.push('Incohérence: reprise d\'ancienneté sans résiliation');
+  // Validation enfants
+  if (testData.lead.souscripteur.nombreEnfants > 0) {
+    if (!testData.lead.enfants || testData.lead.enfants.length === 0) {
+      errors.push('Enfants déclarés mais aucune donnée d\'enfant présente');
+    }
   }
   
   return {
@@ -393,4 +556,70 @@ export function validateFormattedLead(lead: SwissLifeSchema): {
     errors,
     warnings
   };
+}
+
+// Fonction de test avec un lead d'exemple
+export function testLeadConversion(): void {
+  // Lead d'exemple basé sur les données fournies (DESCHAMPS)
+  const sampleLead = {
+    id: "1b326cd5-5919-4233-a611-74e8113ce013",
+    contact: {
+      civilite: "M.",
+      nom: "Deschamps",
+      prenom: "Baptiste",
+      adresse: "2 RUE DEBRAY",
+      codePostal: "44300",
+      ville: "NANTES",
+      telephone: "06.99.79.67.14",
+      email: "baptiste.deschamps@hotmail.fr"
+    },
+    souscripteur: {
+      dateNaissance: "1991-06-02",
+      profession: "Chef d'entreprise",
+      regimeSocial: "TNS",
+      nombreEnfants: 3
+    },
+    conjoint: {
+      dateNaissance: "1992-09-11",
+      profession: "En recherche d'emploi",
+      regimeSocial: "Salarié"
+    },
+    enfants: [
+      { dateNaissance: "2019-03-14" },
+      { dateNaissance: "2021-05-05" },
+      { dateNaissance: "2024-08-08" }
+    ],
+    besoins: {
+      dateEffet: "2025-04-07",
+      assureActuellement: false,
+      niveaux: {
+        soinsMedicaux: 3,
+        hospitalisation: 3,
+        optique: 3,
+        dentaire: 3
+      }
+    }
+  };
+  
+  try {
+    console.log('🧪 Test de conversion lead → test-data.json');
+    const converted = formatLeadForSwissLife(sampleLead as any);
+    const validation = validateFormattedLead(converted);
+    
+    console.log('📊 Lead converti:', JSON.stringify(converted, null, 2));
+    console.log('✅ Validation:', validation);
+    
+    if (validation.isValid) {
+      console.log('✅ Conversion réussie !');
+    } else {
+      console.log('❌ Erreurs de validation:', validation.errors);
+    }
+    
+    if (validation.warnings.length > 0) {
+      console.log('⚠️ Avertissements:', validation.warnings);
+    }
+    
+  } catch (error) {
+    console.error('❌ Erreur lors de la conversion:', error);
+  }
 }

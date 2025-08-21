@@ -5,8 +5,28 @@ import { getResolver } from './dependency-resolver.js';
 
 let testData = null;
 
+// Fonction pour vérifier les leads depuis chrome.storage
+async function checkChromeStorageLeads() {
+  try {
+    const result = await chrome.storage.local.get(['swisslife_leads']);
+    
+    if (result.swisslife_leads && Array.isArray(result.swisslife_leads)) {
+      console.log('✅ Leads trouvés dans chrome.storage:', result.swisslife_leads.length, 'leads');
+    } else if (result.swisslife_leads) {
+      console.log('⚠️ Données trouvées dans chrome.storage mais format inattendu:', typeof result.swisslife_leads);
+    } else {
+      console.log('❌ Aucun lead trouvé dans chrome.storage');
+    }
+  } catch (error) {
+    console.log('❌ Erreur lecture chrome.storage:', error.message);
+  }
+}
+
 // Charger les données de test
 export async function loadTestData() {
+  // Vérification des leads depuis chrome.storage
+  await checkChromeStorageLeads();
+
   try {
     const response = await fetch(chrome.runtime.getURL('data/test-data.json'));
     testData = await response.json();

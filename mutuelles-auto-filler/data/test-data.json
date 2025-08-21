@@ -1,50 +1,15 @@
 {
   "lead": {
-    "id": "test-deschamps-001",
-    "nom": "DESCHAMPS",
-    "prenom": "BAPTISTE",
+    "nom": "LAURENT",
+    "prenom": "PIERRE",
     "contact": {
-      "adresse": "2 RUE DEBRAY",
-      "codePostal": "44300",
-      "ville": "NANTES",
-      "telephone": "06.99.79.67.14",
-      "email": "baptiste.deschamps@hotmail.fr"
+      "codePostal": "75008"
     },
     "souscripteur": {
-      "civilite": "M.",
-      "dateNaissance": "02/06/1991",
-      "profession": "Chef d'entreprise",
+      "dateNaissance": "01/06/1963",
+      "profession": "Profession libérale",
       "regimeSocial": "TNS : régime des indépendants",
-      "nombreEnfants": 3
-    },
-    "conjoint": {
-      "dateNaissance": "11/09/1992",
-      "profession": "En recherche d'emploi",
-      "regimeSocial": "Salarié (ou retraité)"
-    },
-    "enfants": [
-      {
-        "ordre": 1,
-        "dateNaissance": "14/03/2019"
-      },
-      {
-        "ordre": 2,
-        "dateNaissance": "05/05/2021"
-      },
-      {
-        "ordre": 3,
-        "dateNaissance": "08/08/2024"
-      }
-    ],
-    "besoins": {
-      "dateEffet": "07/04/2025",
-      "actuellementAssure": "Non",
-      "niveaux": {
-        "soins": 3,
-        "hospitalisation": 3,
-        "optique": 3,
-        "dentaire": 3
-      }
+      "nombreEnfants": 0
     }
   },
   "workflow": {
@@ -69,15 +34,6 @@
       },
       {
         "order": 3,
-        "name": "simulationType",
-        "service": "simulation-type-service",
-        "required": true,
-        "data": {
-          "value": "couple"
-        }
-      },
-      {
-        "order": 4,
         "name": "subscriberInfo",
         "service": "souscripteur-service",
         "required": true,
@@ -92,36 +48,7 @@
         }
       },
       {
-        "order": 5,
-        "name": "spouseInfo",
-        "service": "conjoint-service",
-        "required": false,
-        "condition": "{{lead.conjoint}}",
-        "autoResolve": true,
-        "validate": true,
-        "data": {
-          "regime": "{{spouseResolver.regime}}",
-          "statut": "{{spouseResolver.statut}}",
-          "profession": "{{spouseResolver.profession}}",
-          "dateNaissance": "{{lead.conjoint.dateNaissance}}",
-          "departement": "{{spouseResolver.departement}}"
-        }
-      },
-      {
-        "order": 6,
-        "name": "childrenInfo",
-        "service": "enfants-service",
-        "required": false,
-        "condition": "{{lead.souscripteur.nombreEnfants > 0}}",
-        "data": {
-          "nbEnfants": "{{lead.souscripteur.nombreEnfants}}",
-          "enfant1": "{{lead.enfants.0.dateNaissance}}",
-          "enfant2": "{{lead.enfants.1.dateNaissance}}",
-          "enfant3": "{{lead.enfants.2.dateNaissance}}"
-        }
-      },
-      {
-        "order": 7,
+        "order": 4,
         "name": "gammes",
         "service": "gammes-service",
         "required": true,
@@ -130,7 +57,7 @@
         }
       },
       {
-        "order": 8,
+        "order": 5,
         "name": "options",
         "service": "options-service",
         "required": true,
@@ -140,16 +67,16 @@
         }
       },
       {
-        "order": 9,
+        "order": 6,
         "name": "dateEffet",
         "service": "date-effet-service",
         "required": true,
         "data": {
-          "value": "07/04/2025"
+          "value": "01/09/2025"
         }
       },
       {
-        "order": 10,
+        "order": 7,
         "name": "navigation",
         "service": "navigation-service",
         "required": true,
@@ -158,19 +85,5 @@
         }
       }
     ]
-  },
-  "mappings": {
-    "regimeSocial": {
-      "TNS : régime des indépendants": "TNS",
-      "Salarié (ou retraité)": "SECURITE_SOCIALE",
-      "TNS": "TNS",
-      "Salarié": "SECURITE_SOCIALE"
-    },
-    "statut": {
-      "Chef d'entreprise": "TNS",
-      "En recherche d'emploi": "SALARIE",
-      "TNS": "TNS",
-      "Salarié": "SALARIE"
-    }
   }
 }
