@@ -53,7 +53,7 @@ async function saveProcessingStatus(leadId, status, details = {}) {
 }
 
 // Exécuter le traitement avec un lead spécifique
-export async function runTestWithLead(leadIndex) {
+export async function runTestWithLead(leadIndex, onProgress = null) {
   if (!availableLeads || availableLeads.length === 0) {
     throw new Error('Aucun lead disponible');
   }
@@ -90,11 +90,32 @@ export async function runTestWithLead(leadIndex) {
   
   console.log(`🎯 ${etapes.length} étapes à traiter`);
 
-  for (const etape of etapes) {
+  // Notifier l'UI du début du traitement
+  if (onProgress) {
+    onProgress({
+      type: 'start',
+      totalSteps: etapes.length,
+      leadName: `${selectedLead.lead.nom} ${selectedLead.lead.prenom}`
+    });
+  }
+
+  for (let index = 0; index < etapes.length; index++) {
+    const etape = etapes[index];
     const stepName = etape.name || etape.nom;
     let stepData = { ...etape.data };
     
     console.log(`📋 Étape ${etape.order || etape.ordre}: ${stepName}`);
+    
+    // Notifier l'UI de l'étape en cours
+    if (onProgress) {
+      onProgress({
+        type: 'step',
+        currentStep: index + 1,
+        totalSteps: etapes.length,
+        stepName: stepName,
+        status: 'in_progress'
+      });
+    }
     
     // Vérifier condition (ex: conjoint existe)
     if (etape.condition) {
@@ -174,6 +195,16 @@ export async function runTestWithLead(leadIndex) {
   
     console.log('🎉 Toutes les étapes terminées avec succès');
     
+    // Notifier l'UI de la fin du traitement
+    if (onProgress) {
+      onProgress({
+        type: 'complete',
+        status: 'success',
+        leadName: `${selectedLead.lead.nom} ${selectedLead.lead.prenom}`,
+        completedSteps: etapes.length
+      });
+    }
+    
     // Sauvegarder le statut de succès
     await saveProcessingStatus(leadId, 'success', {
       leadName: `${selectedLead.lead.nom} ${selectedLead.lead.prenom}`,
@@ -183,6 +214,16 @@ export async function runTestWithLead(leadIndex) {
     
     return { ok: true, completedSteps: etapes.length };
   } catch (error) {
+    // Notifier l'UI de l'erreur
+    if (onProgress) {
+      onProgress({
+        type: 'error',
+        status: 'error',
+        leadName: `${selectedLead.lead.nom} ${selectedLead.lead.prenom}`,
+        errorMessage: error.message
+      });
+    }
+    
     // Sauvegarder le statut d'erreur
     await saveProcessingStatus(leadId, 'error', {
       leadName: `${selectedLead.lead.nom} ${selectedLead.lead.prenom}`,

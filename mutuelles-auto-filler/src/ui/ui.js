@@ -1,3 +1,45 @@
+// Fonctions utilitaires pour l'historique
+function saveLastResult(result) {
+  try {
+    localStorage.setItem('orch-last-result', JSON.stringify(result));
+    displayHistory(result);
+  } catch (error) {
+    console.warn('Impossible de sauvegarder l\'historique:', error);
+  }
+}
+
+function loadAndDisplayHistory() {
+  try {
+    const stored = localStorage.getItem('orch-last-result');
+    if (stored) {
+      const history = JSON.parse(stored);
+      displayHistory(history);
+    }
+  } catch (error) {
+    console.warn('Impossible de charger l\'historique:', error);
+  }
+}
+
+function displayHistory(history) {
+  const historyEl = document.getElementById('orch-history');
+  const lastResultEl = document.getElementById('orch-last-result');
+  
+  if (historyEl && lastResultEl && history) {
+    const time = new Date(history.timestamp).toLocaleTimeString('fr-FR', {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+    
+    const statusClass = history.status === 'success' ? 'orch-history-success' : 'orch-history-error';
+    const statusText = history.status === 'success' 
+      ? `✅ ${history.leadName} (${history.steps || 0} étapes)`
+      : `❌ ${history.leadName}: ${history.error || 'Erreur inconnue'}`;
+    
+    lastResultEl.innerHTML = `<div class="${statusClass}">${statusText}</div><div>${time}</div>`;
+    historyEl.style.display = 'block';
+  }
+}
+
 // Interface utilisateur pour sélection des leads
 export function createUI(leads, onTestClick) {
   // Éviter les doublons
@@ -66,6 +108,66 @@ export function createUI(leads, onTestClick) {
       font-size: 12px;
       padding: 8px 0;
     }
+    .orch-button-secondary {
+      background: #6c757d;
+      color: white;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+      width: 100%;
+      margin-bottom: 8px;
+    }
+    .orch-button-secondary:hover {
+      background: #5a6268;
+    }
+    .orch-progress-container {
+      margin: 12px 0;
+      background: #f0f0f0;
+      border-radius: 4px;
+      height: 20px;
+      position: relative;
+      overflow: hidden;
+      display: none;
+    }
+    .orch-progress-bar {
+      height: 100%;
+      background: linear-gradient(90deg, #007bff, #0056b3);
+      transition: width 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 11px;
+      width: 0%;
+    }
+    .orch-step-detail {
+      font-size: 12px;
+      color: #007bff;
+      padding: 4px 0;
+      min-height: 16px;
+    }
+    .orch-history {
+      background: #f8f9fa;
+      border: 1px solid #e9ecef;
+      border-radius: 4px;
+      padding: 8px;
+      margin-top: 12px;
+      font-size: 11px;
+      display: none;
+    }
+    .orch-history-title {
+      font-weight: bold;
+      color: #495057;
+      margin-bottom: 4px;
+    }
+    .orch-history-success {
+      color: #28a745;
+    }
+    .orch-history-error {
+      color: #dc3545;
+    }
   `;
   document.head.appendChild(style);
 
@@ -100,11 +202,22 @@ export function createUI(leads, onTestClick) {
           <option value="">Sélectionner un lead...</option>
           ${leadOptions}
         </select>
+        <div class="orch-progress-container" id="orch-progress">
+          <div class="orch-progress-bar" id="orch-progress-bar">0%</div>
+        </div>
+        <div class="orch-step-detail" id="orch-step-detail"></div>
         <button class="orch-button" id="orch-test-btn" disabled>
           🚀 Lancer le traitement
         </button>
+        <button class="orch-button-secondary" id="orch-refresh-btn">
+          🔄 Rafraîchir les leads
+        </button>
         <div class="orch-status" id="orch-status">
           Sélectionnez un lead pour commencer
+        </div>
+        <div class="orch-history" id="orch-history">
+          <div class="orch-history-title">Dernier traitement:</div>
+          <div id="orch-last-result"></div>
         </div>
       </div>
     `;
@@ -112,11 +225,18 @@ export function createUI(leads, onTestClick) {
 
   document.body.appendChild(panel);
 
+  // Charger et afficher l'historique au démarrage
+  loadAndDisplayHistory();
+
   // Event listeners seulement si des leads sont disponibles
   if (leads && leads.length > 0) {
     const selectEl = document.getElementById('orch-lead-select');
     const buttonEl = document.getElementById('orch-test-btn');
+    const refreshEl = document.getElementById('orch-refresh-btn');
     const statusEl = document.getElementById('orch-status');
+    const progressEl = document.getElementById('orch-progress');
+    const progressBarEl = document.getElementById('orch-progress-bar');
+    const stepDetailEl = document.getElementById('orch-step-detail');
     
     // Activer/désactiver le bouton selon la sélection
     selectEl.addEventListener('change', () => {
@@ -131,22 +251,84 @@ export function createUI(leads, onTestClick) {
       }
     });
     
-    // Lancer le traitement
+    // Callback pour recevoir les mises à jour de progression
+    const handleProgress = (update) => {
+      if (update.type === 'start') {
+        progressEl.style.display = 'block';
+        progressBarEl.style.width = '0%';
+        progressBarEl.textContent = '0%';
+        stepDetailEl.textContent = `Traitement de ${update.leadName}`;
+        statusEl.textContent = 'Traitement en cours...';
+      } else if (update.type === 'step') {
+        const percent = Math.round((update.currentStep / update.totalSteps) * 100);
+        progressBarEl.style.width = `${percent}%`;
+        progressBarEl.textContent = `${percent}%`;
+        stepDetailEl.textContent = `Étape ${update.currentStep}/${update.totalSteps}: ${update.stepName}`;
+      } else if (update.type === 'complete') {
+        progressBarEl.style.width = '100%';
+        progressBarEl.textContent = '100%';
+        stepDetailEl.textContent = '✅ Traitement terminé avec succès';
+        statusEl.textContent = 'Traitement terminé ✅';
+        saveLastResult({
+          leadName: update.leadName,
+          status: 'success',
+          timestamp: new Date().toISOString(),
+          steps: update.completedSteps
+        });
+      } else if (update.type === 'error') {
+        stepDetailEl.textContent = `❌ Erreur: ${update.errorMessage}`;
+        statusEl.textContent = 'Erreur ❌';
+        saveLastResult({
+          leadName: update.leadName,
+          status: 'error',
+          timestamp: new Date().toISOString(),
+          error: update.errorMessage
+        });
+      }
+    };
+
+    // Lancer le traitement avec callback de progression
     buttonEl.addEventListener('click', async () => {
       const selectedIndex = parseInt(selectEl.value);
       if (selectedIndex >= 0) {
-        statusEl.textContent = 'Traitement en cours...';
         buttonEl.disabled = true;
+        refreshEl.disabled = true;
         
         try {
-          await onTestClick(selectedIndex);
-          statusEl.textContent = 'Traitement terminé ✅';
+          await onTestClick(selectedIndex, handleProgress);
         } catch (error) {
-          statusEl.textContent = 'Erreur ❌';
           console.error(error);
         } finally {
           buttonEl.disabled = false;
+          refreshEl.disabled = false;
+          // Masquer la barre de progression après 3 secondes
+          setTimeout(() => {
+            progressEl.style.display = 'none';
+            stepDetailEl.textContent = '';
+          }, 3000);
         }
+      }
+    });
+
+    // Rafraîchir les leads
+    refreshEl.addEventListener('click', async () => {
+      refreshEl.disabled = true;
+      statusEl.textContent = 'Rafraîchissement...';
+      
+      try {
+        const { loadLeads } = await import(chrome.runtime.getURL('src/core/orchestrator.js'));
+        const newLeads = await loadLeads();
+        
+        // Supprimer l'ancien panel et recréer avec les nouveaux leads
+        document.getElementById('orchestrator-panel').remove();
+        createUI(newLeads, onTestClick);
+        
+        console.log('✅ Leads rafraîchis');
+      } catch (error) {
+        console.error('❌ Erreur rafraîchissement:', error);
+        statusEl.textContent = 'Erreur de rafraîchissement ❌';
+      } finally {
+        refreshEl.disabled = false;
       }
     });
   }

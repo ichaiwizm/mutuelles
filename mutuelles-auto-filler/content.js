@@ -39,8 +39,8 @@
           
           const leads = await loadLeads();
           
-          createUI(leads, async (leadIndex) => {
-            await runTestWithLead(leadIndex);
+          createUI(leads, async (leadIndex, handleProgress) => {
+            await runTestWithLead(leadIndex, handleProgress);
           });
           
           console.log('✅ Orchestrateur SwissLife prêt');
