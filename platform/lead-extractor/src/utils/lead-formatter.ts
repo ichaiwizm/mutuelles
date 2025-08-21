@@ -3,6 +3,7 @@ import { ServiceConfigManager, ConfigValueHelper, type SwissLifeConfig } from '.
 
 // Structure du format test-data.json
 export interface TestDataLead {
+  id: string;
   nom: string;
   prenom: string;
   contact: {
@@ -427,6 +428,7 @@ export function formatLeadForSwissLife(lead: Lead): TestDataFormat {
   
   // Construire le lead formaté
   const formattedLead: TestDataLead = {
+    id: lead.id,
     nom: lead.contact?.nom || '',
     prenom: lead.contact?.prenom || '',
     contact: {

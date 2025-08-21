@@ -13,6 +13,8 @@ export async function loadLeads() {
     if (result.swisslife_leads && Array.isArray(result.swisslife_leads)) {
       availableLeads = result.swisslife_leads;
       console.log('✅ Leads chargés depuis chrome.storage:', availableLeads.length, 'leads');
+      
+      
       return availableLeads;
     } else {
       availableLeads = [];
@@ -31,6 +33,25 @@ export function getAvailableLeads() {
   return availableLeads;
 }
 
+// Sauvegarder le statut de traitement dans chrome.storage
+async function saveProcessingStatus(leadId, status, details = {}) {
+  try {
+    const result = await chrome.storage.local.get(['swisslife_processing_status']);
+    const statusHistory = result.swisslife_processing_status || {};
+    
+    statusHistory[leadId] = {
+      status,
+      timestamp: new Date().toISOString(),
+      ...details
+    };
+    
+    await chrome.storage.local.set({ swisslife_processing_status: statusHistory });
+    console.log(`💾 Statut sauvegardé pour lead ${leadId}:`, status);
+  } catch (error) {
+    console.error('❌ Erreur sauvegarde statut:', error);
+  }
+}
+
 // Exécuter le traitement avec un lead spécifique
 export async function runTestWithLead(leadIndex) {
   if (!availableLeads || availableLeads.length === 0) {
@@ -42,10 +63,25 @@ export async function runTestWithLead(leadIndex) {
   }
 
   const selectedLead = availableLeads[leadIndex];
-  console.log('🚀 Démarrage traitement lead:', `${selectedLead.lead.nom} ${selectedLead.lead.prenom}`);
   
-  // Charger le résolveur de dépendances
-  const resolver = await getResolver();
+  
+  const leadId = selectedLead.lead.id;
+  
+  if (!leadId) {
+    console.error('❌ Structure du lead sélectionné:', selectedLead);
+    throw new Error('Aucun ID trouvé pour le lead sélectionné');
+  }
+  
+  console.log('🚀 Démarrage traitement lead:', `${selectedLead.lead.nom} ${selectedLead.lead.prenom} (ID: ${leadId})`);
+  
+  // Marquer le lead comme en cours de traitement
+  await saveProcessingStatus(leadId, 'processing', {
+    leadName: `${selectedLead.lead.nom} ${selectedLead.lead.prenom}`
+  });
+  
+  try {
+    // Charger le résolveur de dépendances
+    const resolver = await getResolver();
   
   // Traiter les étapes disponibles dans l'ordre
   const etapes = selectedLead.workflow.etapes
@@ -136,6 +172,24 @@ export async function runTestWithLead(leadIndex) {
     }
   }
   
-  console.log('🎉 Toutes les étapes terminées avec succès');
-  return { ok: true, completedSteps: etapes.length };
+    console.log('🎉 Toutes les étapes terminées avec succès');
+    
+    // Sauvegarder le statut de succès
+    await saveProcessingStatus(leadId, 'success', {
+      leadName: `${selectedLead.lead.nom} ${selectedLead.lead.prenom}`,
+      completedSteps: etapes.length,
+      processedAt: new Date().toISOString()
+    });
+    
+    return { ok: true, completedSteps: etapes.length };
+  } catch (error) {
+    // Sauvegarder le statut d'erreur
+    await saveProcessingStatus(leadId, 'error', {
+      leadName: `${selectedLead.lead.nom} ${selectedLead.lead.prenom}`,
+      errorMessage: error.message,
+      failedAt: new Date().toISOString()
+    });
+    
+    throw error; // Re-lancer l'erreur pour l'UI
+  }
 }

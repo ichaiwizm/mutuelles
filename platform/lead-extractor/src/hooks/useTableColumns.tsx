@@ -39,6 +39,44 @@ export function useTableColumns(): ColumnDef<Lead>[] {
       cell: ({ row }) => <Badge variant="outline">{row.original.source}</Badge>,
     },
     {
+      id: 'processing-status',
+      header: 'Statut',
+      cell: ({ row }) => {
+        const status = row.original.processingStatus;
+        if (!status) return <Badge variant="outline">Non traité</Badge>;
+        
+        const getStatusBadge = () => {
+          switch (status.status) {
+            case 'success':
+              return <Badge variant="default" className="bg-green-500 hover:bg-green-600">✅ Traité</Badge>;
+            case 'error':
+              return <Badge variant="destructive" title={status.errorMessage}>❌ Erreur</Badge>;
+            case 'processing':
+              return <Badge variant="secondary" className="bg-blue-500 hover:bg-blue-600 text-white">⏳ En cours</Badge>;
+            case 'pending':
+            default:
+              return <Badge variant="outline">⏸️ En attente</Badge>;
+          }
+        };
+        
+        return (
+          <div className="flex flex-col gap-1">
+            {getStatusBadge()}
+            {status.timestamp && (
+              <div className="text-xs text-gray-500">
+                {new Date(status.timestamp).toLocaleString('fr-FR', {
+                  day: '2-digit',
+                  month: '2-digit',
+                  hour: '2-digit',
+                  minute: '2-digit'
+                })}
+              </div>
+            )}
+          </div>
+        );
+      },
+    },
+    {
       id: 'score',
       header: 'Score',
       accessorKey: 'score',

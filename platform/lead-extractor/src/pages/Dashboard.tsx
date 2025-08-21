@@ -6,6 +6,7 @@ import { useLeads } from '@/hooks/useLeads';
 import { useSettings } from '@/hooks/useSettings';
 import { useUIState } from '@/hooks/useUIState';
 import { useSSEExtraction } from '@/hooks/useSSEExtraction';
+import { useProcessingStatus } from '@/hooks/useProcessingStatus';
 import { ControlsPanel } from '@/components/dashboard/ControlsPanel';
 import { TabsNavigation } from '@/components/dashboard/TabsNavigation';
 import { ProgressPanel } from '@/components/dashboard/ProgressPanel';
@@ -22,6 +23,7 @@ export function Dashboard() {
   // Hooks personnalisés
   const { isAuthenticated, checkAuthStatus, redirectToLogin } = useAuth();
   const { leads, qualifiedLeads, addLeads, clearAllLeads, stats } = useLeads();
+  const { enrichLeadsWithStatus, getStatusStats } = useProcessingStatus();
   const {
     days, setDays,
     gmailEnabled, setGmailEnabled,
@@ -66,13 +68,18 @@ export function Dashboard() {
     setCurrentLeadIndex(newIndex);
   };
 
-  // Données de table selon l'onglet actif
+  // Données de table selon l'onglet actif (enrichies avec les statuts de traitement)
   const getTableData = () => {
-    switch (uiState?.activeTab || 'leads') {
-      case 'leads': return qualifiedLeads;
-      case 'all': return leads;
-      default: return leads;
-    }
+    const baseData = (() => {
+      switch (uiState?.activeTab || 'leads') {
+        case 'leads': return qualifiedLeads;
+        case 'all': return leads;
+        default: return leads;
+      }
+    })();
+    
+    // Enrichir avec les statuts de traitement
+    return enrichLeadsWithStatus(baseData);
   };
 
   return (

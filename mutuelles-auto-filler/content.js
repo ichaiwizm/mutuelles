@@ -64,10 +64,36 @@
           if (event.data.type === 'EXTENSION_STORAGE_SET' && event.data.source === 'mutuelles-platform') {
             try {
               await chrome.storage.local.set(event.data.data);
-              console.log('✅ Leads synchronisés dans chrome.storage');
+              console.log('✅ Chrome storage mis à jour');
             } catch (error) {
               console.error('❌ Erreur sauvegarde chrome.storage:', error);
             }
+          }
+          
+          // Répondre aux demandes de statuts de traitement
+          if (event.data.type === 'GET_PROCESSING_STATUS' && event.data.source === 'mutuelles-platform') {
+            try {
+              const result = await chrome.storage.local.get(['swisslife_processing_status']);
+              window.postMessage({
+                type: 'PROCESSING_STATUS_RESPONSE',
+                data: result.swisslife_processing_status || {},
+                source: 'mutuelles-extension'
+              }, '*');
+            } catch (error) {
+              console.error('❌ Erreur récupération statuts:', error);
+            }
+          }
+        });
+        
+        // Écouter les changements de statut de traitement pour notifier la page
+        chrome.storage.onChanged.addListener((changes, area) => {
+          if (area === 'local' && changes.swisslife_processing_status) {
+            // Notifier la page du changement de statut
+            window.postMessage({
+              type: 'PROCESSING_STATUS_UPDATED',
+              data: changes.swisslife_processing_status.newValue,
+              source: 'mutuelles-extension'
+            }, '*');
           }
         });
         

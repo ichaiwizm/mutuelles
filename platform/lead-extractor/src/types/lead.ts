@@ -48,6 +48,13 @@ export interface Lead {
   fullContent?: string;
   emailSubject?: string;
   emailDate?: string;
+  processingStatus?: {
+    status: 'pending' | 'processing' | 'success' | 'error';
+    timestamp?: string;
+    message?: string;
+    errorMessage?: string;
+    completedSteps?: number;
+  };
   score: number;
   isDuplicate?: boolean;
   notes?: Record<string, any>;
