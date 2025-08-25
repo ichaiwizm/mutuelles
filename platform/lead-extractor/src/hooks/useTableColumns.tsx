@@ -92,11 +92,6 @@ export function useTableColumns(): ColumnDef<Lead>[] {
       ),
     },
     {
-      id: 'duplicate',
-      header: 'Statut',
-      cell: ({ row }) => row.original.isDuplicate && <Badge variant="destructive">Doublon?</Badge>,
-    },
-    {
       id: 'extractedAt',
       header: 'Date',
       accessorKey: 'extractedAt',

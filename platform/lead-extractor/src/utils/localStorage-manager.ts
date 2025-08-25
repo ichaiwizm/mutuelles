@@ -14,20 +14,8 @@ export class SwissLifeStorageManager {
       leads: leads
     };
     
-    // Sauvegarder dans localStorage (pour l'app React)
+    // Sauvegarder dans localStorage uniquement
     localStorage.setItem(SWISSLIFE_STORAGE_KEY, JSON.stringify(storageData));
-    
-    // Synchroniser avec l'extension via chrome.storage
-    try {
-      window.postMessage({
-        type: 'EXTENSION_STORAGE_SET',
-        data: { swisslife_leads: leads },
-        source: 'mutuelles-platform'
-      }, '*');
-      console.log('✅ Synchronisation extension:', leads.length, 'leads');
-    } catch (error) {
-      console.log('❌ Erreur synchronisation extension:', error);
-    }
   }
   
   static getLeads(): TestDataFormat[] {

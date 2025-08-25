@@ -48,56 +48,8 @@
           console.error('❌ Erreur initialisation SwissLife:', error);
         }
       } else if (isLocalhost) {
-        // Mode synchronisation pour localhost
-        console.log('📡 Initialisation synchronisation localhost:5174...');
-        
-        // Signaler que l'extension est prête pour la communication
-        window.postMessage({
-          type: 'EXTENSION_READY',
-          source: 'mutuelles-extension'
-        }, '*');
-        
-        // Écouter les messages de la page
-        window.addEventListener('message', async (event) => {
-          if (event.source !== window) return;
-          
-          if (event.data.type === 'EXTENSION_STORAGE_SET' && event.data.source === 'mutuelles-platform') {
-            try {
-              await chrome.storage.local.set(event.data.data);
-              console.log('✅ Chrome storage mis à jour');
-            } catch (error) {
-              console.error('❌ Erreur sauvegarde chrome.storage:', error);
-            }
-          }
-          
-          // Répondre aux demandes de statuts de traitement
-          if (event.data.type === 'GET_PROCESSING_STATUS' && event.data.source === 'mutuelles-platform') {
-            try {
-              const result = await chrome.storage.local.get(['swisslife_processing_status']);
-              window.postMessage({
-                type: 'PROCESSING_STATUS_RESPONSE',
-                data: result.swisslife_processing_status || {},
-                source: 'mutuelles-extension'
-              }, '*');
-            } catch (error) {
-              console.error('❌ Erreur récupération statuts:', error);
-            }
-          }
-        });
-        
-        // Écouter les changements de statut de traitement pour notifier la page
-        chrome.storage.onChanged.addListener((changes, area) => {
-          if (area === 'local' && changes.swisslife_processing_status) {
-            // Notifier la page du changement de statut
-            window.postMessage({
-              type: 'PROCESSING_STATUS_UPDATED',
-              data: changes.swisslife_processing_status.newValue,
-              source: 'mutuelles-extension'
-            }, '*');
-          }
-        });
-        
-        console.log('✅ Extension active sur localhost - synchronisation chrome.storage disponible');
+        // Mode localhost - extension présente mais pas d'interaction automatique
+        console.log('✅ Extension active sur localhost:5174');
       }
     }
     
