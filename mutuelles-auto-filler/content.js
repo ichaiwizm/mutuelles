@@ -57,6 +57,37 @@
       // Écouter les changements de hash (navigation SPA)
       window.addEventListener('hashchange', handleAccueilRedirect);
       
+      // Écouter aussi les changements de hash pour déclencher l'auto-exécution
+      window.addEventListener('hashchange', async () => {
+        // Si on arrive sur la bonne page et qu'il y a des leads en storage, lancer l'auto-exécution
+        if (window.location.hash === '#/tarification-et-simulation/slsis') {
+          console.log('🎯 Navigation vers page tarification - Vérification auto-exécution...');
+          
+          setTimeout(async () => {
+            try {
+              // Recharger les leads pour vérifier s'il y en a
+              const currentLeads = await chrome.storage.local.get(['swisslife_leads']);
+              
+              if (currentLeads.swisslife_leads && currentLeads.swisslife_leads.length > 0) {
+                console.log('🤖 Leads détectés après navigation - Lancement auto-exécution...');
+                
+                // Attendre que la page soit prête
+                if (isPageReadyForAutoExecution()) {
+                  // Importer les fonctions nécessaires
+                  const { processLeadsQueue } = await import(chrome.runtime.getURL('src/core/orchestrator.js'));
+                  
+                  await processLeadsQueue();
+                } else {
+                  console.log('⏳ Page pas encore prête après navigation...');
+                }
+              }
+            } catch (error) {
+              console.error('❌ Erreur auto-exécution après navigation:', error);
+            }
+          }, 3000); // Attendre 3s pour laisser l'iframe se charger
+        }
+      });
+      
       // Observer les changements DOM au cas où la redirection se fait par JS
       let lastHash = window.location.hash;
       const hashObserver = setInterval(() => {
@@ -72,14 +103,32 @@
       }, 30000);
     }
     
+    // Fonction pour vérifier si la page est prête pour l'exécution automatique
+    function isPageReadyForAutoExecution() {
+      // Vérifier qu'on est sur la bonne page
+      const isCorrectPage = window.location.hash === '#/tarification-et-simulation/slsis';
+      
+      // Vérifier que l'iframe du tarificateur est présent et chargé
+      const iframe = document.querySelector('iframe[name="iFrameTarificateur"]');
+      const isIframeReady = iframe && iframe.contentWindow;
+      
+      console.log('🔍 Vérification page prête:', {
+        correctPage: isCorrectPage,
+        iframePresent: !!iframe,
+        iframeReady: isIframeReady
+      });
+      
+      return isCorrectPage && isIframeReady;
+    }
+
     async function initializeMain() {
       if (isSwissLife) {
         // Mode complet pour SwissLife
         console.log('🎼 Initialisation orchestrateur SwissLife (frame principal)...');
         
         try {
-          const { createUI } = await import(chrome.runtime.getURL('src/ui/ui.js'));
-          const { loadLeads, runTestWithLead } = await import(chrome.runtime.getURL('src/core/orchestrator.js'));
+          const { createUI, autoExecuteLead } = await import(chrome.runtime.getURL('src/ui/ui.js'));
+          const { loadLeads, runTestWithLead, processLeadsQueue } = await import(chrome.runtime.getURL('src/core/orchestrator.js'));
           
           const leads = await loadLeads();
           
@@ -87,19 +136,87 @@
             await runTestWithLead(leadIndex, handleProgress);
           });
           
+          // Fonction pour attendre que la page soit prête avec timeout
+          async function waitForPageReady(maxWaitTime = 10000) {
+            const startTime = Date.now();
+            
+            return new Promise((resolve, reject) => {
+              const checkInterval = setInterval(() => {
+                if (isPageReadyForAutoExecution()) {
+                  clearInterval(checkInterval);
+                  console.log('✅ Page prête pour exécution automatique');
+                  resolve(true);
+                } else if (Date.now() - startTime > maxWaitTime) {
+                  clearInterval(checkInterval);
+                  reject(new Error('Timeout: Page non prête après 10s'));
+                }
+              }, 500);
+            });
+          }
+          
           // Écouter les messages du background script pour les mises à jour de leads
-          chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+          chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
             if (message.action === 'LEADS_UPDATED' && message.source === 'background') {
-              // Recharger les leads et mettre à jour l'UI si nécessaire
+              // Recharger les leads
               loadLeads().then(updatedLeads => {
                 // L'UI sera automatiquement mise à jour via les watchers existants
               }).catch(error => {
                 // Ignore silently
               });
               
+              // Si autoExecute est demandé, lancer l'exécution automatique
+              if (message.data.autoExecute) {
+                console.log('🤖 Auto-exécution demandée - Vérification de la page...');
+                
+                try {
+                  // Attendre que la page soit prête
+                  await waitForPageReady();
+                  
+                  // Petite pause supplémentaire pour laisser l'iframe se stabiliser
+                  setTimeout(async () => {
+                    try {
+                      console.log('🚀 Lancement auto-exécution du lead...');
+                      
+                      // Lancer l'exécution automatique via la queue
+                      await processLeadsQueue();
+                      
+                    } catch (error) {
+                      console.error('❌ Erreur lors de l\'auto-exécution:', error);
+                    }
+                  }, 2000); // Attendre 2s supplémentaires pour la stabilité
+                  
+                } catch (error) {
+                  console.error('❌ Page non prête pour auto-exécution:', error.message);
+                }
+              }
+              
               sendResponse({ received: true });
             }
           });
+          
+          // Vérifier si on doit lancer l'auto-exécution au démarrage
+          // (cas où l'onglet SwissLife est créé après l'envoi des leads)
+          if (leads && leads.length > 0) {
+            console.log('🔍 Leads présents au démarrage - Vérification auto-exécution...');
+            
+            // Attendre un peu que la page soit complètement chargée
+            setTimeout(async () => {
+              try {
+                // Vérifier si on est déjà sur la bonne page
+                if (isPageReadyForAutoExecution()) {
+                  console.log('🤖 Auto-exécution démarrage direct...');
+                  
+                  await processLeadsQueue();
+                } else {
+                  console.log('⏳ Page pas encore prête - attente redirection...');
+                  // Si on n'est pas sur la bonne page, l'auto-redirection va nous y emmener
+                  // et on lancera l'exécution lors de la navigation
+                }
+              } catch (error) {
+                console.error('❌ Erreur auto-exécution démarrage:', error);
+              }
+            }, 5000); // Attendre 5s pour laisser le temps aux redirections
+          }
           
           console.log('✅ Orchestrateur SwissLife prêt');
         } catch (error) {

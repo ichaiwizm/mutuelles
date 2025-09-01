@@ -633,66 +633,16 @@ export function testLeadConversion(): void {
 
 // Nouvelle fonction compatible avec ExtensionBridge (utilise le bon format pour l'extension)
 export function formatLeadsForExtension(leads: Lead[]) {
-  const config = ServiceConfigManager.getServiceConfig('swisslife');
-  
-  return leads.map((lead, index) => ({
-    id: lead.id,
-    nom: `Lead ${index + 1} - ${lead.contact.prenom} ${lead.contact.nom}`,
-    description: `${lead.contact.email} - ${lead.contact.ville || 'Ville inconnue'}`,
-    lead: {
-      // Informations du contact
-      civilite: lead.contact.civilite || 'M.',
-      prenom: lead.contact.prenom || '',
-      nom: lead.contact.nom || '',
-      email: lead.contact.email || '',
-      telephone: lead.contact.telephone || '',
-      
-      // Adresse
-      adresse: lead.contact.adresse || '',
-      ville: lead.contact.ville || '',
-      codePostal: lead.contact.codePostal || '',
-      
-      // Informations métier
-      dateNaissance: lead.souscripteur?.dateNaissance || '',
-      profession: lead.souscripteur?.profession || '',
-      
-      // Conjoint si présent
-      ...(lead.conjoint && {
-        conjoint: {
-          civilite: lead.conjoint.civilite || 'Mme',
-          prenom: lead.conjoint.prenom || '',
-          nom: lead.conjoint.nom || '',
-          dateNaissance: lead.conjoint.dateNaissance || '',
-          profession: lead.conjoint.profession || ''
-        }
-      }),
-      
-      // Enfants si présents
-      ...(lead.enfants && lead.enfants.length > 0 && {
-        enfants: lead.enfants.map(enfant => ({
-          dateNaissance: enfant.dateNaissance || '',
-          sexe: enfant.sexe || 'M'
-        }))
-      }),
-      
-      // Besoins et options avec config
-      gammes: lead.besoins?.gammes || config.forceValues.gammes || 'SwissLife Santé',
-      dateEffet: ConfigValueHelper.resolveDateEffet(config.forceValues.dateEffet),
-      options: {
-        madelin: lead.besoins?.madelin ? 'oui' : config.options.madelin,
-        resiliation: config.options.resiliation,
-        reprise: config.options.reprise
-      }
-    },
-    workflow: {
-      etapes: [
-        'souscripteur',
-        'conjoint',
-        'enfants', 
-        'gammes',
-        'options',
-        'validation'
-      ]
-    }
-  }));
+  return leads.map((lead, index) => {
+    // Utiliser le formatage complet pour avoir le bon workflow
+    const fullFormatted = formatLeadForSwissLife(lead);
+    
+    return {
+      id: lead.id,
+      nom: `Lead ${index + 1} - ${lead.contact.prenom} ${lead.contact.nom}`,
+      description: `${lead.contact.email} - ${lead.contact.ville || 'Ville inconnue'}`,
+      lead: fullFormatted.lead,
+      workflow: fullFormatted.workflow
+    };
+  });
 }

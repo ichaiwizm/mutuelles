@@ -168,12 +168,26 @@ async function sendLeadsToStorage(data) {
       source: 'platform-lead-extractor'
     };
     
-    await chrome.storage.local.set(storageData);
+    // Initialiser la queue de traitement pour plusieurs leads
+    const queueState = {
+      currentIndex: 0,
+      totalLeads: leads.length,
+      processedLeads: [],
+      status: 'pending',
+      startedAt: new Date().toISOString(),
+      completedAt: null
+    };
     
-    // Notifier tous les onglets SwissLife de la mise à jour
+    await chrome.storage.local.set({
+      ...storageData,
+      swisslife_queue_state: queueState
+    });
+    
+    // Notifier tous les onglets SwissLife de la mise à jour avec auto-exécution
     await notifySwissLifeTabs('LEADS_UPDATED', {
       count: storageData.count,
-      timestamp: storageData.timestamp
+      timestamp: storageData.timestamp,
+      autoExecute: true // Flag pour déclencher l'exécution automatique
     });
     
     return {

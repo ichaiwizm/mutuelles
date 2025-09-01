@@ -52,6 +52,203 @@ async function saveProcessingStatus(leadId, status, details = {}) {
   }
 }
 
+// Récupérer l'état de la queue de traitement
+async function getQueueState() {
+  try {
+    const result = await chrome.storage.local.get(['swisslife_queue_state']);
+    return result.swisslife_queue_state || null;
+  } catch (error) {
+    console.error('❌ Erreur récupération queue state:', error);
+    return null;
+  }
+}
+
+// Mettre à jour l'état de la queue
+async function updateQueueState(updates) {
+  try {
+    const currentState = await getQueueState();
+    if (currentState) {
+      const newState = { ...currentState, ...updates };
+      await chrome.storage.local.set({ swisslife_queue_state: newState });
+      console.log('📊 Queue state mise à jour:', newState);
+    }
+  } catch (error) {
+    console.error('❌ Erreur mise à jour queue state:', error);
+  }
+}
+
+// Marquer un lead comme traité dans la queue
+async function markLeadAsProcessed(leadId, status = 'success', error = null) {
+  const queueState = await getQueueState();
+  if (queueState) {
+    const processedLeads = [...queueState.processedLeads];
+    processedLeads.push({
+      leadId,
+      status,
+      error,
+      completedAt: new Date().toISOString()
+    });
+    
+    await updateQueueState({
+      processedLeads,
+      currentIndex: queueState.currentIndex + 1,
+      status: queueState.currentIndex + 1 >= queueState.totalLeads ? 'completed' : 'processing'
+    });
+  }
+}
+
+// Obtenir le prochain lead à traiter
+async function getNextLeadToProcess() {
+  const leads = await loadLeads();
+  const queueState = await getQueueState();
+  
+  if (!leads || !queueState) {
+    return null;
+  }
+  
+  if (queueState.currentIndex >= leads.length) {
+    console.log('🎉 Tous les leads ont été traités');
+    await updateQueueState({ 
+      status: 'completed',
+      completedAt: new Date().toISOString()
+    });
+    return null;
+  }
+  
+  const nextLead = leads[queueState.currentIndex];
+  console.log(`🎯 Prochain lead à traiter: ${queueState.currentIndex + 1}/${queueState.totalLeads} - ${nextLead.lead?.nom} ${nextLead.lead?.prenom}`);
+  
+  return {
+    lead: nextLead,
+    index: queueState.currentIndex,
+    progress: {
+      current: queueState.currentIndex + 1,
+      total: queueState.totalLeads,
+      processed: queueState.processedLeads.length
+    }
+  };
+}
+
+// Traitement de la queue de leads
+export async function processLeadsQueue(onProgress = null) {
+  try {
+    await updateQueueState({ status: 'processing' });
+    
+    const nextItem = await getNextLeadToProcess();
+    if (!nextItem) {
+      console.log('✅ Queue de traitement terminée');
+      if (onProgress) {
+        onProgress({
+          type: 'queue_complete',
+          totalProcessed: (await getQueueState()).processedLeads.length
+        });
+      }
+      return { completed: true };
+    }
+    
+    const { lead, index, progress } = nextItem;
+    
+    console.log(`🚀 Traitement lead ${progress.current}/${progress.total}: ${lead.lead?.nom} ${lead.lead?.prenom}`);
+    
+    // Notifier la progression de la queue
+    if (onProgress) {
+      onProgress({
+        type: 'queue_progress',
+        leadName: `${lead.lead?.nom} ${lead.lead?.prenom}`,
+        current: progress.current,
+        total: progress.total,
+        processed: progress.processed
+      });
+    }
+    
+    try {
+      // Traiter ce lead
+      const result = await runTestWithLead(index, onProgress);
+      
+      // Marquer comme traité avec succès
+      await markLeadAsProcessed(lead.id, 'success');
+      
+      const queueState = await getQueueState();
+      const remaining = queueState.totalLeads - queueState.currentIndex;
+      
+      if (remaining > 0) {
+        console.log(`✅ Lead ${progress.current}/${progress.total} terminé. ${remaining} leads restants.`);
+        
+        if (onProgress) {
+          onProgress({
+            type: 'lead_complete',
+            leadName: `${lead.lead?.nom} ${lead.lead?.prenom}`,
+            current: progress.current,
+            total: progress.total,
+            remaining: remaining
+          });
+        }
+        
+        // Programmer le rechargement pour le prochain lead
+        setTimeout(() => {
+          console.log('🔄 Rechargement pour le prochain lead...');
+          window.location.reload();
+        }, 3000);
+        
+      } else {
+        console.log('🎉 Tous les leads ont été traités avec succès !');
+        await updateQueueState({ 
+          status: 'completed',
+          completedAt: new Date().toISOString()
+        });
+        
+        if (onProgress) {
+          onProgress({
+            type: 'queue_complete',
+            totalProcessed: queueState.processedLeads.length + 1
+          });
+        }
+      }
+      
+      return result;
+      
+    } catch (error) {
+      console.error(`❌ Erreur traitement lead ${progress.current}:`, error);
+      
+      // Marquer comme erreur et continuer avec le suivant
+      await markLeadAsProcessed(lead.id, 'error', error.message);
+      
+      if (onProgress) {
+        onProgress({
+          type: 'lead_error',
+          leadName: `${lead.lead?.nom} ${lead.lead?.prenom}`,
+          error: error.message,
+          current: progress.current,
+          total: progress.total
+        });
+      }
+      
+      // Continuer avec le prochain lead même en cas d'erreur
+      const queueState = await getQueueState();
+      const remaining = queueState.totalLeads - queueState.currentIndex;
+      
+      if (remaining > 0) {
+        setTimeout(() => {
+          console.log('🔄 Rechargement après erreur pour le prochain lead...');
+          window.location.reload();
+        }, 5000);
+      }
+      
+      throw error;
+    }
+    
+  } catch (error) {
+    console.error('❌ Erreur traitement queue:', error);
+    throw error;
+  }
+}
+
+// Fonction de compatibilité - maintenant utilise la queue
+export async function autoExecuteFirstLead(onProgress = null) {
+  console.log('🤖 Démarrage traitement automatique via queue...');
+  return await processLeadsQueue(onProgress);
+}
+
 // Exécuter le traitement avec un lead spécifique
 export async function runTestWithLead(leadIndex, onProgress = null) {
   if (!availableLeads || availableLeads.length === 0) {
@@ -64,8 +261,8 @@ export async function runTestWithLead(leadIndex, onProgress = null) {
 
   const selectedLead = availableLeads[leadIndex];
   
-  
-  const leadId = selectedLead.lead.id;
+  // L'ID est à la racine du lead, pas dans lead.id
+  const leadId = selectedLead.id;
   
   if (!leadId) {
     console.error('❌ Structure du lead sélectionné:', selectedLead);

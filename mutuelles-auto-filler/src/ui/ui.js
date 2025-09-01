@@ -40,6 +40,134 @@ function displayHistory(history) {
   }
 }
 
+// Exécuter automatiquement le premier lead
+export async function autoExecuteLead(onTestClick) {
+  try {
+    console.log('🤖 Démarrage exécution automatique...');
+    
+    // Vérifier si l'UI existe et la mettre à jour
+    const statusEl = document.getElementById('orch-status');
+    const progressEl = document.getElementById('orch-progress');
+    const stepDetailEl = document.getElementById('orch-step-detail');
+    const progressBarEl = document.getElementById('orch-progress-bar');
+    
+    if (statusEl) {
+      statusEl.textContent = '🤖 Exécution automatique en cours...';
+    }
+    
+    if (progressEl) {
+      progressEl.style.display = 'block';
+    }
+    
+    // Callback pour recevoir les mises à jour de progression
+    const handleProgress = (update) => {
+      // Gestion des événements de queue multi-leads
+      if (update.type === 'queue_progress') {
+        if (statusEl) {
+          statusEl.textContent = `🤖 Traitement lead ${update.current}/${update.total}: ${update.leadName}`;
+        }
+        if (stepDetailEl) {
+          stepDetailEl.textContent = `📊 Queue: ${update.current}/${update.total} leads - En cours: ${update.leadName}`;
+        }
+      } else if (update.type === 'queue_complete') {
+        if (progressBarEl) {
+          progressBarEl.style.width = '100%';
+          progressBarEl.textContent = '100%';
+        }
+        if (stepDetailEl) {
+          stepDetailEl.textContent = `🎉 Queue terminée - ${update.totalProcessed} leads traités`;
+        }
+        if (statusEl) {
+          statusEl.textContent = `✅ Tous les leads traités (${update.totalProcessed})`;
+        }
+        saveLastResult({
+          leadName: `Queue de ${update.totalProcessed} leads`,
+          status: 'success',
+          timestamp: new Date().toISOString(),
+          isAuto: true,
+          isQueue: true,
+          totalProcessed: update.totalProcessed
+        });
+      } else if (update.type === 'lead_complete') {
+        if (statusEl) {
+          statusEl.textContent = `✅ Lead ${update.current}/${update.total} terminé - ${update.remaining} restants`;
+        }
+        if (stepDetailEl) {
+          stepDetailEl.textContent = `✅ ${update.leadName} terminé - Rechargement dans 3s...`;
+        }
+      } else if (update.type === 'lead_error') {
+        if (statusEl) {
+          statusEl.textContent = `❌ Erreur lead ${update.current}/${update.total}`;
+        }
+        if (stepDetailEl) {
+          stepDetailEl.textContent = `❌ ${update.leadName}: ${update.error}`;
+        }
+      }
+      // Gestion des événements de traitement individuel
+      else if (update.type === 'start') {
+        if (progressBarEl) {
+          progressBarEl.style.width = '0%';
+          progressBarEl.textContent = '0%';
+        }
+        if (stepDetailEl) {
+          stepDetailEl.textContent = `🤖 Traitement automatique de ${update.leadName}`;
+        }
+      } else if (update.type === 'step') {
+        const percent = Math.round((update.currentStep / update.totalSteps) * 100);
+        if (progressBarEl) {
+          progressBarEl.style.width = `${percent}%`;
+          progressBarEl.textContent = `${percent}%`;
+        }
+        if (stepDetailEl) {
+          stepDetailEl.textContent = `Étape ${update.currentStep}/${update.totalSteps}: ${update.stepName}`;
+        }
+      } else if (update.type === 'complete') {
+        if (progressBarEl) {
+          progressBarEl.style.width = '100%';
+          progressBarEl.textContent = '100%';
+        }
+        if (stepDetailEl) {
+          stepDetailEl.textContent = '✅ Lead terminé avec succès';
+        }
+        if (statusEl) {
+          statusEl.textContent = 'Lead terminé ✅';
+        }
+        saveLastResult({
+          leadName: update.leadName,
+          status: 'success',
+          timestamp: new Date().toISOString(),
+          steps: update.completedSteps,
+          isAuto: true
+        });
+      } else if (update.type === 'error') {
+        if (stepDetailEl) {
+          stepDetailEl.textContent = `❌ Erreur automatique: ${update.errorMessage}`;
+        }
+        if (statusEl) {
+          statusEl.textContent = 'Erreur exécution automatique ❌';
+        }
+        saveLastResult({
+          leadName: update.leadName,
+          status: 'error',
+          timestamp: new Date().toISOString(),
+          error: update.errorMessage,
+          isAuto: true
+        });
+      }
+    };
+    
+    // Lancer l'exécution automatique avec le premier lead (index 0)
+    await onTestClick(0, handleProgress);
+    
+  } catch (error) {
+    console.error('❌ Erreur lors de l\'exécution automatique UI:', error);
+    const statusEl = document.getElementById('orch-status');
+    if (statusEl) {
+      statusEl.textContent = `❌ Erreur: ${error.message}`;
+    }
+  }
+}
+
 // Interface utilisateur pour sélection des leads
 export function createUI(leads, onTestClick) {
   // Éviter les doublons
