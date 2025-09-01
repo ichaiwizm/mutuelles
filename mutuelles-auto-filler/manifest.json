@@ -5,7 +5,8 @@
   "description": "Orchestrateur modulaire pour remplissage SwissLife",
   "permissions": [
     "activeTab",
-    "storage"
+    "storage",
+    "tabs"
   ],
   "host_permissions": [
     "https://*.swisslifeone.fr/*",
@@ -13,6 +14,12 @@
   ],
   "action": {
     "default_title": "SwissLife Orchestrateur"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "externally_connectable": {
+    "matches": ["http://localhost:5174/*"]
   },
   "content_scripts": [
     {
@@ -36,9 +43,10 @@
         "services/swisslife/fields/*.js",
         "services/swisslife/fields/**/*.js",
         "services/swisslife/utils/*.js",
-        "services/swisslife/navigation/*.js"
+        "services/swisslife/navigation/*.js",
+        "background.js"
       ],
-      "matches": ["https://*.swisslifeone.fr/*"]
+      "matches": ["https://*.swisslifeone.fr/*", "http://localhost:5174/*"]
     }
   ]
 }

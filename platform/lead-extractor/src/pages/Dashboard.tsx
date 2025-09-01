@@ -8,6 +8,8 @@ import { useUIState } from '@/hooks/useUIState';
 import { useSSEExtraction } from '@/hooks/useSSEExtraction';
 import { useProcessingStatus } from '@/hooks/useProcessingStatus';
 import { useLeadSelection } from '@/hooks/useLeadSelection';
+import { ExtensionBridge } from '@/services/extension-bridge';
+import { toast } from 'sonner';
 import { ControlsPanel } from '@/components/dashboard/ControlsPanel';
 import { TabsNavigation } from '@/components/dashboard/TabsNavigation';
 import { ProgressPanel } from '@/components/dashboard/ProgressPanel';
@@ -97,10 +99,72 @@ export function Dashboard() {
   } = useLeadSelection(tableData);
   
   // Handler pour l'envoi à l'extension
-  const handleSendToExtension = () => {
-    console.log('Leads sélectionnés pour envoi:', selectedLeads);
-    // TODO: Implémenter l'envoi réel à l'extension
-    alert(`${selectedLeads.length} lead(s) sélectionné(s) seront envoyés à l'extension`);
+  const handleSendToExtension = async () => {
+    console.log('Début envoi vers extension - Leads sélectionnés:', selectedLeads.length);
+    
+    if (selectedLeads.length === 0) {
+      toast.error('Aucun lead sélectionné');
+      return;
+    }
+
+    try {
+      // 1. Vérifier si l'extension est installée
+      const isInstalled = await ExtensionBridge.checkExtensionInstalled();
+      
+      if (!isInstalled) {
+        toast.error('Extension SwissLife non détectée', {
+          description: 'Assurez-vous que l\'extension est installée et activée.'
+        });
+        return;
+      }
+
+      console.log('✅ Extension détectée');
+
+      // 2. Vérifier si un onglet SwissLife est ouvert
+      toast.info('Vérification des onglets SwissLife...');
+      
+      const tabResult = await ExtensionBridge.openSwissLifeTab();
+      
+      if (!tabResult.success) {
+        toast.error('Impossible d\'accéder à SwissLife', {
+          description: 'Erreur lors de l\'ouverture/activation de l\'onglet SwissLife.'
+        });
+        return;
+      }
+
+      if (tabResult.wasExisting) {
+        console.log('Onglet SwissLife déjà ouvert - Activé');
+        toast.success('Onglet SwissLife activé');
+      } else {
+        console.log('Nouvel onglet SwissLife créé');
+        toast.success('Onglet SwissLife ouvert en arrière-plan');
+      }
+
+      // 3. Envoyer les leads à l'extension
+      toast.info('Envoi des leads vers l\'extension...');
+      
+      const sendResult = await ExtensionBridge.sendLeadsToExtension(selectedLeads);
+      
+      if (sendResult.success) {
+        toast.success(`${selectedLeads.length} leads envoyés avec succès`, {
+          description: 'Les leads sont maintenant disponibles dans l\'extension SwissLife.'
+        });
+        
+        console.log('✅ Envoi terminé avec succès');
+      } else {
+        toast.error('Erreur lors de l\'envoi des leads', {
+          description: sendResult.error || 'Erreur inconnue'
+        });
+        
+        console.error('❌ Erreur envoi:', sendResult.error);
+      }
+      
+    } catch (error) {
+      console.error('❌ Erreur générale:', error);
+      toast.error('Erreur inattendue', {
+        description: error instanceof Error ? error.message : 'Erreur inconnue'
+      });
+    }
   };
 
   // Handlers pour la sélection

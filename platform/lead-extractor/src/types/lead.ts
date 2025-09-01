@@ -17,16 +17,22 @@ export interface Lead {
     nombreEnfants?: number;
   };
   conjoint?: {
+    civilite?: string;
+    prenom?: string;
+    nom?: string;
     dateNaissance?: string;
     profession?: string;
     regimeSocial?: string;
   };
   enfants: Array<{
     dateNaissance?: string;
+    sexe?: string;
   }>;
   besoins: {
     dateEffet?: string;
     assureActuellement?: boolean;
+    gammes?: string;
+    madelin?: boolean;
     niveaux?: {
       soinsMedicaux?: number;
       hospitalisation?: number;

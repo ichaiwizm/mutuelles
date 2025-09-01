@@ -481,11 +481,15 @@ export function formatMultipleLeads(leads: Lead[]): Record<string, TestDataForma
 }
 
 // Fonction pour sauvegarder dans localStorage
+// DEPRECATED: Cette fonction est maintenant remplacée par ExtensionBridge.sendLeadsToExtension()
+// Conservée temporairement pour compatibilité
 export function saveFormattedLeadsToStorage(leads: Lead[]): void {
+  console.warn('saveFormattedLeadsToStorage is deprecated. Use ExtensionBridge.sendLeadsToExtension() instead.');
+  
   const config = ServiceConfigManager.getServiceConfig('swisslife');
   const formattedLeads = formatMultipleLeads(leads);
   
-  // Sauvegarder avec un timestamp
+  // Sauvegarder avec un timestamp dans l'ancien format pour compatibilité
   const storageData = {
     timestamp: new Date().toISOString(),
     count: Object.keys(formattedLeads).length,
@@ -495,6 +499,7 @@ export function saveFormattedLeadsToStorage(leads: Lead[]): void {
   
   // Sauvegarder avec la clé par défaut
   localStorage.setItem('swisslife_formatted_leads', JSON.stringify(storageData));
+  console.log(`📦 ${Object.keys(formattedLeads).length} leads formatés et sauvegardés dans localStorage (format legacy)`);
 }
 
 // Fonction pour récupérer les leads formatés du localStorage
@@ -624,4 +629,70 @@ export function testLeadConversion(): void {
   } catch (error) {
     console.error('❌ Erreur lors de la conversion:', error);
   }
+}
+
+// Nouvelle fonction compatible avec ExtensionBridge (utilise le bon format pour l'extension)
+export function formatLeadsForExtension(leads: Lead[]) {
+  const config = ServiceConfigManager.getServiceConfig('swisslife');
+  
+  return leads.map((lead, index) => ({
+    id: lead.id,
+    nom: `Lead ${index + 1} - ${lead.contact.prenom} ${lead.contact.nom}`,
+    description: `${lead.contact.email} - ${lead.contact.ville || 'Ville inconnue'}`,
+    lead: {
+      // Informations du contact
+      civilite: lead.contact.civilite || 'M.',
+      prenom: lead.contact.prenom || '',
+      nom: lead.contact.nom || '',
+      email: lead.contact.email || '',
+      telephone: lead.contact.telephone || '',
+      
+      // Adresse
+      adresse: lead.contact.adresse || '',
+      ville: lead.contact.ville || '',
+      codePostal: lead.contact.codePostal || '',
+      
+      // Informations métier
+      dateNaissance: lead.souscripteur?.dateNaissance || '',
+      profession: lead.souscripteur?.profession || '',
+      
+      // Conjoint si présent
+      ...(lead.conjoint && {
+        conjoint: {
+          civilite: lead.conjoint.civilite || 'Mme',
+          prenom: lead.conjoint.prenom || '',
+          nom: lead.conjoint.nom || '',
+          dateNaissance: lead.conjoint.dateNaissance || '',
+          profession: lead.conjoint.profession || ''
+        }
+      }),
+      
+      // Enfants si présents
+      ...(lead.enfants && lead.enfants.length > 0 && {
+        enfants: lead.enfants.map(enfant => ({
+          dateNaissance: enfant.dateNaissance || '',
+          sexe: enfant.sexe || 'M'
+        }))
+      }),
+      
+      // Besoins et options avec config
+      gammes: lead.besoins?.gammes || config.forceValues.gammes || 'SwissLife Santé',
+      dateEffet: ConfigValueHelper.resolveDateEffet(config.forceValues.dateEffet),
+      options: {
+        madelin: lead.besoins?.madelin ? 'oui' : config.options.madelin,
+        resiliation: config.options.resiliation,
+        reprise: config.options.reprise
+      }
+    },
+    workflow: {
+      etapes: [
+        'souscripteur',
+        'conjoint',
+        'enfants', 
+        'gammes',
+        'options',
+        'validation'
+      ]
+    }
+  }));
 }
