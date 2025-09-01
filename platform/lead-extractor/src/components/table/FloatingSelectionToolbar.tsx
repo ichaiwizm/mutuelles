@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { X, Send, Download, MoreHorizontal, Filter } from 'lucide-react';
+import { X, Send, Download, Filter } from 'lucide-react';
 import { 
   DropdownMenu, 
   DropdownMenuContent, 
@@ -137,25 +137,6 @@ export function FloatingSelectionToolbar({
             </DropdownMenuContent>
           </DropdownMenu>
         )}
-
-        {/* Menu actions supplémentaires */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button size="sm" variant="outline">
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={onExport} disabled={!onExport}>
-              <Download className="h-4 w-4 mr-2" />
-              Exporter la sélection
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={onClearSelection}>
-              <X className="h-4 w-4 mr-2" />
-              Vider la sélection
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
       </div>
 
       {/* Bouton fermer */}

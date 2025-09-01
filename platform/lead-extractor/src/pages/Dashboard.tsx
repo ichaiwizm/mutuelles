@@ -148,6 +148,9 @@ export function Dashboard() {
           description: 'Les leads sont maintenant disponibles dans l\'extension SwissLife.'
         });
         
+        // Vider la sélection après un envoi réussi
+        handleClearSelection();
+        
         console.log('✅ Envoi terminé avec succès');
       } else {
         toast.error('Erreur lors de l\'envoi des leads', {
