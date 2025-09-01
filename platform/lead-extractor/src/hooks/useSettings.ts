@@ -17,14 +17,12 @@ const DEFAULT_SETTINGS = {
 
 export const useSettings = () => {
   const [days, setDays] = useState(DEFAULT_SETTINGS.days);
-  const [gmailEnabled, setGmailEnabled] = useState(DEFAULT_SETTINGS.sources.gmail);
   const [isLoaded, setIsLoaded] = useState(false);
 
   // Charger les paramètres au démarrage
   useEffect(() => {
     const settings = StorageManager.getSettings();
     setDays(settings.days);
-    setGmailEnabled(settings.sources.gmail);
     setIsLoaded(true);
   }, []);
 
@@ -37,31 +35,14 @@ export const useSettings = () => {
       ...currentSettings,
       days,
       sources: {
-        gmail: gmailEnabled
+        gmail: true // Toujours activé maintenant
       }
     };
     StorageManager.saveSettings(settings);
-  }, [days, gmailEnabled, isLoaded]);
-
-  const saveSettings = () => {
-    const currentSettings = StorageManager.getSettings();
-    const settings = {
-      ...currentSettings,
-      days,
-      sources: {
-        gmail: gmailEnabled
-      }
-    };
-    
-    StorageManager.saveSettings(settings);
-    toast.success('Paramètres sauvegardés');
-  };
+  }, [days, isLoaded]);
 
   return {
     days,
-    setDays,
-    gmailEnabled,
-    setGmailEnabled,
-    saveSettings
+    setDays
   };
 };

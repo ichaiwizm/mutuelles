@@ -73,10 +73,10 @@
                 
                 // Attendre que la page soit prête
                 if (isPageReadyForAutoExecution()) {
-                  // Importer les fonctions nécessaires
-                  const { processLeadsQueue } = await import(chrome.runtime.getURL('src/core/orchestrator.js'));
-                  
-                  await processLeadsQueue();
+                  // Utiliser la fonction centralisée
+                  if (window.startProcessing) {
+                    await window.startProcessing();
+                  }
                 } else {
                   console.log('⏳ Page pas encore prête après navigation...');
                 }
@@ -127,14 +127,66 @@
         console.log('🎼 Initialisation orchestrateur SwissLife (frame principal)...');
         
         try {
-          const { createUI, autoExecuteLead } = await import(chrome.runtime.getURL('src/ui/ui.js'));
-          const { loadLeads, runTestWithLead, processLeadsQueue } = await import(chrome.runtime.getURL('src/core/orchestrator.js'));
+          const { createUI, createQueueProgressHandler } = await import(chrome.runtime.getURL('src/ui/ui.js'));
+          const { loadLeads, processLeadsQueue } = await import(chrome.runtime.getURL('src/core/orchestrator.js'));
           
           const leads = await loadLeads();
           
-          createUI(leads, async (leadIndex, handleProgress) => {
-            await runTestWithLead(leadIndex, handleProgress);
-          });
+          // Nettoyer le flag de traitement au démarrage
+          if (leads && leads.length > 0) {
+            // Si on a des leads, réinitialiser la queue si elle était incomplète
+            const queueResult = await chrome.storage.local.get(['swisslife_queue_state']);
+            const queueState = queueResult.swisslife_queue_state;
+            
+            if (queueState && queueState.status === 'processing') {
+              console.log('🔧 Reset queue state incomplète au démarrage');
+              await chrome.storage.local.set({
+                swisslife_queue_state: {
+                  currentIndex: 0,
+                  totalLeads: leads.length,
+                  processedLeads: [],
+                  status: 'pending',
+                  startedAt: new Date().toISOString(),
+                  completedAt: null
+                }
+              });
+            }
+          }
+          
+          createUI();
+          
+          // Créer le gestionnaire de progression global
+          window.orchestratorProgressHandler = createQueueProgressHandler();
+          
+          // Flag pour éviter la double exécution
+          window.orchestratorRunning = false;
+          
+          // Fonction centralisée pour lancer le traitement
+          window.startProcessing = async function() {
+            if (window.orchestratorRunning) {
+              console.log('⏹️ Traitement déjà en cours, ignoré');
+              return;
+            }
+            
+            console.log('🚀 Préparation du traitement automatique...');
+            window.orchestratorRunning = true;
+            
+            try {
+              // Attendre que l'iframe soit vraiment prête
+              console.log('⏳ Attente stabilisation iframe (3s)...');
+              await new Promise(resolve => setTimeout(resolve, 3000));
+              
+              console.log('🎯 Lancement du traitement automatique');
+              await processLeadsQueue(window.orchestratorProgressHandler);
+            } catch (error) {
+              console.error('❌ Erreur traitement:', error);
+            } finally {
+              // Reset du flag après completion (réactivé au rechargement)
+              setTimeout(() => {
+                window.orchestratorRunning = false;
+              }, 1000);
+            }
+          };
           
           // Fonction pour attendre que la page soit prête avec timeout
           async function waitForPageReady(maxWaitTime = 10000) {
@@ -177,8 +229,10 @@
                     try {
                       console.log('🚀 Lancement auto-exécution du lead...');
                       
-                      // Lancer l'exécution automatique via la queue
-                      await processLeadsQueue();
+                      // Utiliser la fonction centralisée
+                      if (window.startProcessing) {
+                        await window.startProcessing();
+                      }
                       
                     } catch (error) {
                       console.error('❌ Erreur lors de l\'auto-exécution:', error);
@@ -206,7 +260,10 @@
                 if (isPageReadyForAutoExecution()) {
                   console.log('🤖 Auto-exécution démarrage direct...');
                   
-                  await processLeadsQueue();
+                  // Utiliser la fonction centralisée
+                  if (window.startProcessing) {
+                    await window.startProcessing();
+                  }
                 } else {
                   console.log('⏳ Page pas encore prête - attente redirection...');
                   // Si on n'est pas sur la bonne page, l'auto-redirection va nous y emmener

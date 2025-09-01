@@ -28,9 +28,7 @@ export function Dashboard() {
   const { leads, qualifiedLeads, addLeads, clearAllLeads, stats } = useLeads();
   const { enrichLeadsWithStatus } = useProcessingStatus();
   const {
-    days, setDays,
-    gmailEnabled, setGmailEnabled,
-    saveSettings
+    days, setDays
   } = useSettings();
   const {
     uiState,
@@ -52,8 +50,6 @@ export function Dashboard() {
   } = useSSEExtraction(addLeads, checkAuthStatus);
 
   // Handlers
-  const handleExtractGmail = () => extractWithSSE('gmail', days);
-  
   const handleRefresh = () => {
     // Utiliser le mode replaceAll pour remplacer tous les leads existants
     extractWithSSE('gmail', days, true);
@@ -201,14 +197,9 @@ export function Dashboard() {
         <ControlsPanel
           days={days}
           setDays={setDays}
-          gmailEnabled={gmailEnabled}
-          setGmailEnabled={setGmailEnabled}
-          saveSettings={saveSettings}
-          onExtractGmail={handleExtractGmail}
           onClearAll={clearAllLeads}
           onRefresh={handleRefresh}
           busy={busy}
-          leads={leads}
         />
 
 

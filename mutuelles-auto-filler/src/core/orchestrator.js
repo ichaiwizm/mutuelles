@@ -171,6 +171,12 @@ export async function processLeadsQueue(onProgress = null) {
       const queueState = await getQueueState();
       const remaining = queueState.totalLeads - queueState.currentIndex;
       
+      console.log('🔍 Debug après markLeadAsProcessed:', { 
+        currentIndex: queueState.currentIndex, 
+        totalLeads: queueState.totalLeads, 
+        remaining: remaining 
+      });
+      
       if (remaining > 0) {
         console.log(`✅ Lead ${progress.current}/${progress.total} terminé. ${remaining} leads restants.`);
         
@@ -185,9 +191,18 @@ export async function processLeadsQueue(onProgress = null) {
         }
         
         // Programmer le rechargement pour le prochain lead
+        console.log('🔄 Programmation du rechargement dans 3s...');
         setTimeout(() => {
-          console.log('🔄 Rechargement pour le prochain lead...');
-          window.location.reload();
+          console.log('🔄 RECHARGEMENT MAINTENANT - window.location.reload()');
+          
+          try {
+            window.location.reload(true); // Force reload
+            console.log('✅ Rechargement lancé');
+          } catch (error) {
+            console.error('❌ Erreur rechargement:', error);
+            // Fallback
+            window.location.href = window.location.href + '?t=' + Date.now();
+          }
         }, 3000);
         
       } else {
@@ -243,11 +258,6 @@ export async function processLeadsQueue(onProgress = null) {
   }
 }
 
-// Fonction de compatibilité - maintenant utilise la queue
-export async function autoExecuteFirstLead(onProgress = null) {
-  console.log('🤖 Démarrage traitement automatique via queue...');
-  return await processLeadsQueue(onProgress);
-}
 
 // Exécuter le traitement avec un lead spécifique
 export async function runTestWithLead(leadIndex, onProgress = null) {
@@ -373,20 +383,51 @@ export async function runTestWithLead(leadIndex, onProgress = null) {
       }
     }
 
-    // Exécuter l'action via le bridge
+    // Exécuter l'action via le bridge avec retry
     console.log('⚡ Exécution action SwissLife...');
     
     // Pour compatibilité avec les anciens services qui attendent une valeur simple
     const serviceData = stepData.value || stepData;
-    const result = await executeSwissLifeAction(stepName, serviceData);
     
-    if (result.ok) {
-      console.log('✅ Succès étape:', stepName);
-    } else {
-      console.error('❌ Échec étape:', stepName, result);
-      // Compatible avec nouveau format response-format.js et ancien format
-      const errorMessage = result.error?.message || result.reason || 'Erreur inconnue';
-      throw new Error(`Échec étape ${stepName}: ${errorMessage}`);
+    let result;
+    let attempts = 0;
+    const maxAttempts = 2;
+    
+    while (attempts < maxAttempts) {
+      try {
+        attempts++;
+        console.log(`🔄 Tentative ${attempts}/${maxAttempts} pour l'étape: ${stepName}`);
+        
+        result = await executeSwissLifeAction(stepName, serviceData);
+        
+        if (result.ok) {
+          console.log('✅ Succès étape:', stepName);
+          break; // Sortir de la boucle en cas de succès
+        } else {
+          console.error('❌ Échec étape (tentative ' + attempts + '):', stepName, result);
+          // Compatible avec nouveau format response-format.js et ancien format
+          const errorMessage = result.error?.message || result.reason || 'Erreur inconnue';
+          
+          if (attempts >= maxAttempts) {
+            throw new Error(`Échec étape ${stepName} après ${maxAttempts} tentatives: ${errorMessage}`);
+          } else {
+            console.log(`⏳ Attendre 2s avant retry...`);
+            await new Promise(resolve => setTimeout(resolve, 2000));
+          }
+        }
+      } catch (error) {
+        console.error(`❌ Exception étape (tentative ${attempts}):`, stepName, error);
+        
+        // Si c'est un timeout et qu'on a encore des tentatives, retry
+        if (error.message && error.message.includes('Timeout') && attempts < maxAttempts) {
+          console.log(`⏳ Timeout détecté, retry dans 3s...`);
+          await new Promise(resolve => setTimeout(resolve, 3000));
+          continue;
+        }
+        
+        // Sinon, re-lancer l'erreur
+        throw error;
+      }
     }
   }
   

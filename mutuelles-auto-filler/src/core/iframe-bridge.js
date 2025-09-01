@@ -44,11 +44,11 @@ export async function sendToIframe(action, data) {
       data
     }, '*');
     
-    // Timeout après 10 secondes (navigation peut être lente)
+    // Timeout après 5 secondes
     setTimeout(() => {
       window.removeEventListener('message', handler);
       reject(new Error('Timeout: pas de réponse de l\'iframe'));
-    }, 10000);
+    }, 5000);
   });
 }
 
