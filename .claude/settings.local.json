@@ -22,7 +22,8 @@
       "Bash(cp:*)",
       "Bash(echo:*)",
       "Bash(cd:*)",
-      "Bash(cd:*)"
+      "Bash(cd:*)",
+      "WebSearch"
     ],
     "deny": [],
     "ask": [],

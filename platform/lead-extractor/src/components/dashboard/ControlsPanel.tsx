@@ -71,6 +71,7 @@ export function ControlsPanel({
           disabled={busy || leads.length === 0}
         />
 
+
         {/* Actions */}
         <div className="flex gap-2 ml-auto">
           <Button 

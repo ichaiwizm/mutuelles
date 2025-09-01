@@ -7,6 +7,7 @@ import { useSettings } from '@/hooks/useSettings';
 import { useUIState } from '@/hooks/useUIState';
 import { useSSEExtraction } from '@/hooks/useSSEExtraction';
 import { useProcessingStatus } from '@/hooks/useProcessingStatus';
+import { useLeadTableSelection } from '@/hooks/useLeadTableSelection';
 import { ControlsPanel } from '@/components/dashboard/ControlsPanel';
 import { TabsNavigation } from '@/components/dashboard/TabsNavigation';
 import { ProgressPanel } from '@/components/dashboard/ProgressPanel';
@@ -82,6 +83,34 @@ export function Dashboard() {
     return enrichLeadsWithStatus(baseData);
   };
 
+  // Données du tableau
+  const tableData = getTableData();
+  
+  // Hook de sélection des leads dans le tableau
+  const {
+    selectedLeadIds,
+    toggleSelectLead,
+    selectAll,
+    deselectAll,
+    getSelectedCount,
+    getSelectedLeads,
+    isAllSelected,
+    clearSelection
+  } = useLeadTableSelection();
+  
+  // Handler pour l'envoi à l'extension
+  const handleSendToExtension = () => {
+    const selectedLeads = getSelectedLeads(tableData);
+    console.log('Leads sélectionnés pour envoi:', selectedLeads);
+    // TODO: Implémenter l'envoi réel à l'extension
+    alert(`${selectedLeads.length} lead(s) sélectionné(s) seront envoyés à l'extension`);
+  };
+
+  // Handlers pour la sélection
+  const handleSelectAll = () => selectAll(tableData);
+  const handleDeselectAll = () => deselectAll();
+  const isAllDataSelected = isAllSelected(tableData);
+
   return (
     <div className="min-h-screen bg-slate-50">
       {/* Progress flottant */}
@@ -141,7 +170,7 @@ export function Dashboard() {
 
         {/* Table */}
         <LeadsTable
-          data={getTableData()}
+          data={tableData}
           globalFilter={uiState?.globalFilter || ''}
           onRowClick={handleRowClick}
           activeTab={uiState?.activeTab || 'leads'}
@@ -149,6 +178,13 @@ export function Dashboard() {
           currentPage={uiState?.currentPage || 0}
           onPageSizeChange={setPageSize}
           onPageChange={setCurrentPage}
+          selectedLeadIds={selectedLeadIds}
+          onToggleSelect={toggleSelectLead}
+          onSelectAll={handleSelectAll}
+          onDeselectAll={handleDeselectAll}
+          onSendToExtension={handleSendToExtension}
+          onClearSelection={clearSelection}
+          isAllSelected={isAllDataSelected}
         />
 
         {/* Modal détail */}

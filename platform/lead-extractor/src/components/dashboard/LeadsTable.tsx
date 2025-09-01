@@ -2,6 +2,7 @@ import { Table } from '@/components/ui/table';
 import { TableHeader } from '@/components/table/TableHeader';
 import { TableBody } from '@/components/table/TableBody';
 import { PaginationControls } from '@/components/table/PaginationControls';
+import { FloatingSelectionToolbar } from '@/components/table/FloatingSelectionToolbar';
 import { useLeadsTable } from '@/hooks/useLeadsTable';
 import { getEmptyMessage } from '@/utils/table-utils';
 import type { Lead } from '@/types/lead';
@@ -15,6 +16,13 @@ interface LeadsTableProps {
   currentPage: number;
   onPageSizeChange: (pageSize: number) => void;
   onPageChange: (page: number) => void;
+  selectedLeadIds?: Set<string>;
+  onToggleSelect?: (leadId: string) => void;
+  onSelectAll?: () => void;
+  onDeselectAll?: () => void;
+  onSendToExtension?: () => void;
+  onClearSelection?: () => void;
+  isAllSelected?: boolean;
 }
 
 export function LeadsTable({ 
@@ -25,7 +33,14 @@ export function LeadsTable({
   pageSize,
   currentPage,
   onPageSizeChange,
-  onPageChange
+  onPageChange,
+  selectedLeadIds,
+  onToggleSelect,
+  onSelectAll,
+  onDeselectAll,
+  onSendToExtension,
+  onClearSelection,
+  isAllSelected = false
 }: LeadsTableProps) {
   const { table, allSortedAndFilteredData, columns } = useLeadsTable({
     data,
@@ -39,6 +54,17 @@ export function LeadsTable({
 
   return (
     <div>
+      {/* Floating Selection Toolbar */}
+      <FloatingSelectionToolbar
+        selectedCount={selectedLeadIds?.size || 0}
+        totalCount={data.length}
+        onSelectAll={onSelectAll || (() => {})}
+        onDeselectAll={onDeselectAll || (() => {})}
+        onSendToExtension={onSendToExtension || (() => {})}
+        onClearSelection={onClearSelection || (() => {})}
+        isAllSelected={isAllSelected}
+      />
+      
       {/* Table */}
       <div className="rounded-xl border border-slate-200/60 bg-white shadow-sm overflow-hidden">
         <Table>
@@ -49,6 +75,8 @@ export function LeadsTable({
             onRowClick={onRowClick}
             emptyMessage={emptyMessage}
             columnsLength={columns.length}
+            selectedLeadIds={selectedLeadIds}
+            onToggleSelect={onToggleSelect}
           />
         </Table>
       </div>
