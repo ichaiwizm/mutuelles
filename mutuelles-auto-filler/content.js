@@ -139,17 +139,33 @@
             const queueState = queueResult.swisslife_queue_state;
             
             if (queueState && queueState.status === 'processing') {
-              console.log('🔧 Reset queue state incomplète au démarrage');
-              await chrome.storage.local.set({
-                swisslife_queue_state: {
-                  currentIndex: 0,
-                  totalLeads: leads.length,
-                  processedLeads: [],
-                  status: 'pending',
-                  startedAt: new Date().toISOString(),
-                  completedAt: null
+              // Ne reset que si aucun lead n'a été traité (éviter la boucle infinie)
+              if (!queueState.processedLeads || queueState.processedLeads.length === 0) {
+                console.log('🔧 Reset queue state incomplète au démarrage (aucun lead traité)');
+                await chrome.storage.local.set({
+                  swisslife_queue_state: {
+                    currentIndex: 0,
+                    totalLeads: leads.length,
+                    processedLeads: [],
+                    status: 'pending',
+                    startedAt: new Date().toISOString(),
+                    completedAt: null
+                  }
+                });
+              } else {
+                console.log(`📊 Queue en cours avec ${queueState.processedLeads.length} leads déjà traités - Reprise à l'index:`, queueState.currentIndex);
+                // Vérifier si tous les leads ont été traités
+                if (queueState.currentIndex >= leads.length) {
+                  console.log('🎉 Tous les leads ont été traités - Finalisation de la queue');
+                  await chrome.storage.local.set({
+                    swisslife_queue_state: {
+                      ...queueState,
+                      status: 'completed',
+                      completedAt: new Date().toISOString()
+                    }
+                  });
                 }
-              });
+              }
             }
           }
           
@@ -246,6 +262,20 @@
               
               sendResponse({ received: true });
             }
+            
+            // Relayer les notifications de statut vers la plateforme
+            else if (message.action === 'FORWARD_STATUS_TO_PLATFORM' && message.source === 'background') {
+              console.log('📡 [CONTENT] Relais notification statut vers plateforme:', message.data);
+              
+              // Envoyer vers la plateforme via postMessage
+              window.postMessage({
+                type: 'FROM_EXTENSION_STATUS',
+                statusUpdate: message.data
+              }, window.location.origin);
+              
+              console.log('📡 [CONTENT] Message relayé via postMessage');
+              sendResponse({ forwarded: true });
+            }
           });
           
           // Vérifier si on doit lancer l'auto-exécution au démarrage
@@ -321,6 +351,22 @@
                   error: errorMessage
                 }
               }, event.origin);
+            }
+          }
+          
+          // Écouter les messages de l'orchestrator (depuis l'iframe)
+          else if (event.data?.type === 'ORCHESTRATOR_STATUS_UPDATE') {
+            console.log('📡 [CONTENT] Reçu status update de l\'orchestrator:', event.data);
+            
+            // Relayer au background
+            try {
+              const response = await chrome.runtime.sendMessage({
+                action: event.data.action,
+                data: event.data.data
+              });
+              console.log('📡 [CONTENT] Relayé au background, réponse:', response);
+            } catch (error) {
+              console.error('❌ [CONTENT] Erreur relais au background:', error);
             }
           }
         });

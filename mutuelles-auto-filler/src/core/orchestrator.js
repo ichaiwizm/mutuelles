@@ -3,6 +3,27 @@ import { processTemplate } from './template-processor.js';
 import { executeSwissLifeAction } from '../../services/swisslife/orchestrator-bridge.js';
 import { getResolver } from './dependency-resolver.js';
 
+// Helper pour notifier la plateforme du statut des leads
+async function notifyPlatformStatus(leadId, status, leadName, details = {}) {
+  console.log(`📡 [ORCHESTRATOR] Tentative notification: ${status} pour "${leadName}" (ID: ${leadId})`);
+  try {
+    // Envoyer vers le content.js principal via postMessage
+    window.top.postMessage({
+      type: 'ORCHESTRATOR_STATUS_UPDATE',
+      action: 'UPDATE_LEAD_STATUS',
+      data: {
+        leadId,
+        status,
+        leadName,
+        details
+      }
+    }, '*');
+    console.log('📡 [ORCHESTRATOR] Notification envoyée via postMessage');
+  } catch (error) {
+    console.error('❌ [ORCHESTRATOR] Erreur notification plateforme:', error);
+  }
+}
+
 let availableLeads = [];
 
 // Charger les leads depuis chrome.storage
@@ -279,11 +300,17 @@ export async function runTestWithLead(leadIndex, onProgress = null) {
     throw new Error('Aucun ID trouvé pour le lead sélectionné');
   }
   
-  console.log('🚀 Démarrage traitement lead:', `${selectedLead.lead.nom} ${selectedLead.lead.prenom} (ID: ${leadId})`);
+  const leadName = `${selectedLead.lead.nom} ${selectedLead.lead.prenom}`;
+  console.log('🚀 Démarrage traitement lead:', `${leadName} (ID: ${leadId})`);
   
   // Marquer le lead comme en cours de traitement
   await saveProcessingStatus(leadId, 'processing', {
-    leadName: `${selectedLead.lead.nom} ${selectedLead.lead.prenom}`
+    leadName: leadName
+  });
+  
+  // Notifier la plateforme du début du traitement
+  await notifyPlatformStatus(leadId, 'processing', leadName, {
+    message: 'Début du traitement'
   });
   
   try {
@@ -445,9 +472,15 @@ export async function runTestWithLead(leadIndex, onProgress = null) {
     
     // Sauvegarder le statut de succès
     await saveProcessingStatus(leadId, 'success', {
-      leadName: `${selectedLead.lead.nom} ${selectedLead.lead.prenom}`,
+      leadName: leadName,
       completedSteps: etapes.length,
       processedAt: new Date().toISOString()
+    });
+    
+    // Notifier la plateforme du succès
+    await notifyPlatformStatus(leadId, 'success', leadName, {
+      message: 'Traitement terminé avec succès',
+      completedSteps: etapes.length
     });
     
     return { ok: true, completedSteps: etapes.length };
@@ -464,9 +497,15 @@ export async function runTestWithLead(leadIndex, onProgress = null) {
     
     // Sauvegarder le statut d'erreur
     await saveProcessingStatus(leadId, 'error', {
-      leadName: `${selectedLead.lead.nom} ${selectedLead.lead.prenom}`,
+      leadName: leadName,
       errorMessage: error.message,
       failedAt: new Date().toISOString()
+    });
+    
+    // Notifier la plateforme de l'erreur
+    await notifyPlatformStatus(leadId, 'error', leadName, {
+      message: 'Erreur lors du traitement',
+      errorMessage: error.message
     });
     
     throw error; // Re-lancer l'erreur pour l'UI

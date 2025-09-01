@@ -54,6 +54,9 @@ async function handleMessage(message) {
     case 'SEND_LEADS':
       return await sendLeadsToStorage(data);
       
+    case 'UPDATE_LEAD_STATUS':
+      return await notifyPlatformLeadStatus(data);
+      
     default:
       throw new Error(`Action inconnue: ${action}`);
   }
@@ -231,6 +234,69 @@ async function notifySwissLifeTabs(action, data) {
   }
 }
 
+
+// Notifier la plateforme d'une mise à jour de statut de lead
+async function notifyPlatformLeadStatus(data) {
+  console.log('📡 [BACKGROUND] Reçu UPDATE_LEAD_STATUS:', data);
+  try {
+    const { leadId, status, leadName, details } = data || {};
+    
+    if (!leadId || !status) {
+      throw new Error('leadId et status sont requis');
+    }
+    
+    const statusUpdate = {
+      type: 'LEAD_STATUS_UPDATE',
+      leadId,
+      status, // 'processing', 'success', 'error'
+      leadName: leadName || `Lead ${leadId}`,
+      timestamp: new Date().toISOString(),
+      details: details || {}
+    };
+    
+    console.log(`📡 Notification statut lead vers plateforme:`, statusUpdate);
+    
+    // Envoyer vers tous les onglets localhost:5174
+    await notifyPlatformTabs(statusUpdate);
+    
+    return {
+      success: true,
+      data: { notified: true }
+    };
+  } catch (error) {
+    console.error('❌ Erreur notification plateforme:', error);
+    throw error;
+  }
+}
+
+// Notifier tous les onglets de la plateforme (localhost:5174)
+async function notifyPlatformTabs(statusUpdate) {
+  try {
+    const tabs = await chrome.tabs.query({});
+    
+    // Trouver tous les onglets localhost:5174
+    const platformTabs = tabs.filter(tab => 
+      tab.url && tab.url.includes('localhost:5174')
+    );
+    
+    console.log(`📡 Envoi vers ${platformTabs.length} onglet(s) plateforme`);
+    
+    // Envoyer le message à chaque onglet plateforme
+    for (const tab of platformTabs) {
+      try {
+        await chrome.tabs.sendMessage(tab.id, {
+          action: 'FORWARD_STATUS_TO_PLATFORM',
+          data: statusUpdate,
+          source: 'background'
+        });
+      } catch (error) {
+        console.log(`⚠️ Impossible d'envoyer vers onglet ${tab.id}:`, error.message);
+      }
+    }
+  } catch (error) {
+    console.error('❌ Erreur notification onglets plateforme:', error);
+  }
+}
 
 // Gestionnaire d'installation/mise à jour de l'extension
 chrome.runtime.onInstalled.addListener((details) => {

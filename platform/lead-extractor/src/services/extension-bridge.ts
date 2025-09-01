@@ -7,6 +7,22 @@ export interface ExtensionMessage {
   data?: any;
 }
 
+export interface LeadStatusUpdate {
+  type: 'LEAD_STATUS_UPDATE';
+  leadId: string;
+  status: 'processing' | 'success' | 'error';
+  leadName: string;
+  timestamp: string;
+  details: {
+    message?: string;
+    completedSteps?: number;
+    errorMessage?: string;
+    currentStep?: number;
+    totalSteps?: number;
+    stepName?: string;
+  };
+}
+
 export interface ExtensionResponse {
   success: boolean;
   data?: any;
@@ -15,6 +31,7 @@ export interface ExtensionResponse {
 
 export class ExtensionBridge {
   private static readonly EXTENSION_ID = 'extension-id-will-be-set-in-production'; // TODO: Définir l'ID réel en production
+  private static statusUpdateCallbacks: Set<(update: LeadStatusUpdate) => void> = new Set();
 
   // Vérifier si l'extension est installée
   static async checkExtensionInstalled(): Promise<boolean> {
@@ -206,7 +223,56 @@ export class ExtensionBridge {
     });
   }
 
+  // Ajouter un callback pour les mises à jour de statut
+  static onLeadStatusUpdate(callback: (update: LeadStatusUpdate) => void): () => void {
+    this.statusUpdateCallbacks.add(callback);
+    
+    // Initialiser l'écoute si ce n'est pas déjà fait
+    this.initializeStatusListener();
+    
+    // Retourner une fonction de nettoyage
+    return () => {
+      this.statusUpdateCallbacks.delete(callback);
+    };
+  }
+
+  // Initialiser l'écoute des messages de statut (une seule fois)
+  private static statusListenerInitialized = false;
+  private static initializeStatusListener(): void {
+    if (this.statusListenerInitialized) {
+      return;
+    }
+    
+    this.statusListenerInitialized = true;
+    
+    // Écouter les messages de statut depuis l'extension
+    window.addEventListener('message', (event) => {
+      // Vérifier l'origine pour la sécurité
+      if (event.origin !== window.location.origin) {
+        return;
+      }
+      
+      // Vérifier le type de message
+      if (event.data?.type === 'FROM_EXTENSION_STATUS' && event.data?.statusUpdate) {
+        const update = event.data.statusUpdate as LeadStatusUpdate;
+        
+        console.log('[EXTENSION BRIDGE] 📡 Notification reçue:', update);
+        
+        // Notifier tous les callbacks enregistrés
+        this.statusUpdateCallbacks.forEach(callback => {
+          try {
+            callback(update);
+          } catch (error) {
+            console.error('[EXTENSION BRIDGE] ❌ Erreur callback:', error);
+          }
+        });
+      }
+    });
+    
+    console.log('[EXTENSION BRIDGE] ✅ Écoute des statuts initialisée');
+  }
+
 }
 
 // Export des types pour utilisation externe
-export type { Lead };
+export type { Lead, LeadStatusUpdate };

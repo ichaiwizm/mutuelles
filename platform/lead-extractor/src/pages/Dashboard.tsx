@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { LeadDetailModal } from '@/components/LeadDetailModal';
 import { useAuth } from '@/hooks/useAuth';
@@ -8,7 +8,7 @@ import { useUIState } from '@/hooks/useUIState';
 import { useSSEExtraction } from '@/hooks/useSSEExtraction';
 import { useProcessingStatus } from '@/hooks/useProcessingStatus';
 import { useLeadSelection } from '@/hooks/useLeadSelection';
-import { ExtensionBridge } from '@/services/extension-bridge';
+import { ExtensionBridge, type LeadStatusUpdate } from '@/services/extension-bridge';
 import { toast } from 'sonner';
 import { ControlsPanel } from '@/components/dashboard/ControlsPanel';
 import { TabsNavigation } from '@/components/dashboard/TabsNavigation';
@@ -95,6 +95,36 @@ export function Dashboard() {
     statusCounts,
     allFilteredSelected
   } = useLeadSelection(tableData);
+  
+  // Écouter les notifications de statut depuis l'extension
+  useEffect(() => {
+    const handleStatusUpdate = (update: LeadStatusUpdate) => {
+      const { status, leadName, details } = update;
+      
+      switch (status) {
+        case 'processing':
+          console.log(`[EXTENSION] 🚀 Lead "${leadName}" - ${details.message || 'Début du traitement'}`);
+          break;
+        
+        case 'success':
+          console.log(`[EXTENSION] ✅ Lead "${leadName}" - ${details.message || 'Traitement terminé avec succès'}${details.completedSteps ? ` (${details.completedSteps} étapes)` : ''}`);
+          break;
+        
+        case 'error':
+          console.log(`[EXTENSION] ❌ Lead "${leadName}" - ${details.message || 'Erreur lors du traitement'}${details.errorMessage ? `: ${details.errorMessage}` : ''}`);
+          break;
+        
+        default:
+          console.log(`[EXTENSION] 📋 Lead "${leadName}" - Statut: ${status}`);
+      }
+    };
+    
+    // S'abonner aux notifications
+    const unsubscribe = ExtensionBridge.onLeadStatusUpdate(handleStatusUpdate);
+    
+    // Nettoyer l'abonnement au démontage
+    return unsubscribe;
+  }, []);
   
   // Handler pour l'envoi à l'extension
   const handleSendToExtension = async () => {
