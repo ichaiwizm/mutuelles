@@ -25,7 +25,7 @@ export function ControlsPanel({
         <div className="flex items-center gap-2">
           <Label className="text-slate-700 font-medium">Derniers</Label>
           <Select value={String(days)} onValueChange={(v) => setDays(Number(v))}>
-            <SelectTrigger className="w-32">
+            <SelectTrigger className="w-26">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
