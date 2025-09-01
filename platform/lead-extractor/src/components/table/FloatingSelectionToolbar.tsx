@@ -1,11 +1,13 @@
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { X, Send, Download, MoreHorizontal } from 'lucide-react';
+import { X, Send, Download, MoreHorizontal, Filter } from 'lucide-react';
 import { 
   DropdownMenu, 
   DropdownMenuContent, 
   DropdownMenuItem, 
-  DropdownMenuTrigger 
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+  DropdownMenuLabel
 } from '@/components/ui/dropdown-menu';
 
 interface FloatingSelectionToolbarProps {
@@ -17,6 +19,14 @@ interface FloatingSelectionToolbarProps {
   onExport?: () => void;
   onClearSelection: () => void;
   isAllSelected: boolean;
+  onSelectByStatus?: (status: 'pending' | 'processing' | 'success' | 'error') => void;
+  statusCounts?: {
+    pending: number;
+    processing: number;
+    success: number;
+    error: number;
+    undefined: number;
+  };
   className?: string;
 }
 
@@ -29,6 +39,8 @@ export function FloatingSelectionToolbar({
   onExport,
   onClearSelection,
   isAllSelected,
+  onSelectByStatus,
+  statusCounts,
   className = ''
 }: FloatingSelectionToolbarProps) {
   if (selectedCount === 0) return null;
@@ -76,6 +88,54 @@ export function FloatingSelectionToolbar({
             <Download className="h-4 w-4 mr-1" />
             Exporter
           </Button>
+        )}
+
+        {/* Sélection par statut */}
+        {onSelectByStatus && statusCounts && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="sm" variant="outline">
+                <Filter className="h-4 w-4 mr-1" />
+                Sélectionner par statut
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>Sélectionner les leads</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {statusCounts.pending > 0 && (
+                <DropdownMenuItem onClick={() => onSelectByStatus('pending')}>
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-yellow-500"></div>
+                    En attente ({statusCounts.pending})
+                  </div>
+                </DropdownMenuItem>
+              )}
+              {statusCounts.processing > 0 && (
+                <DropdownMenuItem onClick={() => onSelectByStatus('processing')}>
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                    En cours ({statusCounts.processing})
+                  </div>
+                </DropdownMenuItem>
+              )}
+              {statusCounts.success > 0 && (
+                <DropdownMenuItem onClick={() => onSelectByStatus('success')}>
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                    Réussi ({statusCounts.success})
+                  </div>
+                </DropdownMenuItem>
+              )}
+              {statusCounts.error > 0 && (
+                <DropdownMenuItem onClick={() => onSelectByStatus('error')}>
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-red-500"></div>
+                    Erreur ({statusCounts.error})
+                  </div>
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
         )}
 
         {/* Menu actions supplémentaires */}

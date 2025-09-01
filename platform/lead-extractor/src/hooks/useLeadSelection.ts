@@ -59,6 +59,37 @@ export function useLeadSelection(filteredLeads: Lead[]) {
   const selectAll = () => handleSelectAll(true);
   const deselectAll = () => handleSelectAll(false);
 
+  // Sélection par statut
+  const selectByStatus = (status: 'pending' | 'processing' | 'success' | 'error') => {
+    const newSelection = new Set(selectedLeadIds);
+    filteredLeads.forEach(lead => {
+      if (lead.processingStatus?.status === status) {
+        newSelection.add(lead.id);
+      }
+    });
+    setSelectedLeadIds(newSelection);
+  };
+
+  // Compter les leads par statut dans les leads filtrés
+  const statusCounts = useMemo(() => {
+    const counts = {
+      pending: 0,
+      processing: 0,
+      success: 0,
+      error: 0,
+      undefined: 0 // Pour les leads sans statut
+    };
+    
+    filteredLeads.forEach(lead => {
+      const status = lead.processingStatus?.status || 'undefined';
+      if (status in counts) {
+        counts[status as keyof typeof counts]++;
+      }
+    });
+    
+    return counts;
+  }, [filteredLeads]);
+
   // État de "Tout sélectionner"
   const allFilteredSelected = filteredLeads.length > 0 && 
     filteredLeads.every(lead => selectedLeadIds.has(lead.id));
@@ -72,6 +103,8 @@ export function useLeadSelection(filteredLeads: Lead[]) {
     toggleSelectLead,
     selectAll,
     deselectAll,
+    selectByStatus,
+    statusCounts,
     cleanSelection,
     allFilteredSelected,
     someFilteredSelected

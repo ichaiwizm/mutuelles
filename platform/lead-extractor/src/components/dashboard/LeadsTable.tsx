@@ -23,6 +23,14 @@ interface LeadsTableProps {
   onSendToExtension?: () => void;
   onClearSelection?: () => void;
   isAllSelected?: boolean;
+  onSelectByStatus?: (status: 'pending' | 'processing' | 'success' | 'error') => void;
+  statusCounts?: {
+    pending: number;
+    processing: number;
+    success: number;
+    error: number;
+    undefined: number;
+  };
 }
 
 export function LeadsTable({ 
@@ -40,7 +48,9 @@ export function LeadsTable({
   onDeselectAll,
   onSendToExtension,
   onClearSelection,
-  isAllSelected = false
+  isAllSelected = false,
+  onSelectByStatus,
+  statusCounts
 }: LeadsTableProps) {
   const { table, allSortedAndFilteredData, columns } = useLeadsTable({
     data,
@@ -68,6 +78,8 @@ export function LeadsTable({
         onSendToExtension={onSendToExtension || (() => {})}
         onClearSelection={onClearSelection || (() => {})}
         isAllSelected={isAllSelected}
+        onSelectByStatus={onSelectByStatus}
+        statusCounts={statusCounts}
       />
       
       {/* Table */}

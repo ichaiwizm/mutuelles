@@ -91,6 +91,8 @@ export function Dashboard() {
     toggleSelectLead,
     selectAll,
     deselectAll,
+    selectByStatus,
+    statusCounts,
     allFilteredSelected
   } = useLeadSelection(tableData);
   
@@ -238,6 +240,8 @@ export function Dashboard() {
           onSendToExtension={handleSendToExtension}
           onClearSelection={handleClearSelection}
           isAllSelected={isAllDataSelected}
+          onSelectByStatus={selectByStatus}
+          statusCounts={statusCounts}
         />
 
         {/* Modal détail */}
