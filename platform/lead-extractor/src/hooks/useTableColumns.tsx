@@ -1,10 +1,66 @@
-import { useMemo } from 'react';
+import { useMemo, useCallback } from 'react';
 import { type ColumnDef } from '@tanstack/react-table';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 import type { Lead } from '@/types/lead';
 
-export function useTableColumns(): ColumnDef<Lead>[] {
+interface UseTableColumnsProps {
+  selectedLeadIds?: Set<string>;
+  onToggleSelect?: (leadId: string) => void;
+  onSelectAll?: () => void;
+  onDeselectAll?: () => void;
+  isAllSelected?: boolean;
+}
+
+export function useTableColumns({
+  selectedLeadIds = new Set(),
+  onToggleSelect,
+  onSelectAll,
+  onDeselectAll,
+  isAllSelected = false
+}: UseTableColumnsProps = {}): ColumnDef<Lead>[] {
+  
+  // Stabiliser les callbacks
+  const stableToggleSelect = useCallback((leadId: string) => {
+    onToggleSelect?.(leadId);
+  }, [onToggleSelect]);
+  
+  const stableSelectAll = useCallback(() => {
+    onSelectAll?.();
+  }, [onSelectAll]);
+  
+  const stableDeselectAll = useCallback(() => {
+    onDeselectAll?.();
+  }, [onDeselectAll]);
   return useMemo(() => [
+    {
+      id: 'select',
+      header: () => (
+        <Checkbox
+          checked={isAllSelected}
+          onCheckedChange={(checked) => {
+            if (checked) {
+              stableSelectAll();
+            } else {
+              stableDeselectAll();
+            }
+          }}
+          aria-label="Sélectionner toutes les lignes"
+          className="mx-auto"
+        />
+      ),
+      cell: ({ row }) => (
+        <Checkbox
+          checked={selectedLeadIds.has(row.original.id)}
+          onCheckedChange={() => stableToggleSelect(row.original.id)}
+          aria-label="Sélectionner cette ligne"
+          className="mx-auto"
+        />
+      ),
+      size: 48,
+      enableSorting: false,
+      enableHiding: false,
+    },
     {
       id: 'contact',
       header: 'Contact',
@@ -101,5 +157,5 @@ export function useTableColumns(): ColumnDef<Lead>[] {
         </div>
       ),
     },
-  ], []);
+  ], [selectedLeadIds, stableToggleSelect, stableSelectAll, stableDeselectAll, isAllSelected]);
 }

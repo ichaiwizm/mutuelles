@@ -1,6 +1,5 @@
 import { flexRender, type Table } from '@tanstack/react-table';
 import { TableBody as UITableBody, TableCell, TableRow } from '@/components/ui/table';
-import { Checkbox } from '@/components/ui/checkbox';
 import type { Lead } from '@/types/lead';
 
 interface TableBodyProps {
@@ -20,7 +19,6 @@ export function TableBody({
   emptyMessage, 
   columnsLength,
   selectedLeadIds = new Set(),
-  onToggleSelect
 }: TableBodyProps) {
   return (
     <UITableBody>
@@ -43,34 +41,14 @@ export function TableBody({
                 );
                 onRowClick(row.original, allSortedAndFilteredData, realIndex);
               }}
-              className={`group cursor-pointer transition-all duration-200 relative ${
+              className={`cursor-pointer transition-all duration-200 ${
                 isSelected 
-                  ? 'bg-indigo-50 hover:bg-indigo-100 border-l-2 border-l-indigo-500' 
+                  ? 'bg-indigo-50 hover:bg-indigo-100' 
                   : 'odd:bg-white even:bg-slate-50/40 hover:bg-slate-100'
               }`}
             >
-              {/* Checkbox qui apparaît au hover/selection */}
-              <div className={`absolute left-3 top-1/2 -translate-y-1/2 z-10 transition-all duration-200 ${
-                isSelected 
-                  ? 'opacity-100 translate-x-0' 
-                  : 'opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0'
-              }`}>
-                <Checkbox
-                  checked={isSelected}
-                  onCheckedChange={() => {
-                    if (onToggleSelect) {
-                      onToggleSelect(row.original.id);
-                    }
-                  }}
-                  className="bg-white shadow-sm"
-                  aria-label="Sélectionner cette ligne"
-                />
-              </div>
-              {row.getVisibleCells().map((cell, index) => (
-                <TableCell 
-                  key={cell.id}
-                  className={index === 0 ? 'pl-16' : ''} // Padding pour la première cellule pour laisser place au checkbox
-                >
+              {row.getVisibleCells().map((cell) => (
+                <TableCell key={cell.id}>
                   {flexRender(cell.column.columnDef.cell, cell.getContext())}
                 </TableCell>
               ))}

@@ -18,6 +18,11 @@ interface UseLeadsTableProps {
   pageSize: number;
   currentPage: number;
   onPageChange: (page: number) => void;
+  selectedLeadIds?: Set<string>;
+  onToggleSelect?: (leadId: string) => void;
+  onSelectAll?: () => void;
+  onDeselectAll?: () => void;
+  isAllSelected?: boolean;
 }
 
 export function useLeadsTable({
@@ -26,11 +31,22 @@ export function useLeadsTable({
   pageSize,
   currentPage,
   onPageChange,
+  selectedLeadIds,
+  onToggleSelect,
+  onSelectAll,
+  onDeselectAll,
+  isAllSelected,
 }: UseLeadsTableProps) {
   const [sorting, setSorting] = useState<SortingState>([{ id: 'score', desc: true }]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   
-  const columns = useTableColumns();
+  const columns = useTableColumns({
+    selectedLeadIds,
+    onToggleSelect,
+    onSelectAll,
+    onDeselectAll,
+    isAllSelected,
+  });
 
   const globalFilterFn = (row: any, _columnId: string, filterValue: string) => {
     const haystack = [

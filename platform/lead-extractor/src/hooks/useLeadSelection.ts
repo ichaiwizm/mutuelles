@@ -1,17 +1,22 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import type { Lead } from '@/types/lead';
 
 export function useLeadSelection(filteredLeads: Lead[]) {
   const [selectedLeadIds, setSelectedLeadIds] = useState<Set<string>>(new Set());
 
-  // Sélectionner automatiquement tous les leads filtrés
-  useEffect(() => {
-    if (filteredLeads.length > 0) {
-      const newSelection = new Set<string>();
-      filteredLeads.forEach(lead => newSelection.add(lead.id));
-      setSelectedLeadIds(newSelection);
-    }
-  }, [filteredLeads]);
+  // Fonction de nettoyage pour supprimer les leads qui ne sont plus dans filteredLeads
+  const cleanSelection = () => {
+    const filteredIds = new Set(filteredLeads.map(lead => lead.id));
+    setSelectedLeadIds(prev => {
+      const cleaned = new Set<string>();
+      prev.forEach(id => {
+        if (filteredIds.has(id)) {
+          cleaned.add(id);
+        }
+      });
+      return cleaned;
+    });
+  };
 
   // Leads sélectionnés (intersection entre filtrés et sélectionnés)
   const selectedLeads = useMemo(() => {
@@ -41,6 +46,19 @@ export function useLeadSelection(filteredLeads: Lead[]) {
     setSelectedLeadIds(newSelection);
   };
 
+  const toggleSelectLead = (leadId: string) => {
+    const newSelection = new Set(selectedLeadIds);
+    if (newSelection.has(leadId)) {
+      newSelection.delete(leadId);
+    } else {
+      newSelection.add(leadId);
+    }
+    setSelectedLeadIds(newSelection);
+  };
+
+  const selectAll = () => handleSelectAll(true);
+  const deselectAll = () => handleSelectAll(false);
+
   // État de "Tout sélectionner"
   const allFilteredSelected = filteredLeads.length > 0 && 
     filteredLeads.every(lead => selectedLeadIds.has(lead.id));
@@ -51,6 +69,10 @@ export function useLeadSelection(filteredLeads: Lead[]) {
     selectedLeads,
     handleSelectAll,
     handleSelectLead,
+    toggleSelectLead,
+    selectAll,
+    deselectAll,
+    cleanSelection,
     allFilteredSelected,
     someFilteredSelected
   };

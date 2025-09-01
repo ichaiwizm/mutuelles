@@ -7,7 +7,7 @@ import { useSettings } from '@/hooks/useSettings';
 import { useUIState } from '@/hooks/useUIState';
 import { useSSEExtraction } from '@/hooks/useSSEExtraction';
 import { useProcessingStatus } from '@/hooks/useProcessingStatus';
-import { useLeadTableSelection } from '@/hooks/useLeadTableSelection';
+import { useLeadSelection } from '@/hooks/useLeadSelection';
 import { ControlsPanel } from '@/components/dashboard/ControlsPanel';
 import { TabsNavigation } from '@/components/dashboard/TabsNavigation';
 import { ProgressPanel } from '@/components/dashboard/ProgressPanel';
@@ -24,7 +24,7 @@ export function Dashboard() {
   // Hooks personnalisés
   const { isAuthenticated, checkAuthStatus, redirectToLogin } = useAuth();
   const { leads, qualifiedLeads, addLeads, clearAllLeads, stats } = useLeads();
-  const { enrichLeadsWithStatus, getStatusStats } = useProcessingStatus();
+  const { enrichLeadsWithStatus } = useProcessingStatus();
   const {
     days, setDays,
     gmailEnabled, setGmailEnabled,
@@ -89,27 +89,25 @@ export function Dashboard() {
   // Hook de sélection des leads dans le tableau
   const {
     selectedLeadIds,
+    selectedLeads,
     toggleSelectLead,
     selectAll,
     deselectAll,
-    getSelectedCount,
-    getSelectedLeads,
-    isAllSelected,
-    clearSelection
-  } = useLeadTableSelection();
+    allFilteredSelected
+  } = useLeadSelection(tableData);
   
   // Handler pour l'envoi à l'extension
   const handleSendToExtension = () => {
-    const selectedLeads = getSelectedLeads(tableData);
     console.log('Leads sélectionnés pour envoi:', selectedLeads);
     // TODO: Implémenter l'envoi réel à l'extension
     alert(`${selectedLeads.length} lead(s) sélectionné(s) seront envoyés à l'extension`);
   };
 
   // Handlers pour la sélection
-  const handleSelectAll = () => selectAll(tableData);
-  const handleDeselectAll = () => deselectAll();
-  const isAllDataSelected = isAllSelected(tableData);
+  const handleSelectAll = selectAll;
+  const handleDeselectAll = deselectAll;
+  const handleClearSelection = deselectAll;
+  const isAllDataSelected = allFilteredSelected;
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -183,7 +181,7 @@ export function Dashboard() {
           onSelectAll={handleSelectAll}
           onDeselectAll={handleDeselectAll}
           onSendToExtension={handleSendToExtension}
-          onClearSelection={clearSelection}
+          onClearSelection={handleClearSelection}
           isAllSelected={isAllDataSelected}
         />
 

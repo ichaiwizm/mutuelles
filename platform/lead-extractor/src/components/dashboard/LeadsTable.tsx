@@ -48,6 +48,11 @@ export function LeadsTable({
     pageSize,
     currentPage,
     onPageChange,
+    selectedLeadIds,
+    onToggleSelect,
+    onSelectAll,
+    onDeselectAll,
+    isAllSelected,
   });
 
   const emptyMessage = getEmptyMessage(activeTab);
