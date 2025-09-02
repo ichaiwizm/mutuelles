@@ -26,7 +26,7 @@ export function Dashboard() {
   // Hooks personnalisés
   const { isAuthenticated, hasTokens, checkAuthStatus, redirectToLogin } = useAuth();
   const { leads, qualifiedLeads, addLeads, clearAllLeads, stats } = useLeads();
-  const { enrichLeadsWithStatus, applyStatusUpdate } = useProcessingStatus();
+  const { enrichLeadsWithStatus, applyStatusUpdate, cleanupOrphanedStatuses, isLoaded } = useProcessingStatus();
   const {
     days, setDays
   } = useSettings();
@@ -128,6 +128,18 @@ export function Dashboard() {
     // Nettoyer l'abonnement au démontage
     return unsubscribe;
   }, [applyStatusUpdate]);
+
+  // Nettoyer les statuts orphelins quand les leads changent
+  useEffect(() => {
+    if (!isLoaded || leads.length === 0) return;
+    
+    const existingLeadIds = leads.map(lead => lead.id);
+    const removedCount = cleanupOrphanedStatuses(existingLeadIds);
+    
+    if (removedCount > 0) {
+      console.log(`[DASHBOARD] ${removedCount} statuts orphelins nettoyés`);
+    }
+  }, [leads, isLoaded, cleanupOrphanedStatuses]);
   
   // Handler pour l'envoi à l'extension
   const handleSendToExtension = async () => {

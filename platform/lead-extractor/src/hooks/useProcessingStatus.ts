@@ -1,22 +1,31 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { Lead } from '@/types/lead';
 import type { LeadStatusUpdate } from '@/services/extension-bridge';
-
-interface ProcessingStatus {
-  status: 'pending' | 'processing' | 'success' | 'error';
-  timestamp?: string;
-  message?: string;
-  errorMessage?: string;
-  completedSteps?: number;
-  leadName?: string;
-  currentStep?: number;
-  totalSteps?: number;
-}
-
-type ProcessingStatusMap = Record<string, ProcessingStatus>;
+import { ProcessingStatusStorage, type ProcessingStatus, type ProcessingStatusMap } from '@/utils/processing-status-storage';
 
 export function useProcessingStatus() {
   const [statusMap, setStatusMap] = useState<ProcessingStatusMap>({});
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  // Charger les statuts depuis localStorage au démarrage
+  useEffect(() => {
+    const loadedStatuses = ProcessingStatusStorage.loadStatuses();
+    setStatusMap(loadedStatuses);
+    setIsLoaded(true);
+    
+    // Nettoyer les statuts anciens (optionnel, 30 jours par défaut)
+    ProcessingStatusStorage.cleanupOldStatuses(30);
+    
+    console.log('[PROCESSING STATUS] Statuts chargés depuis localStorage:', Object.keys(loadedStatuses).length);
+  }, []);
+
+  // Sauvegarder automatiquement quand statusMap change (mais seulement après le chargement initial)
+  useEffect(() => {
+    if (!isLoaded) return;
+    
+    ProcessingStatusStorage.saveStatuses(statusMap);
+    console.log('[PROCESSING STATUS] Statuts sauvegardés:', Object.keys(statusMap).length);
+  }, [statusMap, isLoaded]);
 
   // Mappe les statuts externes vers nos statuts internes
   const mapExternalStatus = (status: string): ProcessingStatus['status'] => {
@@ -106,14 +115,53 @@ export function useProcessingStatus() {
     return stats;
   };
 
+  // Méthodes de nettoyage et gestion
+  const clearAllStatuses = () => {
+    ProcessingStatusStorage.clearAllStatuses();
+    setStatusMap({});
+  };
+
+  const removeLeadStatus = (leadId: string) => {
+    setStatusMap(prev => {
+      const newMap = { ...prev };
+      delete newMap[leadId];
+      return newMap;
+    });
+  };
+
+  const cleanupOrphanedStatuses = (existingLeadIds: string[]) => {
+    const removedCount = ProcessingStatusStorage.cleanupOrphanedStatuses(existingLeadIds);
+    if (removedCount > 0) {
+      // Recharger depuis localStorage après nettoyage
+      const cleanedStatuses = ProcessingStatusStorage.loadStatuses();
+      setStatusMap(cleanedStatuses);
+    }
+    return removedCount;
+  };
+
+  const getStorageStats = () => {
+    return ProcessingStatusStorage.getStatusStats();
+  };
+
+  const exportStatuses = () => {
+    return ProcessingStatusStorage.exportToJSON();
+  };
+
   return {
     statusMap,
     enrichLeadWithStatus,
     enrichLeadsWithStatus,
     getLeadStatus,
     getStatusStats,
-    // Nouveaux helpers pour gérer les updates
+    isLoaded,
+    // Helpers pour gérer les updates
     setLeadStatus,
-    applyStatusUpdate
+    applyStatusUpdate,
+    // Méthodes de nettoyage
+    clearAllStatuses,
+    removeLeadStatus,
+    cleanupOrphanedStatuses,
+    getStorageStats,
+    exportStatuses
   };
 }
