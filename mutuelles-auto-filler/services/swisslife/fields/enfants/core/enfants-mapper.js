@@ -6,11 +6,11 @@
 import { qa, isVisible } from '../../../utils/dom-utils.js';
 import { getChildDateEl, getChildAyantSel } from './enfants-detector.js';
 
-// Configuration par défaut
+// Configuration par défaut - Mode loose comme dans le script manuel
 export const DEFAULT_CONFIG = {
   nbEnfants: 0,
   enfants: [],
-  MODE: "visible" // "visible" ou "loose"
+  MODE: "loose" // "visible" ou "loose" - loose par défaut pour plus de robustesse
 };
 
 /**

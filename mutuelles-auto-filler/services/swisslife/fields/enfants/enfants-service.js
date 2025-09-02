@@ -42,6 +42,10 @@ export async function fill(cfg = {}) {
     
     // Convertir le format bridge vers le format interne
     const config = mapBridgeConfigToInternal(cfg, hasConjoint);
+    // S'assurer que le mode loose est utilisé par défaut comme dans le script manuel
+    if (!config.MODE) {
+      config.MODE = 'loose';
+    }
     console.log('🔍 enfants-service.fill - configuration finale:', config);
     
     // Remplir les enfants
@@ -59,11 +63,17 @@ export async function fill(cfg = {}) {
     
     const readback = readChildren(config);
     
-    return success({ 
+    // Attendre un peu pour s'assurer que tous les processus asynchrones sont terminés
+    await wait(100);
+    
+    const result = success({ 
       actions: fillResult.filled || [], 
       readback,
       validation
     });
+    
+    console.log('🎯 enfants-service.fill - retour final:', result);
+    return result;
   } catch (err) {
     console.error('❌ Erreur remplissage enfants:', err);
     return error(ERROR_CODES.FILL_ERROR, 'Erreur lors du remplissage des champs enfants', err);

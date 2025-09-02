@@ -6,7 +6,7 @@
  * Configuration des retry
  */
 const RETRY_CONFIG = {
-  MAX_RETRY_ATTEMPTS: 1, // 1 retry = 2 tentatives total par lead
+  MAX_RETRY_ATTEMPTS: 2, // 2 retry = 3 tentatives total par lead
 };
 
 /**
