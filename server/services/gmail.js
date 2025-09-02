@@ -14,7 +14,8 @@ export class GmailService {
     try {
       const query = `newer_than:${days}d`;
       
-      logger.info(`Fetching Gmail messages for ${days} days`);
+      logger.info(`[GMAIL] Fetching Gmail messages for ${days} days`);
+      logger.info(`[GMAIL] About to call Gmail API...`);
       
       const messagesResponse = await this.gmail.users.messages.list({
         userId: 'me',
@@ -27,7 +28,8 @@ export class GmailService {
       
       return messages;
     } catch (error) {
-      logger.error('Error fetching Gmail messages list:', error);
+      logger.error(`[GMAIL ERROR] Error fetching Gmail messages list: ${error.message}`);
+      logger.error(`[GMAIL ERROR] Full error:`, error);
       throw error;
     }
   }

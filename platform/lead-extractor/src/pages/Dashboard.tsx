@@ -24,7 +24,7 @@ export function Dashboard() {
   const [modalOpen, setModalOpen] = useState(false);
 
   // Hooks personnalisés
-  const { isAuthenticated, checkAuthStatus, redirectToLogin } = useAuth();
+  const { isAuthenticated, hasTokens, checkAuthStatus, redirectToLogin } = useAuth();
   const { leads, qualifiedLeads, addLeads, clearAllLeads, stats } = useLeads();
   const { enrichLeadsWithStatus } = useProcessingStatus();
   const {
@@ -224,6 +224,7 @@ export function Dashboard() {
           </h1>
           <AuthStatus 
             isAuthenticated={isAuthenticated}
+            hasTokens={hasTokens}
             onRedirectToLogin={redirectToLogin}
           />
         </div>

@@ -128,7 +128,7 @@
         
         try {
           const { createUI, createQueueProgressHandler } = await import(chrome.runtime.getURL('src/ui/ui.js'));
-          const { loadLeads, processLeadsQueue } = await import(chrome.runtime.getURL('src/core/orchestrator.js'));
+          const { loadLeads, processLeadsQueue } = await import(chrome.runtime.getURL('src/core/orchestrator/index.js'));
           
           const leads = await loadLeads();
           
@@ -305,6 +305,24 @@
             }, 5000); // Attendre 5s pour laisser le temps aux redirections
           }
           
+          // Écouter les messages de l'orchestrator (depuis l'iframe)
+          window.addEventListener('message', async (event) => {
+            if (event.data?.type === 'ORCHESTRATOR_STATUS_UPDATE') {
+              console.log('📡 [CONTENT SwissLife] Reçu status update de l\'orchestrator:', event.data);
+              
+              // Relayer au background
+              try {
+                const response = await chrome.runtime.sendMessage({
+                  action: event.data.action,
+                  data: event.data.data
+                });
+                console.log('📡 [CONTENT SwissLife] Relayé au background, réponse:', response);
+              } catch (error) {
+                console.error('❌ [CONTENT SwissLife] Erreur relais au background:', error);
+              }
+            }
+          });
+          
           console.log('✅ Orchestrateur SwissLife prêt');
         } catch (error) {
           console.error('❌ Erreur initialisation SwissLife:', error);
@@ -367,6 +385,27 @@
               console.log('📡 [CONTENT] Relayé au background, réponse:', response);
             } catch (error) {
               console.error('❌ [CONTENT] Erreur relais au background:', error);
+            }
+            
+            // AUSSI relayer à la plateforme localhost:5174
+            try {
+              const statusUpdate = {
+                type: 'LEAD_STATUS_UPDATE',
+                leadId: event.data.data.leadId,
+                status: event.data.data.status,
+                leadName: event.data.data.leadName,
+                timestamp: new Date().toISOString(),
+                details: event.data.data.details || {}
+              };
+              
+              window.postMessage({
+                type: 'FROM_EXTENSION_STATUS',
+                statusUpdate: statusUpdate
+              }, 'http://localhost:5174');
+              
+              console.log('📡 [CONTENT] Notification envoyée à la plateforme:', statusUpdate);
+            } catch (error) {
+              console.error('❌ [CONTENT] Erreur notification plateforme:', error);
             }
           }
         });

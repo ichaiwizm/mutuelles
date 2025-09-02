@@ -17,9 +17,17 @@ export const useSSEExtraction = (addLeads: any, checkAuthStatus: any) => {
   const busy = pendingOps > 0;
 
   const extractWithSSE = async (source: any, days: any, replaceAll = false) => {
-    const authOk = await checkAuthStatus();
-    if (!authOk) {
+    const authResult = await checkAuthStatus();
+    if (!authResult.authenticated) {
       toast.error('Authentification requise. Redirection...');
+      window.location.href = `${API_URL}/auth/google/start`;
+      return;
+    }
+    
+    if (!authResult.hasTokens) {
+      toast.error('Connexion Gmail requise. Redirection vers Google...', {
+        description: 'Vous devez autoriser l\'accès à votre compte Gmail pour extraire les emails.'
+      });
       window.location.href = `${API_URL}/auth/google/start`;
       return;
     }
@@ -33,39 +41,43 @@ export const useSSEExtraction = (addLeads: any, checkAuthStatus: any) => {
     setShowProgress(true);
 
     const endpoint = `${API_URL}/api/ingest/gmail/stream?days=${days}`;
-
     const eventSource = new EventSource(endpoint);
     let collectedLeads = [];
 
     eventSource.onmessage = (event) => {
-      const data = JSON.parse(event.data);
+      try {
+        const data = JSON.parse(event.data);
 
-      if (data.type === 'final') {
-        collectedLeads = data.leads || [];
-        eventSource.close();
-        
-        // Ajouter les leads avec statistiques détaillées
-        const { addedQualified, addedNon, totalAdded } = addLeads(collectedLeads, replaceAll);
-        StorageManager.updateLastSync(source);
+        if (data.type === 'final') {
+          collectedLeads = data.leads || [];
+          eventSource.close();
+          
+          // Ajouter les leads avec statistiques détaillées
+          const { addedQualified, addedNon, totalAdded } = addLeads(collectedLeads, replaceAll);
+          StorageManager.updateLastSync(source);
 
-        // Toast avec informations claires
-        const message = replaceAll 
-          ? `Base mise à jour : ${addedQualified} lead(s) qualifié(s) et ${addedNon} non-lead(s)`
-          : `${addedQualified} lead(s) qualifié(s) et ${addedNon} non-lead(s) trouvés (${totalAdded} ajoutés après déduplication)`;
-        toast.success(message);
+          // Toast avec informations claires
+          const message = replaceAll 
+            ? `Base mise à jour : ${addedQualified} lead(s) qualifié(s) et ${addedNon} non-lead(s)`
+            : `${addedQualified} lead(s) qualifié(s) et ${addedNon} non-lead(s) trouvés (${totalAdded} ajoutés après déduplication)`;
+          toast.success(message);
 
-        setShowProgress(false);
-        end();
-      } else {
-        // Updates de progression
-        setProgressPhase(data.phase || '');
-        setProgressMessage(data.message || '');
-        if (data.total) setProgressTotal(data.total);
-        if (data.current !== undefined) setProgressCurrent(data.current);
+          setShowProgress(false);
+          end();
+        } else {
+          // Updates de progression
+          setProgressPhase(data.phase || '');
+          setProgressMessage(data.message || '');
+          if (data.total) setProgressTotal(data.total);
+          if (data.current !== undefined) setProgressCurrent(data.current);
+        }
+      } catch (error) {
+        console.error('Erreur parsing JSON:', error);
       }
     };
 
-    eventSource.onerror = () => {
+    eventSource.onerror = (error) => {
+      console.error('Erreur EventSource:', error);
       eventSource.close();
       toast.error('Erreur lors de l\'extraction Gmail');
       setShowProgress(false);

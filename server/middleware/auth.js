@@ -7,19 +7,28 @@ let cachedTokens = null;
 // Charger les tokens au démarrage
 export const initAuth = () => {
   cachedTokens = TokensService.load();
+  logger.info(`[AUTH INIT] cachedTokens: ${cachedTokens ? 'EXISTS' : 'NULL'}`);
   if (cachedTokens) {
     oauth2Client.setCredentials(cachedTokens);
     logger.info('Authentication initialized with cached tokens');
+  } else {
+    logger.info('[AUTH INIT] No tokens found, clearing oauth2Client credentials');
+    oauth2Client.setCredentials({});
   }
 };
 
 // Middleware de vérification d'authentification
 export const checkAuth = (req, res, next) => {
+  logger.info(`[CHECK AUTH] cachedTokens: ${cachedTokens ? 'EXISTS' : 'NULL'}, path: ${req.path}`);
+  
   if (!cachedTokens) {
-    logger.warn('Authentication required - no tokens');
+    // IMPORTANT: Vider complètement les credentials pour éviter d'utiliser des tokens expirés en cache
+    oauth2Client.setCredentials({});
+    logger.warn('[CHECK AUTH] Authentication required - no tokens, clearing credentials');
     return res.status(401).json({ error: 'Not authenticated' });
   }
   
+  logger.info('[CHECK AUTH] Setting credentials and proceeding');
   oauth2Client.setCredentials(cachedTokens);
   next();
 };
@@ -34,8 +43,10 @@ export const saveTokens = (tokens) => {
 
 // Vérifier le statut d'authentification
 export const getAuthStatus = () => {
-  return {
+  const status = {
     authenticated: !!cachedTokens,
     hasTokens: TokensService.exists()
   };
+  logger.info(`[GET AUTH STATUS] authenticated: ${status.authenticated}, hasTokens: ${status.hasTokens}`);
+  return status;
 };

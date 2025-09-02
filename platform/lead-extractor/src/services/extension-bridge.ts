@@ -275,4 +275,4 @@ export class ExtensionBridge {
 }
 
 // Export des types pour utilisation externe
-export type { Lead, LeadStatusUpdate };
+// Types already exported above
