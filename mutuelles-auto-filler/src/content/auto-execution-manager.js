@@ -16,8 +16,9 @@ export class AutoExecutionManager {
   }
 
   isPageReadyForAutoExecution() {
-    // Vérifier qu'on est sur la bonne page
-    const isCorrectPage = window.location.hash === '#/tarification-et-simulation/slsis';
+    // Vérifier qu'on est sur la bonne page (ignorer les paramètres après ?)
+    const hashWithoutParams = window.location.hash.split('?')[0];
+    const isCorrectPage = hashWithoutParams === '#/tarification-et-simulation/slsis';
     
     // Vérifier que l'iframe du tarificateur est présent et chargé
     const iframe = document.querySelector('iframe[name="iFrameTarificateur"]');
