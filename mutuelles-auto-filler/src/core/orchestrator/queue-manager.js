@@ -104,9 +104,11 @@ async function handleLeadSuccess(lead, progress, onProgress) {
     });
     
     if (onProgress) {
+      // Recharger le queueState après markLeadAsProcessed pour avoir le bon compte
+      const updatedQueueState = await getQueueState();
       onProgress({
         type: 'queue_complete',
-        totalProcessed: queueState.processedLeads.length + 1
+        totalProcessed: updatedQueueState.processedLeads.length
       });
     }
   }

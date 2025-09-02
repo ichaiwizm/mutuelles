@@ -41,8 +41,9 @@ async function initializeStats() {
         }
       } else if (queueState && queueState.currentIndex >= leads.length) {
         // Tous traités
+        const processed = queueState.processedLeads ? queueState.processedLeads.length : 0;
         if (statusLineEl) {
-          statusLineEl.textContent = `✅ ${leads.length} leads traités avec succès`;
+          statusLineEl.textContent = `✅ ${processed} lead${processed > 1 ? 's' : ''} traité${processed > 1 ? 's' : ''} avec succès`;
         }
       } else {
         // Pas de queue state, on est au début

@@ -237,7 +237,6 @@ async function notifySwissLifeTabs(action, data) {
 
 // Notifier la plateforme d'une mise à jour de statut de lead
 async function notifyPlatformLeadStatus(data) {
-  console.log('📡 [BACKGROUND] Reçu UPDATE_LEAD_STATUS:', data);
   try {
     const { leadId, status, leadName, details } = data || {};
     
@@ -254,7 +253,7 @@ async function notifyPlatformLeadStatus(data) {
       details: details || {}
     };
     
-    console.log(`📡 Notification statut lead vers plateforme:`, statusUpdate);
+    console.log(`📡 [BACKGROUND] ${status} notification pour ${leadName}`);
     
     // Envoyer vers tous les onglets localhost:5174
     await notifyPlatformTabs(statusUpdate);
@@ -264,7 +263,7 @@ async function notifyPlatformLeadStatus(data) {
       data: { notified: true }
     };
   } catch (error) {
-    console.error('❌ Erreur notification plateforme:', error);
+    console.error('❌ [BACKGROUND] Erreur notification plateforme:', error);
     throw error;
   }
 }
@@ -279,7 +278,10 @@ async function notifyPlatformTabs(statusUpdate) {
       tab.url && tab.url.includes('localhost:5174')
     );
     
-    console.log(`📡 Envoi vers ${platformTabs.length} onglet(s) plateforme`);
+    if (platformTabs.length === 0) {
+      console.log('⚠️ [BACKGROUND] Aucun onglet localhost:5174 trouvé');
+      return;
+    }
     
     // Envoyer le message à chaque onglet plateforme
     for (const tab of platformTabs) {
@@ -290,11 +292,11 @@ async function notifyPlatformTabs(statusUpdate) {
           source: 'background'
         });
       } catch (error) {
-        console.log(`⚠️ Impossible d'envoyer vers onglet ${tab.id}:`, error.message);
+        // Ignore silently - onglet peut être fermé ou inaccessible
       }
     }
   } catch (error) {
-    console.error('❌ Erreur notification onglets plateforme:', error);
+    console.error('❌ [BACKGROUND] Erreur notification onglets plateforme:', error);
   }
 }
 

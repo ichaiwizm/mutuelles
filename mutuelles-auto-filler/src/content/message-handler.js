@@ -26,6 +26,11 @@ export class MessageHandler {
   initializeForLocalhost() {
     console.log('📬 Initialisation gestionnaire de messages localhost');
     
+    // Écouter les messages du background script pour les notifications de statut
+    chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
+      await this.handleRuntimeMessage(message, sender, sendResponse);
+    });
+    
     // Écouter les messages de l'orchestrator (depuis l'iframe)
     window.addEventListener('message', async (event) => {
       await this.handleLocalhostWindowMessage(event);
@@ -51,7 +56,7 @@ export class MessageHandler {
     
     // Relayer les notifications de statut vers la plateforme
     else if (message.action === 'FORWARD_STATUS_TO_PLATFORM' && message.source === 'background') {
-      console.log('📡 [CONTENT] Relais notification statut vers plateforme:', message.data);
+      console.log('📡 [CONTENT localhost] Notification:', message.data.status, 'pour', message.data.leadName);
       
       // Envoyer vers la plateforme via postMessage
       window.postMessage({
@@ -59,14 +64,13 @@ export class MessageHandler {
         statusUpdate: message.data
       }, window.location.origin);
       
-      console.log('📡 [CONTENT] Message relayé via postMessage');
       sendResponse({ forwarded: true });
     }
   }
 
   async handleWindowMessage(event) {
     if (event.data?.type === 'ORCHESTRATOR_STATUS_UPDATE') {
-      console.log('📡 [CONTENT SwissLife] Reçu status update de l\'orchestrator:', event.data);
+      console.log('📡 [CONTENT SwissLife] Status update:', event.data.data.status, 'pour', event.data.data.leadName);
       
       // Relayer au background
       try {
@@ -74,7 +78,6 @@ export class MessageHandler {
           action: event.data.action,
           data: event.data.data
         });
-        console.log('📡 [CONTENT SwissLife] Relayé au background, réponse:', response);
       } catch (error) {
         console.error('❌ [CONTENT SwissLife] Erreur relais au background:', error);
       }
@@ -82,9 +85,14 @@ export class MessageHandler {
   }
 
   async handleLocalhostWindowMessage(event) {
-    // Écouter les messages de l'orchestrator (depuis l'iframe)
-    if (event.data?.type === 'ORCHESTRATOR_STATUS_UPDATE') {
-      console.log('📡 [CONTENT] Reçu status update de l\'orchestrator:', event.data);
+    // Filtrer les messages sans type pour éviter la pollution des logs
+    if (!event.data?.type) {
+      return;
+    }
+    
+    // Écouter les messages de l'orchestrator (depuis l'iframe) - flux legacy
+    if (event.data.type === 'ORCHESTRATOR_STATUS_UPDATE') {
+      console.log('📡 [CONTENT localhost] Legacy status update:', event.data.data.status, 'pour', event.data.data.leadName);
       
       // Relayer au background
       try {
@@ -92,30 +100,8 @@ export class MessageHandler {
           action: event.data.action,
           data: event.data.data
         });
-        console.log('📡 [CONTENT] Relayé au background, réponse:', response);
       } catch (error) {
-        console.error('❌ [CONTENT] Erreur relais au background:', error);
-      }
-      
-      // AUSSI relayer à la plateforme localhost:5174
-      try {
-        const statusUpdate = {
-          type: 'LEAD_STATUS_UPDATE',
-          leadId: event.data.data.leadId,
-          status: event.data.data.status,
-          leadName: event.data.data.leadName,
-          timestamp: new Date().toISOString(),
-          details: event.data.data.details || {}
-        };
-        
-        window.postMessage({
-          type: 'FROM_EXTENSION_STATUS',
-          statusUpdate: statusUpdate
-        }, 'http://localhost:5174');
-        
-        console.log('📡 [CONTENT] Notification envoyée à la plateforme:', statusUpdate);
-      } catch (error) {
-        console.error('❌ [CONTENT] Erreur notification plateforme:', error);
+        console.error('❌ [CONTENT localhost] Erreur relais au background:', error);
       }
     }
   }
