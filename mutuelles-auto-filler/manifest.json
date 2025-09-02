@@ -40,6 +40,7 @@
         "src/core/template-processor.js",
         "src/core/dependency-resolver.js",
         "src/core/iframe-bridge.js",
+        "src/content/*.js",
         "services/swisslife/orchestrator-bridge.js",
         "services/swisslife/fields/*.js",
         "services/swisslife/fields/**/*.js",
