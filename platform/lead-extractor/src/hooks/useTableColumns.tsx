@@ -91,9 +91,10 @@ export function useTableColumns({
     {
       id: 'location',
       header: 'Localisation',
+      size: 120,
       cell: ({ row }) => (
-        <div className="text-sm">
-          {row.original.contact.ville && <div>{row.original.contact.ville}</div>}
+        <div className="text-xs max-w-24">
+          {row.original.contact.ville && <div className="truncate">{row.original.contact.ville}</div>}
           {row.original.contact.codePostal && <div>{row.original.contact.codePostal}</div>}
         </div>
       ),
@@ -101,6 +102,7 @@ export function useTableColumns({
     {
       id: 'processing-status',
       header: 'Statut',
+      size: 140,
       enableSorting: true,
       cell: ({ row }) => {
         const s = row.original.processingStatus;
@@ -142,7 +144,7 @@ export function useTableColumns({
           <div className="flex flex-col gap-1">
             {getStatusBadge()}
             {(s.status === 'processing' && s.currentStep && s.totalSteps) && (
-              <div className="text-xs text-gray-600">Étape {s.currentStep}/{s.totalSteps}</div>
+              <div className="text-xs text-gray-600">{s.currentStep}/{s.totalSteps}</div>
             )}
             {s.timestamp && (
               <div className="text-xs text-gray-500">
@@ -169,13 +171,17 @@ export function useTableColumns({
       id: 'score',
       header: 'Score',
       accessorKey: 'score',
+      size: 80,
       enableSorting: true,
       cell: ({ row }) => (
-        <Badge variant={
-          row.original.score >= 4 ? 'default' :
-          row.original.score >= 3 ? 'secondary' :
-          row.original.score >= 2 ? 'outline' : 'destructive'
-        }>
+        <Badge 
+          variant={
+            row.original.score >= 4 ? 'default' :
+            row.original.score >= 3 ? 'secondary' :
+            row.original.score >= 2 ? 'outline' : 'destructive'
+          }
+          className="text-xs px-2"
+        >
           {row.original.score}/5
         </Badge>
       ),
