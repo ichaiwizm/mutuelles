@@ -65,6 +65,10 @@ export const useSettings = () => {
   const updateDateRange = (range: DateRange | undefined) => {
     setDateRange(range || null);
     setFilterMode(range ? 'custom' : 'predefined');
+    // Si on revient en mode prédéfini, s'assurer qu'on a une valeur par défaut
+    if (!range && days === 0) {
+      setDays(7);
+    }
   };
 
   return {

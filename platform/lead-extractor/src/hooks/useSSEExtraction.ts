@@ -16,7 +16,7 @@ export const useSSEExtraction = (addLeads: any, checkAuthStatus: any) => {
   const end = () => setPendingOps(n => Math.max(0, n - 1));
   const busy = pendingOps > 0;
 
-  const extractWithSSE = async (source: any, days: any, replaceAll = false) => {
+  const extractWithSSE = async (source: any, days: any, replaceAll = false, dateRange?: any) => {
     const authResult = await checkAuthStatus();
     if (!authResult.authenticated) {
       toast.error('Authentification requise. Redirection...');
@@ -40,7 +40,17 @@ export const useSSEExtraction = (addLeads: any, checkAuthStatus: any) => {
     setProgressCurrent(0);
     setShowProgress(true);
 
-    const endpoint = `${API_URL}/api/ingest/gmail/stream?days=${days}`;
+    // Construire l'endpoint selon le mode
+    let endpoint: string;
+    if (dateRange?.from && dateRange?.to) {
+      // Mode dates personnalisées
+      const fromDate = dateRange.from.toISOString().split('T')[0]; // YYYY-MM-DD
+      const toDate = dateRange.to.toISOString().split('T')[0];
+      endpoint = `${API_URL}/api/ingest/gmail/stream?fromDate=${fromDate}&toDate=${toDate}`;
+    } else {
+      // Mode nombre de jours
+      endpoint = `${API_URL}/api/ingest/gmail/stream?days=${days}`;
+    }
     const eventSource = new EventSource(endpoint);
     let collectedLeads = [];
 

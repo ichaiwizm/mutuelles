@@ -1,16 +1,10 @@
 import { useState, useEffect, useMemo } from 'react';
 import { StorageManager } from '@/lib/storage';
 import type { Lead } from '@/types/lead';
-import type { DateRange } from 'react-day-picker';
-import { isWithinInterval } from 'date-fns';
 
 const MIN_SCORE = 3;
 
-export const useLeads = (
-  filterMode: 'predefined' | 'custom' = 'predefined',
-  days: number = 7,
-  dateRange?: DateRange | null
-) => {
+export const useLeads = () => {
   const [leads, setLeads] = useState<Lead[]>([]);
 
   // Charger les leads au démarrage
@@ -19,32 +13,13 @@ export const useLeads = (
     setLeads(storedLeads);
   }, []);
 
-  // Filtrer les leads par période
-  const filteredLeads = useMemo(() => {
-    if (filterMode === 'custom' && dateRange?.from && dateRange?.to) {
-      // Filtrage par plage de dates personnalisée
-      return leads.filter(lead => {
-        const leadDate = new Date(lead.extractedAt);
-        return isWithinInterval(leadDate, {
-          start: dateRange.from!,
-          end: dateRange.to!
-        });
-      });
-    } else {
-      // Filtrage par nombre de jours (mode prédéfini)
-      const now = new Date();
-      const cutoffDate = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
-      return leads.filter(lead => new Date(lead.extractedAt) >= cutoffDate);
-    }
-  }, [leads, filterMode, days, dateRange]);
-
-  // Séparer leads qualifiés et non-leads (sur les leads filtrés)
+  // Séparer leads qualifiés et non-leads
   const qualifiedLeads = useMemo(() => 
-    filteredLeads.filter(l => (l.score ?? 0) >= MIN_SCORE), [filteredLeads]
+    leads.filter(l => (l.score ?? 0) >= MIN_SCORE), [leads]
   );
   
   const nonLeads = useMemo(() => 
-    filteredLeads.filter(l => (l.score ?? 0) < MIN_SCORE), [filteredLeads]
+    leads.filter(l => (l.score ?? 0) < MIN_SCORE), [leads]
   );
 
   // Ajouter de nouveaux leads (déjà dédupliqués côté serveur)
@@ -99,15 +74,13 @@ export const useLeads = (
     };
   };
 
-  // Statistiques (basées sur les leads filtrés)
+  // Statistiques
   const stats = useMemo(() => ({
-    total: filteredLeads.length,
+    total: leads.length,
     qualified: qualifiedLeads.length,
     nonLeads: nonLeads.length,
-    qualificationRate: filteredLeads.length > 0 ? (qualifiedLeads.length / filteredLeads.length * 100).toFixed(1) : '0',
-    // Statistiques globales (non filtrées)
-    totalStored: leads.length
-  }), [filteredLeads, qualifiedLeads, nonLeads, leads]);
+    qualificationRate: leads.length > 0 ? (qualifiedLeads.length / leads.length * 100).toFixed(1) : '0'
+  }), [leads, qualifiedLeads, nonLeads]);
 
   const clearAllLeads = () => {
     setLeads([]);
@@ -115,8 +88,7 @@ export const useLeads = (
   };
 
   return {
-    leads: filteredLeads, // Retourner les leads filtrés
-    allLeads: leads, // Garder l'accès aux leads non filtrés si besoin
+    leads,
     qualifiedLeads,
     nonLeads,
     addLeads,

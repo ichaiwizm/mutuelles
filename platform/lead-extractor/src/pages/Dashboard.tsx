@@ -32,7 +32,7 @@ export function Dashboard() {
   const {
     days, setDays, dateRange, setDateRange, filterMode
   } = useSettings();
-  const { leads, qualifiedLeads, addLeads, clearAllLeads, stats } = useLeads(filterMode, days, dateRange);
+  const { leads, qualifiedLeads, addLeads, clearAllLeads, stats } = useLeads();
   const { enrichLeadsWithStatus, applyStatusUpdate, cleanupOrphanedStatuses, isLoaded } = useProcessingStatus();
   const {
     uiState,
@@ -56,7 +56,8 @@ export function Dashboard() {
   // Handlers
   const handleRefresh = () => {
     // Utiliser le mode replaceAll pour remplacer tous les leads existants
-    extractWithSSE('gmail', days, true);
+    // Passer les paramètres selon le mode (prédéfini ou dates personnalisées)
+    extractWithSSE('gmail', days, true, filterMode === 'custom' ? dateRange : null);
   };
 
   const handleRowClick = (lead: Lead, allSortedData: Lead[], leadIndex: number) => {
