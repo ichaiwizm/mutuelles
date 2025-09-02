@@ -10,7 +10,7 @@ export interface ExtensionMessage {
 export interface LeadStatusUpdate {
   type: 'LEAD_STATUS_UPDATE';
   leadId: string;
-  status: 'processing' | 'success' | 'error';
+  status: 'processing' | 'success' | 'error' | 'launched' | 'started' | 'pending';
   leadName: string;
   timestamp: string;
   details: {

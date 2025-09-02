@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { Lead } from '@/types/lead';
+import type { LeadStatusUpdate } from '@/services/extension-bridge';
 
 interface ProcessingStatus {
   status: 'pending' | 'processing' | 'success' | 'error';
@@ -8,12 +9,46 @@ interface ProcessingStatus {
   errorMessage?: string;
   completedSteps?: number;
   leadName?: string;
+  currentStep?: number;
+  totalSteps?: number;
 }
 
 type ProcessingStatusMap = Record<string, ProcessingStatus>;
 
 export function useProcessingStatus() {
   const [statusMap, setStatusMap] = useState<ProcessingStatusMap>({});
+
+  // Mappe les statuts externes vers nos statuts internes
+  const mapExternalStatus = (status: string): ProcessingStatus['status'] => {
+    switch (status) {
+      case 'launched':
+      case 'started':
+      case 'processing': return 'processing';
+      case 'success': return 'success';
+      case 'error': return 'error';
+      default: return 'pending';
+    }
+  };
+
+  // Met à jour le statut d'un lead
+  const setLeadStatus = (leadId: string, next: ProcessingStatus) => {
+    setStatusMap(prev => ({ ...prev, [leadId]: { ...prev[leadId], ...next } }));
+  };
+
+  // Applique un update envoyé par l'extension
+  const applyStatusUpdate = (update: LeadStatusUpdate) => {
+    const next: ProcessingStatus = {
+      status: mapExternalStatus(update.status),
+      timestamp: update.timestamp || new Date().toISOString(),
+      message: update.details?.message || update.leadName,
+      errorMessage: update.details?.errorMessage,
+      completedSteps: update.details?.completedSteps,
+      currentStep: update.details?.currentStep,
+      totalSteps: update.details?.totalSteps,
+      leadName: update.leadName,
+    };
+    setLeadStatus(update.leadId, next);
+  };
 
   // Fonction pour enrichir un lead avec son statut de traitement
   const enrichLeadWithStatus = (lead: Lead): Lead => {
@@ -27,7 +62,9 @@ export function useProcessingStatus() {
           timestamp: status.timestamp,
           message: status.message || status.leadName,
           errorMessage: status.errorMessage,
-          completedSteps: status.completedSteps
+          completedSteps: status.completedSteps,
+          currentStep: status.currentStep,
+          totalSteps: status.totalSteps
         }
       };
     }
@@ -74,6 +111,9 @@ export function useProcessingStatus() {
     enrichLeadWithStatus,
     enrichLeadsWithStatus,
     getLeadStatus,
-    getStatusStats
+    getStatusStats,
+    // Nouveaux helpers pour gérer les updates
+    setLeadStatus,
+    applyStatusUpdate
   };
 }

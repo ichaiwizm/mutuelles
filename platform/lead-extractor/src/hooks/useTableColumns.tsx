@@ -97,16 +97,17 @@ export function useTableColumns({
     {
       id: 'processing-status',
       header: 'Statut',
+      enableSorting: true,
       cell: ({ row }) => {
-        const status = row.original.processingStatus;
-        if (!status) return <Badge variant="outline">Non traité</Badge>;
+        const s = row.original.processingStatus;
+        if (!s) return <Badge variant="outline">⏸️ En attente</Badge>;
         
         const getStatusBadge = () => {
-          switch (status.status) {
+          switch (s.status) {
             case 'success':
-              return <Badge variant="default" className="bg-green-500 hover:bg-green-600">✅ Traité</Badge>;
+              return <Badge variant="default" className="bg-green-500 hover:bg-green-600">✅ Succès</Badge>;
             case 'error':
-              return <Badge variant="destructive" title={status.errorMessage}>❌ Erreur</Badge>;
+              return <Badge variant="destructive" title={s.errorMessage}>❌ Erreur</Badge>;
             case 'processing':
               return <Badge variant="secondary" className="bg-blue-500 hover:bg-blue-600 text-white">⏳ En cours</Badge>;
             case 'pending':
@@ -118,9 +119,12 @@ export function useTableColumns({
         return (
           <div className="flex flex-col gap-1">
             {getStatusBadge()}
-            {status.timestamp && (
+            {(s.status === 'processing' && s.currentStep && s.totalSteps) && (
+              <div className="text-xs text-gray-600">Étape {s.currentStep}/{s.totalSteps}</div>
+            )}
+            {s.timestamp && (
               <div className="text-xs text-gray-500">
-                {new Date(status.timestamp).toLocaleString('fr-FR', {
+                {new Date(s.timestamp).toLocaleString('fr-FR', {
                   day: '2-digit',
                   month: '2-digit',
                   hour: '2-digit',
@@ -130,6 +134,13 @@ export function useTableColumns({
             )}
           </div>
         );
+      },
+      // Tri par priorité de statut: error > processing > pending > success
+      sortingFn: (rowA, rowB) => {
+        const order = { error: 0, processing: 1, pending: 2, success: 3 } as Record<string, number>;
+        const a = order[rowA.original.processingStatus?.status || 'pending'];
+        const b = order[rowB.original.processingStatus?.status || 'pending'];
+        return a - b;
       },
     },
     {

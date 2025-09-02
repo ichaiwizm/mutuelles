@@ -60,6 +60,8 @@ export interface Lead {
     message?: string;
     errorMessage?: string;
     completedSteps?: number;
+    currentStep?: number;
+    totalSteps?: number;
   };
   score: number;
   isDuplicate?: boolean;

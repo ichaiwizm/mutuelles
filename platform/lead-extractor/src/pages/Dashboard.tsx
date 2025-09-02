@@ -26,7 +26,7 @@ export function Dashboard() {
   // Hooks personnalisés
   const { isAuthenticated, hasTokens, checkAuthStatus, redirectToLogin } = useAuth();
   const { leads, qualifiedLeads, addLeads, clearAllLeads, stats } = useLeads();
-  const { enrichLeadsWithStatus } = useProcessingStatus();
+  const { enrichLeadsWithStatus, applyStatusUpdate } = useProcessingStatus();
   const {
     days, setDays
   } = useSettings();
@@ -99,6 +99,9 @@ export function Dashboard() {
   // Écouter les notifications de statut depuis l'extension
   useEffect(() => {
     const handleStatusUpdate = (update: LeadStatusUpdate) => {
+      // Appliquer l'update au store local pour mettre à jour le tableau
+      applyStatusUpdate(update);
+      
       const { status, leadName, details } = update;
       
       switch (status) {
@@ -124,7 +127,7 @@ export function Dashboard() {
     
     // Nettoyer l'abonnement au démontage
     return unsubscribe;
-  }, []);
+  }, [applyStatusUpdate]);
   
   // Handler pour l'envoi à l'extension
   const handleSendToExtension = async () => {
