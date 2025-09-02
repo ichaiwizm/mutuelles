@@ -3,6 +3,13 @@
  */
 
 /**
+ * Configuration des retry
+ */
+const RETRY_CONFIG = {
+  MAX_RETRY_ATTEMPTS: 1, // 1 retry = 2 tentatives total par lead
+};
+
+/**
  * Sauvegarde le statut de traitement dans chrome.storage
  */
 export async function saveProcessingStatus(leadId, status, details = {}) {
@@ -78,6 +85,70 @@ export async function markLeadAsProcessed(leadId, status = 'success', error = nu
     return await updateQueueState(updates);
   }
   return null;
+}
+
+/**
+ * Récupère le compteur de retry pour un lead spécifique
+ */
+export async function getLeadRetryCount(leadId) {
+  try {
+    const result = await chrome.storage.local.get(['swisslife_lead_retries']);
+    const retries = result.swisslife_lead_retries || {};
+    return retries[leadId] || 0;
+  } catch (error) {
+    console.error('❌ Erreur récupération retry count:', error);
+    return 0;
+  }
+}
+
+/**
+ * Incrémente le compteur de retry pour un lead
+ */
+export async function incrementLeadRetryCount(leadId) {
+  try {
+    const result = await chrome.storage.local.get(['swisslife_lead_retries']);
+    const retries = result.swisslife_lead_retries || {};
+    
+    retries[leadId] = (retries[leadId] || 0) + 1;
+    
+    await chrome.storage.local.set({ swisslife_lead_retries: retries });
+    console.log(`🔄 Retry count pour lead ${leadId}: ${retries[leadId]}`);
+    
+    return retries[leadId];
+  } catch (error) {
+    console.error('❌ Erreur incrémentation retry count:', error);
+    return 0;
+  }
+}
+
+/**
+ * Vérifie si un lead peut être retenté
+ */
+export async function canRetryLead(leadId) {
+  const retryCount = await getLeadRetryCount(leadId);
+  const canRetry = retryCount < RETRY_CONFIG.MAX_RETRY_ATTEMPTS;
+  
+  console.log(`🤔 Lead ${leadId} - Tentatives: ${retryCount}/${RETRY_CONFIG.MAX_RETRY_ATTEMPTS}, Peut retry: ${canRetry}`);
+  
+  return canRetry;
+}
+
+/**
+ * Remet à zéro le compteur de retry pour un lead (après succès)
+ */
+export async function clearLeadRetryCount(leadId) {
+  try {
+    const result = await chrome.storage.local.get(['swisslife_lead_retries']);
+    const retries = result.swisslife_lead_retries || {};
+    
+    if (retries[leadId]) {
+      delete retries[leadId];
+      await chrome.storage.local.set({ swisslife_lead_retries: retries });
+      console.log(`🧹 Retry count cleared pour lead ${leadId}`);
+    }
+  } catch (error) {
+    console.error('❌ Erreur clear retry count:', error);
+  }
 }
 
 /**
