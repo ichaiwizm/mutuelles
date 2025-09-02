@@ -15,7 +15,7 @@ export const overlayPresent = () => {
 };
 
 // Attente de disparition d'overlay
-export const waitOverlayGone = async (timeout = 8000) => {
+export const waitOverlayGone = async (timeout = 4000) => {
   const t0 = Date.now();
   while (Date.now() - t0 < timeout) {
     if (!overlayPresent()) return true;
@@ -25,7 +25,7 @@ export const waitOverlayGone = async (timeout = 8000) => {
 };
 
 // Attente de stabilité DOM
-export const waitStable = async ({ minQuiet = 300, maxWait = 6000 } = {}) => {
+export const waitStable = async ({ minQuiet = 300, maxWait = 3000 } = {}) => {
   const t0 = Date.now();
   let lastMutation = Date.now();
   let observer = null;

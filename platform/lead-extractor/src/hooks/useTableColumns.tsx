@@ -190,9 +190,14 @@ export function useTableColumns({
       id: 'extractedAt',
       header: 'Date',
       accessorKey: 'extractedAt',
+      size: 100,
       cell: ({ row }) => (
-        <div className="text-sm">
-          {new Date(row.original.extractedAt).toLocaleDateString()}
+        <div className="text-xs">
+          {new Date(row.original.extractedAt).toLocaleDateString('fr-FR', {
+            day: '2-digit',
+            month: '2-digit',
+            year: '2-digit'
+          })}
         </div>
       ),
     },
