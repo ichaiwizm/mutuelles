@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { StorageManager } from '@/lib/storage';
 import { toast } from 'sonner';
+import type { DateRange } from 'react-day-picker';
 
 const DEFAULT_SETTINGS = {
   days: 7,
@@ -12,17 +13,27 @@ const DEFAULT_SETTINGS = {
     currentPage: 0,
     activeTab: 'leads' as const,
     globalFilter: ''
-  }
+  },
+  dateRange: null as DateRange | null
 };
 
 export const useSettings = () => {
   const [days, setDays] = useState(DEFAULT_SETTINGS.days);
+  const [dateRange, setDateRange] = useState<DateRange | null>(DEFAULT_SETTINGS.dateRange);
+  const [filterMode, setFilterMode] = useState<'predefined' | 'custom'>('predefined');
   const [isLoaded, setIsLoaded] = useState(false);
 
   // Charger les paramètres au démarrage
   useEffect(() => {
     const settings = StorageManager.getSettings();
     setDays(settings.days);
+    if (settings.dateRange) {
+      setDateRange({
+        from: settings.dateRange.from ? new Date(settings.dateRange.from) : undefined,
+        to: settings.dateRange.to ? new Date(settings.dateRange.to) : undefined
+      });
+      setFilterMode('custom');
+    }
     setIsLoaded(true);
   }, []);
 
@@ -36,13 +47,31 @@ export const useSettings = () => {
       days,
       sources: {
         gmail: true // Toujours activé maintenant
-      }
+      },
+      dateRange: dateRange ? {
+        from: dateRange.from?.toISOString(),
+        to: dateRange.to?.toISOString()
+      } : null
     };
     StorageManager.saveSettings(settings);
-  }, [days, isLoaded]);
+  }, [days, dateRange, isLoaded]);
+
+  const updateDays = (newDays: number) => {
+    setDays(newDays);
+    setFilterMode('predefined');
+    setDateRange(null);
+  };
+
+  const updateDateRange = (range: DateRange | undefined) => {
+    setDateRange(range || null);
+    setFilterMode(range ? 'custom' : 'predefined');
+  };
 
   return {
     days,
-    setDays
+    setDays: updateDays,
+    dateRange,
+    setDateRange: updateDateRange,
+    filterMode
   };
 };

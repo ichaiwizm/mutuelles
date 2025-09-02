@@ -65,7 +65,8 @@ export function useTableColumns({
           className="mx-auto"
         />
       ),
-      size: 48,
+      size: 40,
+      maxSize: 40,
       enableSorting: false,
       enableHiding: false,
     },
@@ -73,16 +74,17 @@ export function useTableColumns({
       id: 'contact',
       header: 'Contact',
       accessorFn: (row) => `${row.contact.civilite || ''} ${row.contact.prenom || ''} ${row.contact.nom || ''}`.trim(),
+      size: 280,
       cell: ({ row }) => (
-        <div>
-          <div className="font-medium flex items-center gap-2">
+        <div className="max-w-xs">
+          <div className="font-medium flex items-center gap-1 text-sm">
             {row.original.contact.civilite} {row.original.contact.prenom} {row.original.contact.nom}
             {row.original.signature?.numeroOrias && (
-              <Badge variant="secondary" className="text-xs">PRO</Badge>
+              <Badge variant="secondary" className="text-xs px-1">PRO</Badge>
             )}
           </div>
-          <div className="text-sm text-gray-500">{row.original.contact.email}</div>
-          <div className="text-sm text-gray-500">{row.original.contact.telephone}</div>
+          <div className="text-xs text-gray-500 truncate">{row.original.contact.email}</div>
+          <div className="text-xs text-gray-500">{row.original.contact.telephone}</div>
         </div>
       ),
     },
@@ -95,12 +97,6 @@ export function useTableColumns({
           {row.original.contact.codePostal && <div>{row.original.contact.codePostal}</div>}
         </div>
       ),
-    },
-    {
-      id: 'source',
-      header: 'Source',
-      accessorKey: 'source',
-      cell: ({ row }) => <Badge variant="outline">{row.original.source}</Badge>,
     },
     {
       id: 'processing-status',

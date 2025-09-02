@@ -25,6 +25,45 @@ import {
   detectVisibleOptions, 
   healthCheckAllOptions 
 } from './core/options-detector.js';
+import { isEligibleForMadelin } from '../../utils/age-utils.js';
+
+/**
+ * Vérifie si l'option Madelin doit être traitée selon l'âge du souscripteur
+ * @param {any} madelinValue - Valeur demandée pour l'option Madelin
+ * @returns {Promise<boolean>} - true si l'option doit être traitée, false sinon
+ */
+async function shouldProcessMadelinOption(madelinValue) {
+  // Si on veut décocher Madelin (valeur falsy), toujours autoriser
+  if (!/^(true|1|oui|yes)$/i.test(String(madelinValue))) {
+    return true;
+  }
+  
+  try {
+    // Pour cocher Madelin, vérifier l'âge du souscripteur
+    const { readAllSouscripteurValues } = await import('../souscripteur-service.js');
+    const souscripteurData = readAllSouscripteurValues();
+    
+    if (souscripteurData.dateNaissance?.value) {
+      const eligible = isEligibleForMadelin(souscripteurData.dateNaissance.value);
+      
+      if (eligible === false) {
+        console.log('⚠️ Option Madelin ignorée - souscripteur trop âgé (> 70 ans)');
+        return false;
+      }
+      
+      if (eligible === null) {
+        console.warn('⚠️ Impossible de vérifier l\'âge pour Madelin - date de naissance invalide');
+      }
+    } else {
+      console.warn('⚠️ Date de naissance du souscripteur non trouvée - option Madelin autorisée par défaut');
+    }
+    
+    return true; // Si pas de date ou date valide avec âge ≤ 70, on autorise
+  } catch (error) {
+    console.error('❌ Erreur lors de la vérification d\'âge pour Madelin:', error);
+    return true; // En cas d'erreur, on autorise par défaut
+  }
+}
 
 /**
  * Définit toutes les options en une fois
@@ -47,9 +86,21 @@ export async function setAll(options = {}) {
   
   // Traitement séquentiel des options
   if (options.madelin !== undefined) {
-    console.log('🔧 Traitement option Madelin:', options.madelin);
-    results.madelin = await setMadelin(options.madelin);
-    if (results.madelin && !results.madelin.ok) hasErrors = true;
+    // Vérifier l'éligibilité selon l'âge avant de traiter l'option
+    const shouldProcess = await shouldProcessMadelinOption(options.madelin);
+    if (shouldProcess) {
+      console.log('🔧 Traitement option Madelin:', options.madelin);
+      results.madelin = await setMadelin(options.madelin);
+      if (results.madelin && !results.madelin.ok) hasErrors = true;
+    } else {
+      console.log('⏭️ Option Madelin ignorée (âge > 70 ans)');
+      results.madelin = { 
+        ok: true, 
+        skipped: true, 
+        reason: 'age_limit_exceeded',
+        message: 'Option Loi Madelin non applicable pour les personnes de plus de 70 ans'
+      };
+    }
   }
   
   if (options.resiliation !== undefined) {

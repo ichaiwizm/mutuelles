@@ -25,11 +25,11 @@ export function Dashboard() {
 
   // Hooks personnalisés
   const { isAuthenticated, hasTokens, checkAuthStatus, redirectToLogin } = useAuth();
-  const { leads, qualifiedLeads, addLeads, clearAllLeads, stats } = useLeads();
-  const { enrichLeadsWithStatus, applyStatusUpdate, cleanupOrphanedStatuses, isLoaded } = useProcessingStatus();
   const {
-    days, setDays
+    days, setDays, dateRange, setDateRange, filterMode
   } = useSettings();
+  const { leads, qualifiedLeads, addLeads, clearAllLeads, stats } = useLeads(filterMode, days, dateRange);
+  const { enrichLeadsWithStatus, applyStatusUpdate, cleanupOrphanedStatuses, isLoaded } = useProcessingStatus();
   const {
     uiState,
     setPageSize,
@@ -293,6 +293,9 @@ export function Dashboard() {
         <ControlsPanel
           days={days}
           setDays={setDays}
+          dateRange={dateRange}
+          setDateRange={setDateRange}
+          filterMode={filterMode}
           onClearAll={clearAllLeads}
           onRefresh={handleRefresh}
           busy={busy}
