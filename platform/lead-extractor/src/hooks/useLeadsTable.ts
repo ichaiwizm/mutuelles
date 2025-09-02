@@ -22,6 +22,7 @@ interface UseLeadsTableProps {
   onToggleSelect?: (leadId: string) => void;
   onSelectAll?: () => void;
   onDeselectAll?: () => void;
+  onRetrySingleLead?: (lead: Lead) => void;
   isAllSelected?: boolean;
 }
 
@@ -35,6 +36,7 @@ export function useLeadsTable({
   onToggleSelect,
   onSelectAll,
   onDeselectAll,
+  onRetrySingleLead,
   isAllSelected,
 }: UseLeadsTableProps) {
   const [sorting, setSorting] = useState<SortingState>([{ id: 'score', desc: true }]);
@@ -45,6 +47,7 @@ export function useLeadsTable({
     onToggleSelect,
     onSelectAll,
     onDeselectAll,
+    onRetrySingleLead,
     isAllSelected,
   });
 

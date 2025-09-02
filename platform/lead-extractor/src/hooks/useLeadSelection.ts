@@ -25,39 +25,48 @@ export function useLeadSelection(filteredLeads: Lead[]) {
 
   // Gestion de la sélection
   const handleSelectAll = (checked: boolean) => {
-    if (checked) {
-      const newSelection = new Set(selectedLeadIds);
-      filteredLeads.forEach(lead => newSelection.add(lead.id));
-      setSelectedLeadIds(newSelection);
-    } else {
-      const newSelection = new Set(selectedLeadIds);
-      filteredLeads.forEach(lead => newSelection.delete(lead.id));
-      setSelectedLeadIds(newSelection);
-    }
+    setSelectedLeadIds(prev => {
+      const next = new Set(prev);
+      if (checked) {
+        filteredLeads.forEach(lead => next.add(lead.id));
+      } else {
+        filteredLeads.forEach(lead => next.delete(lead.id));
+      }
+      return next;
+    });
   };
 
   const handleSelectLead = (leadId: string, checked: boolean) => {
-    const newSelection = new Set(selectedLeadIds);
-    if (checked) {
-      newSelection.add(leadId);
-    } else {
-      newSelection.delete(leadId);
-    }
-    setSelectedLeadIds(newSelection);
+    setSelectedLeadIds(prev => {
+      const next = new Set(prev);
+      if (checked) {
+        next.add(leadId);
+      } else {
+        next.delete(leadId);
+      }
+      return next;
+    });
   };
 
   const toggleSelectLead = (leadId: string) => {
-    const newSelection = new Set(selectedLeadIds);
-    if (newSelection.has(leadId)) {
-      newSelection.delete(leadId);
-    } else {
-      newSelection.add(leadId);
-    }
-    setSelectedLeadIds(newSelection);
+    setSelectedLeadIds(prev => {
+      const next = new Set(prev);
+      if (next.has(leadId)) {
+        next.delete(leadId);
+      } else {
+        next.add(leadId);
+      }
+      return next;
+    });
   };
 
   const selectAll = () => handleSelectAll(true);
   const deselectAll = () => handleSelectAll(false);
+
+  // Remplace entièrement la sélection par un ensemble d'IDs
+  const replaceSelection = (leadIds: string[]) => {
+    setSelectedLeadIds(new Set(leadIds));
+  };
 
   // Sélection par statut
   const selectByStatus = (status: 'pending' | 'processing' | 'success' | 'error') => {
@@ -103,6 +112,7 @@ export function useLeadSelection(filteredLeads: Lead[]) {
     toggleSelectLead,
     selectAll,
     deselectAll,
+    replaceSelection,
     selectByStatus,
     statusCounts,
     cleanSelection,

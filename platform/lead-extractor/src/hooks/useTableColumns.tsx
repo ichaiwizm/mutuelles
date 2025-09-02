@@ -1,7 +1,9 @@
 import { useMemo, useCallback } from 'react';
 import { type ColumnDef } from '@tanstack/react-table';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import { RotateCcw } from 'lucide-react';
 import type { Lead } from '@/types/lead';
 
 interface UseTableColumnsProps {
@@ -10,6 +12,7 @@ interface UseTableColumnsProps {
   onSelectAll?: () => void;
   onDeselectAll?: () => void;
   isAllSelected?: boolean;
+  onRetrySingleLead?: (lead: Lead) => void;
 }
 
 export function useTableColumns({
@@ -17,7 +20,8 @@ export function useTableColumns({
   onToggleSelect,
   onSelectAll,
   onDeselectAll,
-  isAllSelected = false
+  isAllSelected = false,
+  onRetrySingleLead
 }: UseTableColumnsProps = {}): ColumnDef<Lead>[] {
   
   // Stabiliser les callbacks
@@ -32,6 +36,10 @@ export function useTableColumns({
   const stableDeselectAll = useCallback(() => {
     onDeselectAll?.();
   }, [onDeselectAll]);
+
+  const stableRetrySingleLead = useCallback((lead: Lead) => {
+    onRetrySingleLead?.(lead);
+  }, [onRetrySingleLead]);
   return useMemo(() => [
     {
       id: 'select',
@@ -107,7 +115,25 @@ export function useTableColumns({
             case 'success':
               return <Badge variant="default" className="bg-green-500 hover:bg-green-600">✅ Succès</Badge>;
             case 'error':
-              return <Badge variant="destructive" title={s.errorMessage}>❌ Erreur</Badge>;
+              return (
+                <div className="flex items-center gap-1">
+                  <Badge variant="destructive" title={s.errorMessage}>❌ Erreur</Badge>
+                  {onRetrySingleLead && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-5 w-5 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                      onClick={(e) => {
+                        e.stopPropagation(); // Éviter d'ouvrir le modal du lead
+                        stableRetrySingleLead(row.original);
+                      }}
+                      title="Réessayer ce lead"
+                    >
+                      <RotateCcw className="h-3 w-3" />
+                    </Button>
+                  )}
+                </div>
+              );
             case 'processing':
               return <Badge variant="secondary" className="bg-blue-500 hover:bg-blue-600 text-white">⏳ En cours</Badge>;
             case 'pending':
@@ -168,5 +194,5 @@ export function useTableColumns({
         </div>
       ),
     },
-  ], [selectedLeadIds, stableToggleSelect, stableSelectAll, stableDeselectAll, isAllSelected]);
+  ], [selectedLeadIds, stableToggleSelect, stableSelectAll, stableDeselectAll, isAllSelected, stableRetrySingleLead]);
 }

@@ -91,6 +91,7 @@ export function Dashboard() {
     toggleSelectLead,
     selectAll,
     deselectAll,
+    replaceSelection,
     selectByStatus,
     statusCounts,
     allFilteredSelected
@@ -141,6 +142,50 @@ export function Dashboard() {
     }
   }, [leads, isLoaded, cleanupOrphanedStatuses]);
   
+  // Handler pour l'envoi d'un seul lead (retry)
+  const handleRetrySingleLead = async (lead: Lead) => {
+    console.log('Retry lead:', lead.contact.nom, lead.contact.prenom);
+    
+    try {
+      // 1. Vérifier si l'extension est installée
+      const isInstalled = await ExtensionBridge.checkExtensionInstalled();
+      
+      if (!isInstalled) {
+        toast.error('Extension SwissLife non détectée', {
+          description: 'Assurez-vous que l\'extension est installée et activée.'
+        });
+        return;
+      }
+
+      // 2. Vérifier/ouvrir onglet SwissLife
+      const tabResult = await ExtensionBridge.openSwissLifeTab();
+      
+      if (!tabResult.success) {
+        toast.error('Impossible d\'accéder à SwissLife');
+        return;
+      }
+
+      // 3. Envoyer le lead unique
+      toast.info(`Réessai en cours pour ${lead.contact.prenom} ${lead.contact.nom}...`);
+      
+      const sendResult = await ExtensionBridge.sendLeadsToExtension([lead]);
+      
+      if (sendResult.success) {
+        toast.success(`Lead "${lead.contact.prenom} ${lead.contact.nom}" renvoyé avec succès`);
+      } else {
+        toast.error('Erreur lors du réessai', {
+          description: sendResult.error || 'Erreur inconnue'
+        });
+      }
+      
+    } catch (error) {
+      console.error('❌ Erreur retry:', error);
+      toast.error('Erreur lors du réessai', {
+        description: error instanceof Error ? error.message : 'Erreur inconnue'
+      });
+    }
+  };
+
   // Handler pour l'envoi à l'extension
   const handleSendToExtension = async () => {
     console.log('Début envoi vers extension - Leads sélectionnés:', selectedLeads.length);
@@ -286,8 +331,10 @@ export function Dashboard() {
           onToggleSelect={toggleSelectLead}
           onSelectAll={handleSelectAll}
           onDeselectAll={handleDeselectAll}
+          onReplaceSelection={replaceSelection}
           onSendToExtension={handleSendToExtension}
           onClearSelection={handleClearSelection}
+          onRetrySingleLead={handleRetrySingleLead}
           isAllSelected={isAllDataSelected}
           onSelectByStatus={selectByStatus}
           statusCounts={statusCounts}
