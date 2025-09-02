@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Settings } from 'lucide-react';
 import { LeadDetailModal } from '@/components/LeadDetailModal';
 import { useAuth } from '@/hooks/useAuth';
 import { useLeads } from '@/hooks/useLeads';
@@ -15,6 +17,7 @@ import { TabsNavigation } from '@/components/dashboard/TabsNavigation';
 import { ProgressPanel } from '@/components/dashboard/ProgressPanel';
 import { AuthStatus } from '@/components/dashboard/AuthStatus';
 import { LeadsTable } from '@/components/dashboard/LeadsTable';
+import { ConfigurationModal } from '@/components/ConfigurationModal';
 import type { Lead } from '@/types/lead';
 
 export function Dashboard() {
@@ -22,6 +25,7 @@ export function Dashboard() {
   const [modalLeads, setModalLeads] = useState<Lead[]>([]);
   const [currentLeadIndex, setCurrentLeadIndex] = useState(0);
   const [modalOpen, setModalOpen] = useState(false);
+  const [configModalOpen, setConfigModalOpen] = useState(false);
 
   // Hooks personnalisés
   const { isAuthenticated, hasTokens, checkAuthStatus, redirectToLogin } = useAuth();
@@ -282,11 +286,22 @@ export function Dashboard() {
           <h1 className="text-2xl font-bold text-slate-800">
             Tableau de bord - Extraction de leads
           </h1>
-          <AuthStatus 
-            isAuthenticated={isAuthenticated}
-            hasTokens={hasTokens}
-            onRedirectToLogin={redirectToLogin}
-          />
+          <div className="flex items-center gap-3">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setConfigModalOpen(true)}
+              className="flex items-center gap-2"
+            >
+              <Settings className="h-4 w-4" />
+              Configuration
+            </Button>
+            <AuthStatus 
+              isAuthenticated={isAuthenticated}
+              hasTokens={hasTokens}
+              onRedirectToLogin={redirectToLogin}
+            />
+          </div>
         </div>
 
         {/* Contrôles */}
@@ -351,6 +366,12 @@ export function Dashboard() {
           open={modalOpen}
           onOpenChange={setModalOpen}
           onLeadChange={handleLeadChange}
+        />
+
+        {/* Modal configuration */}
+        <ConfigurationModal
+          open={configModalOpen}
+          onOpenChange={setConfigModalOpen}
         />
       </div>
     </div>

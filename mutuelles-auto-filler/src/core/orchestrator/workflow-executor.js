@@ -9,7 +9,7 @@ import { getResolver } from '../dependency-resolver.js';
 /**
  * Configuration par défaut
  */
-const CONFIG = {
+const DEFAULT_CONFIG = {
   MAX_RETRY_ATTEMPTS: 2,
   RETRY_DELAY: 2000,
   TIMEOUT_RETRY_DELAY: 3000,
@@ -21,11 +21,36 @@ const CONFIG = {
 };
 
 /**
+ * Récupère la configuration d'automation depuis chrome.storage
+ */
+async function getWorkflowConfig() {
+  try {
+    const result = await chrome.storage.local.get(['automation_config']);
+    const config = result.automation_config;
+    
+    if (config) {
+      return {
+        MAX_RETRY_ATTEMPTS: config.maxRetryAttempts || DEFAULT_CONFIG.MAX_RETRY_ATTEMPTS,
+        RETRY_DELAY: config.retryDelay || DEFAULT_CONFIG.RETRY_DELAY,
+        TIMEOUT_RETRY_DELAY: config.timeoutRetryDelay || DEFAULT_CONFIG.TIMEOUT_RETRY_DELAY,
+        SUPPORTED_STEPS: DEFAULT_CONFIG.SUPPORTED_STEPS
+      };
+    }
+    
+    console.log('🔧 [WORKFLOW] Utilisation config par défaut:', DEFAULT_CONFIG);
+    return DEFAULT_CONFIG;
+  } catch (error) {
+    console.error('❌ [WORKFLOW] Erreur récupération config:', error);
+    return DEFAULT_CONFIG;
+  }
+}
+
+/**
  * Filtre et trie les étapes d'un workflow
  */
-function prepareWorkflowSteps(workflow) {
+function prepareWorkflowSteps(workflow, config) {
   return workflow.etapes
-    .filter(e => CONFIG.SUPPORTED_STEPS.includes(e.name || e.nom))
+    .filter(e => config.SUPPORTED_STEPS.includes(e.name || e.nom))
     .sort((a, b) => (a.order || a.ordre) - (b.order || b.ordre));
 }
 
@@ -101,13 +126,13 @@ async function resolveStepData(etape, leadData, resolver) {
 /**
  * Exécute une étape avec retry
  */
-async function executeStepWithRetry(stepName, serviceData) {
+async function executeStepWithRetry(stepName, serviceData, config) {
   let attempts = 0;
   
-  while (attempts < CONFIG.MAX_RETRY_ATTEMPTS) {
+  while (attempts < config.MAX_RETRY_ATTEMPTS) {
     try {
       attempts++;
-      console.log(`🔄 Tentative ${attempts}/${CONFIG.MAX_RETRY_ATTEMPTS} pour l'étape: ${stepName}`);
+      console.log(`🔄 Tentative ${attempts}/${config.MAX_RETRY_ATTEMPTS} pour l'étape: ${stepName}`);
       
       const result = await executeSwissLifeAction(stepName, serviceData);
       
@@ -118,20 +143,20 @@ async function executeStepWithRetry(stepName, serviceData) {
         console.error('❌ Échec étape (tentative ' + attempts + '):', stepName, result);
         const errorMessage = result.error?.message || result.reason || 'Erreur inconnue';
         
-        if (attempts >= CONFIG.MAX_RETRY_ATTEMPTS) {
-          throw new Error(`Échec étape ${stepName} après ${CONFIG.MAX_RETRY_ATTEMPTS} tentatives: ${errorMessage}`);
+        if (attempts >= config.MAX_RETRY_ATTEMPTS) {
+          throw new Error(`Échec étape ${stepName} après ${config.MAX_RETRY_ATTEMPTS} tentatives: ${errorMessage}`);
         } else {
-          console.log(`⏳ Attendre ${CONFIG.RETRY_DELAY}ms avant retry...`);
-          await new Promise(resolve => setTimeout(resolve, CONFIG.RETRY_DELAY));
+          console.log(`⏳ Attendre ${config.RETRY_DELAY}ms avant retry...`);
+          await new Promise(resolve => setTimeout(resolve, config.RETRY_DELAY));
         }
       }
     } catch (error) {
       console.error(`❌ Exception étape (tentative ${attempts}):`, stepName, error);
       
       // Si c'est un timeout et qu'on a encore des tentatives, retry
-      if (error.message && error.message.includes('Timeout') && attempts < CONFIG.MAX_RETRY_ATTEMPTS) {
-        console.log(`⏳ Timeout détecté, retry dans ${CONFIG.TIMEOUT_RETRY_DELAY}ms...`);
-        await new Promise(resolve => setTimeout(resolve, CONFIG.TIMEOUT_RETRY_DELAY));
+      if (error.message && error.message.includes('Timeout') && attempts < config.MAX_RETRY_ATTEMPTS) {
+        console.log(`⏳ Timeout détecté, retry dans ${config.TIMEOUT_RETRY_DELAY}ms...`);
+        await new Promise(resolve => setTimeout(resolve, config.TIMEOUT_RETRY_DELAY));
         continue;
       }
       
@@ -145,11 +170,12 @@ async function executeStepWithRetry(stepName, serviceData) {
  * Exécute un workflow complet
  */
 export async function executeWorkflow(leadData, onProgress = null) {
-  // Charger le résolveur de dépendances
+  // Charger la configuration et le résolveur de dépendances
+  const config = await getWorkflowConfig();
   const resolver = await getResolver();
 
   // Préparer les étapes du workflow
-  const etapes = prepareWorkflowSteps(leadData.workflow);
+  const etapes = prepareWorkflowSteps(leadData.workflow, config);
   
   console.log(`🎯 ${etapes.length} étapes à traiter`);
 
@@ -199,7 +225,7 @@ export async function executeWorkflow(leadData, onProgress = null) {
     // Pour compatibilité avec les anciens services
     const serviceData = stepData.value || stepData;
     
-    await executeStepWithRetry(stepName, serviceData);
+    await executeStepWithRetry(stepName, serviceData, config);
   }
 
   console.log('🎉 Toutes les étapes terminées avec succès');

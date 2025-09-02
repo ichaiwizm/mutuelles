@@ -57,6 +57,9 @@ async function handleMessage(message) {
       
     case 'UPDATE_LEAD_STATUS':
       return await notifyPlatformLeadStatus(data);
+
+    case 'UPDATE_CONFIG':
+      return await updateAutomationConfig(data);
       
     default:
       throw new Error(`Action inconnue: ${action}`);
@@ -317,6 +320,52 @@ async function notifyPlatformTabs(statusUpdate) {
     }
   } catch (error) {
     console.error('❌ [BACKGROUND] Erreur notification onglets plateforme:', error);
+  }
+}
+
+// Mettre à jour la configuration d'automatisation
+async function updateAutomationConfig(data) {
+  try {
+    const { config, timestamp } = data || {};
+    
+    if (!config) {
+      throw new Error('Configuration manquante');
+    }
+    
+    // Valider la configuration
+    if (typeof config.maxRetryAttempts !== 'number' || config.maxRetryAttempts < 0 || config.maxRetryAttempts > 10) {
+      throw new Error('maxRetryAttempts doit être un nombre entre 0 et 10');
+    }
+    
+    if (typeof config.retryDelay !== 'number' || config.retryDelay < 500 || config.retryDelay > 30000) {
+      throw new Error('retryDelay doit être un nombre entre 500 et 30000');
+    }
+
+    if (typeof config.timeoutRetryDelay !== 'number' || config.timeoutRetryDelay < 1000 || config.timeoutRetryDelay > 60000) {
+      throw new Error('timeoutRetryDelay doit être un nombre entre 1000 et 60000');
+    }
+    
+    // Stocker dans chrome.storage.local
+    const configData = {
+      automation_config: config,
+      updated_at: timestamp || new Date().toISOString()
+    };
+    
+    await chrome.storage.local.set(configData);
+    
+    console.log('✅ [BACKGROUND] Configuration automation mise à jour:', config);
+    
+    return {
+      success: true,
+      data: {
+        updated: true,
+        config: config,
+        timestamp: configData.updated_at
+      }
+    };
+  } catch (error) {
+    console.error('❌ [BACKGROUND] Erreur mise à jour configuration:', error);
+    throw error;
   }
 }
 

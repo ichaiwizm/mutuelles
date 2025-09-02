@@ -3,11 +3,33 @@
  */
 
 /**
- * Configuration des retry
+ * Configuration par défaut des retry
  */
-const RETRY_CONFIG = {
+const DEFAULT_RETRY_CONFIG = {
   MAX_RETRY_ATTEMPTS: 2, // 2 retry = 3 tentatives total par lead
 };
+
+/**
+ * Récupère la configuration d'automation depuis chrome.storage
+ */
+async function getAutomationConfig() {
+  try {
+    const result = await chrome.storage.local.get(['automation_config']);
+    const config = result.automation_config;
+    
+    if (config && typeof config.maxRetryAttempts === 'number') {
+      return {
+        MAX_RETRY_ATTEMPTS: config.maxRetryAttempts
+      };
+    }
+    
+    console.log('🔧 [STORAGE] Utilisation config par défaut:', DEFAULT_RETRY_CONFIG);
+    return DEFAULT_RETRY_CONFIG;
+  } catch (error) {
+    console.error('❌ [STORAGE] Erreur récupération config:', error);
+    return DEFAULT_RETRY_CONFIG;
+  }
+}
 
 /**
  * Sauvegarde le statut de traitement dans chrome.storage
@@ -126,9 +148,10 @@ export async function incrementLeadRetryCount(leadId) {
  */
 export async function canRetryLead(leadId) {
   const retryCount = await getLeadRetryCount(leadId);
-  const canRetry = retryCount < RETRY_CONFIG.MAX_RETRY_ATTEMPTS;
+  const config = await getAutomationConfig();
+  const canRetry = retryCount < config.MAX_RETRY_ATTEMPTS;
   
-  console.log(`🤔 Lead ${leadId} - Tentatives: ${retryCount}/${RETRY_CONFIG.MAX_RETRY_ATTEMPTS}, Peut retry: ${canRetry}`);
+  console.log(`🤔 Lead ${leadId} - Tentatives: ${retryCount}/${config.MAX_RETRY_ATTEMPTS}, Peut retry: ${canRetry}`);
   
   return canRetry;
 }

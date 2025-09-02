@@ -1,9 +1,10 @@
 // Service de communication avec l'extension Chrome SwissLife
 import type { Lead } from '@/types/lead';
+import type { AutomationConfig } from '@/hooks/useAutomationConfig';
 import { formatLeadsForExtension } from '@/utils/lead-formatter';
 
 export interface ExtensionMessage {
-  action: 'CHECK_SWISSLIFE_TAB' | 'OPEN_SWISSLIFE_TAB' | 'SEND_LEADS';
+  action: 'CHECK_SWISSLIFE_TAB' | 'OPEN_SWISSLIFE_TAB' | 'SEND_LEADS' | 'UPDATE_CONFIG';
   data?: any;
 }
 
@@ -221,6 +222,36 @@ export class ExtensionBridge {
         }
       }
     });
+  }
+
+  // Mettre à jour la configuration d'automatisation dans l'extension
+  static async updateAutomationConfig(config: AutomationConfig): Promise<{ success: boolean; error?: string }> {
+    try {
+      const message: ExtensionMessage = {
+        action: 'UPDATE_CONFIG',
+        data: {
+          config: config,
+          timestamp: new Date().toISOString()
+        }
+      };
+
+      const response = await this.sendMessageToExtension(message);
+      
+      if (response && response.success) {
+        console.log('✅ Configuration mise à jour dans l\'extension');
+        return { success: true };
+      } else {
+        const error = response?.error || 'Erreur inconnue lors de la mise à jour';
+        console.error('❌ Erreur mise à jour config extension:', error);
+        return { success: false, error };
+      }
+    } catch (error) {
+      console.error('❌ Exception mise à jour config extension:', error);
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Erreur inconnue' 
+      };
+    }
   }
 
   // Ajouter un callback pour les mises à jour de statut

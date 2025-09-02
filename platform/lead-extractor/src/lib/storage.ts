@@ -1,10 +1,12 @@
 import type { Lead } from '@/types/lead';
+import type { AutomationConfig } from '@/hooks/useAutomationConfig';
 
 const STORAGE_KEYS = {
   LEADS: 'leads_v1',
   SETTINGS: 'settings_v1',
   LAST_SYNC: 'last_sync_v1',
-  RULES_VERSION: 'rules_version'
+  RULES_VERSION: 'rules_version',
+  AUTOMATION_CONFIG: 'automation_config_v1'
 };
 
 export interface Settings {
@@ -73,6 +75,15 @@ export class StorageManager {
   static incrementRulesVersion(): void {
     const currentVersion = this.getRulesVersion();
     localStorage.setItem(STORAGE_KEYS.RULES_VERSION, String(currentVersion + 1));
+  }
+
+  static getAutomationConfig(): AutomationConfig | null {
+    const data = localStorage.getItem(STORAGE_KEYS.AUTOMATION_CONFIG);
+    return data ? JSON.parse(data) : null;
+  }
+
+  static saveAutomationConfig(config: AutomationConfig): void {
+    localStorage.setItem(STORAGE_KEYS.AUTOMATION_CONFIG, JSON.stringify(config));
   }
 
   static clearAll(): void {
