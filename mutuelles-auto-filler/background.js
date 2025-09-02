@@ -5,6 +5,7 @@
 
 // Pattern pour identifier les onglets SwissLife (ignore les paramètres comme refreshTime)
 const SWISSLIFE_URL_PATTERN = /swisslifeone\.fr.*\/tarification-et-simulation\/slsis/;
+const SWISSLIFE_URL_PATTERN_LOOSE = /swisslifeone\.fr/; // Pattern plus permissif pour debug
 
 // Écouter les messages externes (depuis la plateforme localhost:5174)
 chrome.runtime.onMessageExternal.addListener(
@@ -67,10 +68,26 @@ async function checkSwissLifeTab() {
   try {
     const tabs = await chrome.tabs.query({});
     
+    console.log('🔍 [BACKGROUND] Vérification onglets SwissLife...');
+    console.log('🔍 [BACKGROUND] Nombre total d\'onglets:', tabs.length);
+    
+    // Debug: afficher toutes les URLs et tester les patterns
+    tabs.forEach((tab, index) => {
+      console.log(`🔍 [BACKGROUND] Onglet ${index}: ${tab.url}`);
+      if (tab.url && SWISSLIFE_URL_PATTERN_LOOSE.test(tab.url)) {
+        console.log(`🎯 [BACKGROUND] SwissLife détecté (pattern loose) sur onglet ${index}`);
+        console.log(`🎯 [BACKGROUND] Pattern strict match:`, SWISSLIFE_URL_PATTERN.test(tab.url));
+      }
+    });
+    
     // Chercher un onglet qui correspond au pattern SwissLife
-    const swissLifeTab = tabs.find(tab => 
-      tab.url && SWISSLIFE_URL_PATTERN.test(tab.url)
-    );
+    const swissLifeTab = tabs.find(tab => {
+      const matches = tab.url && SWISSLIFE_URL_PATTERN.test(tab.url);
+      if (matches) {
+        console.log('✅ [BACKGROUND] SwissLife trouvé avec pattern strict:', tab.url);
+      }
+      return matches;
+    });
     
     if (swissLifeTab) {
       return {
@@ -78,6 +95,7 @@ async function checkSwissLifeTab() {
         data: {
           exists: true,
           tabId: swissLifeTab.id,
+          windowId: swissLifeTab.windowId,
           url: swissLifeTab.url
         }
       };
@@ -104,45 +122,47 @@ async function openSwissLifeTab(data) {
       // Activer un onglet existant
       await chrome.tabs.update(tabId, { active: true });
       
-      // Optionellement, amener la fenêtre au premier plan
+      // Restaurer la fenêtre si elle est miniaturisée et la mettre au premier plan
       const tab = await chrome.tabs.get(tabId);
       if (tab.windowId) {
-        await chrome.windows.update(tab.windowId, { focused: true });
+        await chrome.windows.update(tab.windowId, { 
+          focused: true,
+          state: 'normal' // Restaurer depuis miniaturisé
+        });
       }
       
       return {
         success: true,
         data: {
           activated: true,
-          tabId: tabId
+          tabId: tabId,
+          windowId: tab.windowId
         }
       };
     } else if (url) {
-      // Créer un nouvel onglet
-      // Obtenir l'onglet actuel pour le restaurer après
-      const currentTab = await chrome.tabs.query({ active: true, currentWindow: true });
-      const currentTabId = currentTab.length > 0 ? currentTab[0].id : null;
-      
-      const newTab = await chrome.tabs.create({
+      // Créer une nouvelle fenêtre normale puis minimiser immédiatement
+      const newWindow = await chrome.windows.create({
         url: url,
-        active: false // Toujours false pour éviter le vol de focus
+        type: 'normal',
+        focused: false,  // Ne vole pas le focus
+        width: 800,
+        height: 600
       });
       
-      // Remettre le focus sur l'onglet précédent si on en avait un
-      if (currentTabId && !active) {
-        try {
-          await chrome.tabs.update(currentTabId, { active: true });
-        } catch (error) {
-          // Ignore silently
-        }
-      }
+      // Minimiser immédiatement
+      chrome.windows.update(newWindow.id, { 
+        state: 'minimized' 
+      }).catch(err => {
+        console.log('⚠️ [BACKGROUND] Minimisation échouée:', err);
+      });
       
       return {
         success: true,
         data: {
           created: true,
-          tabId: newTab.id,
-          url: newTab.url
+          tabId: newWindow.tabs[0].id,
+          windowId: newWindow.id,
+          url: newWindow.tabs[0].url
         }
       };
     } else {

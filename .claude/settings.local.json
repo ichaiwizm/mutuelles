@@ -26,7 +26,8 @@
       "WebSearch",
       "mcp__playwright__browser_navigate",
       "mcp__playwright__browser_install",
-      "mcp__playwright__browser_wait_for"
+      "mcp__playwright__browser_wait_for",
+      "WebFetch(domain:developer.chrome.com)"
     ],
     "deny": [],
     "ask": [],
