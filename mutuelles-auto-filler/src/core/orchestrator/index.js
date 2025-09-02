@@ -13,7 +13,6 @@
 // Exports publics - Interface de l'orchestrateur
 export { loadLeads, getAvailableLeads } from './lead-manager.js';
 export { runTestWithLead } from './lead-processor.js';
-export { processLeadsQueue } from './queue-manager.js';
 export { initializeQueue } from './storage-manager.js';
 
 // Re-export des fonctions principales pour rétrocompatibilité
@@ -28,5 +27,5 @@ export async function processLeadsQueueWithProcessor(onProgress = null) {
   return await _processLeadsQueue(_runTestWithLead, onProgress);
 }
 
-// Fonction de compatibilité avec l'ancienne interface
+// Export principal pour rétrocompatibilité
 export { processLeadsQueueWithProcessor as processLeadsQueue };
