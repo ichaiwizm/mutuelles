@@ -20,6 +20,10 @@ export interface Settings {
     activeTab: 'leads' | 'all';
     globalFilter: string;
   };
+  dateRange?: {
+    from?: string;
+    to?: string;
+  } | null;
 }
 
 export interface LastSync {
@@ -48,7 +52,8 @@ export class StorageManager {
         currentPage: 0,
         activeTab: 'leads',
         globalFilter: ''
-      }
+      },
+      dateRange: null
     };
   }
 

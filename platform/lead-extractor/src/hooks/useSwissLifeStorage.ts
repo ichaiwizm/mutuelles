@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
-import type { SwissLifeLead } from '@/types/automation';
+import type { TestDataFormat } from '@/utils/lead-formatter';
 import { SwissLifeStorageManager } from '@/utils/localStorage-manager';
 
 interface ConversionResults {
-  successful: SwissLifeLead[];
+  successful: TestDataFormat[];
   totalWarnings: string[];
   failed: any[];
 }
@@ -12,7 +12,7 @@ interface ConversionResults {
 export function useSwissLifeStorage(
   conversionResults: ConversionResults | null,
   open: boolean,
-  onConversionComplete?: (convertedLeads: SwissLifeLead[]) => void
+  onConversionComplete?: (convertedLeads: TestDataFormat[]) => void
 ) {
   const [isSaving, setIsSaving] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
@@ -35,11 +35,6 @@ export function useSwissLifeStorage(
     setIsSaving(true);
     
     try {
-      // Vérifier l'espace disponible
-      if (SwissLifeStorageManager.isStorageNearLimit()) {
-        toast.warning('Le stockage local est presque plein. Certains leads pourraient ne pas être sauvegardés.');
-      }
-
       // Sauvegarder les leads
       SwissLifeStorageManager.replaceLeads(conversionResults.successful);
       

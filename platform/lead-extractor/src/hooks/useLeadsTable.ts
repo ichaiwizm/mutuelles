@@ -99,8 +99,6 @@ export function useLeadsTable({
   // Obtenir les données dans l'ordre EXACT du tableau final (trié + filtré)
   const allSortedAndFilteredData = table.getPrePaginationRowModel().rows.map(row => row.original);
   
-  // Obtenir les données réelles de la page courante (après tri et filtre)
-  const actualCurrentPageData = table.getRowModel().rows.map(row => row.original);
 
   return {
     table,

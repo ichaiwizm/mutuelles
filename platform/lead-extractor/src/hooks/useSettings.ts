@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { StorageManager } from '@/lib/storage';
-import { toast } from 'sonner';
 import type { DateRange } from 'react-day-picker';
 
 const DEFAULT_SETTINGS = {
