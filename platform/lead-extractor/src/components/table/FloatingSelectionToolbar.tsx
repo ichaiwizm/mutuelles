@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { X, Send, Download, Filter } from 'lucide-react';
+import { X, Send, Download, Filter, Edit3 } from 'lucide-react';
 import { 
   DropdownMenu, 
   DropdownMenuContent, 
@@ -27,6 +27,7 @@ interface FloatingSelectionToolbarProps {
     error: number;
     undefined: number;
   };
+  onUpdateStatus?: (status: 'pending' | 'processing' | 'success' | 'error') => void;
   className?: string;
 }
 
@@ -41,6 +42,7 @@ export function FloatingSelectionToolbar({
   isAllSelected,
   onSelectByStatus,
   statusCounts,
+  onUpdateStatus,
   className = ''
 }: FloatingSelectionToolbarProps) {
   if (selectedCount === 0) return null;
@@ -134,6 +136,38 @@ export function FloatingSelectionToolbar({
                   </div>
                 </DropdownMenuItem>
               )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
+
+        {/* Modifier le statut des leads sélectionnés */}
+        {onUpdateStatus && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="sm" variant="outline" className="text-indigo-700 border-indigo-200 hover:bg-indigo-50">
+                <Edit3 className="h-4 w-4 mr-1" />
+                Modifier le statut
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>Définir le statut</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => onUpdateStatus('pending')}>
+                <div className="w-2 h-2 rounded-full bg-yellow-500 mr-2" />
+                En attente
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onUpdateStatus('processing')}>
+                <div className="w-2 h-2 rounded-full bg-blue-500 mr-2" />
+                En cours
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onUpdateStatus('success')}>
+                <div className="w-2 h-2 rounded-full bg-green-500 mr-2" />
+                Réussi
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onUpdateStatus('error')}>
+                <div className="w-2 h-2 rounded-full bg-red-500 mr-2" />
+                Erreur
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         )}

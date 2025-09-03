@@ -6,7 +6,7 @@
   "workspaces": [
     "platform/lead-extractor",
     "server",
-    "swisslife-one-ext"
+    "mutuelles-auto-filler"
   ],
   "scripts": {
     "dev": "concurrently --names \"🔧SERVER,🎯FRONTEND\" --prefix-colors \"blue,green\" \"npm run dev:server\" \"npm run dev:frontend\"",
@@ -20,7 +20,7 @@
     "install:all": "npm install && npm run install:server && npm run install:frontend && npm run install:ext",
     "install:server": "cd server && npm install",
     "install:frontend": "cd platform/lead-extractor && npm install",
-    "install:ext": "cd swisslife-one-ext && npm install"
+    "install:ext": "cd mutuelles-auto-filler && npm install"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"

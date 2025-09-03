@@ -13,6 +13,7 @@ import { useLeadSelection } from '@/hooks/useLeadSelection';
 import { ExtensionBridge, type LeadStatusUpdate } from '@/services/extension-bridge';
 import { toast } from 'sonner';
 import { ControlsPanel } from '@/components/dashboard/ControlsPanel';
+import type { ProcessingStatus } from '@/utils/processing-status-storage';
 import { TabsNavigation } from '@/components/dashboard/TabsNavigation';
 import { ProgressPanel } from '@/components/dashboard/ProgressPanel';
 import { AuthStatus } from '@/components/dashboard/AuthStatus';
@@ -34,7 +35,7 @@ export function Dashboard() {
     days, setDays, dateRange, setDateRange, filterMode
   } = useSettings();
   const { leads, qualifiedLeads, addLeads, clearAllLeads, stats } = useLeads();
-  const { enrichLeadsWithStatus, applyStatusUpdate, cleanupOrphanedStatuses, isLoaded } = useProcessingStatus();
+  const { enrichLeadsWithStatus, applyStatusUpdate, cleanupOrphanedStatuses, isLoaded, setLeadStatus } = useProcessingStatus();
   const {
     uiState,
     setPageSize,
@@ -90,6 +91,18 @@ export function Dashboard() {
   // Données du tableau
   const tableData = getTableData();
   const { parallelTabs } = useAutomationConfig();
+
+  // Mettre à jour manuellement le statut des leads sélectionnés
+  const handleUpdateSelectedStatus = (status: ProcessingStatus['status']) => {
+    const ids = Array.from(selectedLeadIds);
+    if (ids.length === 0) return;
+    const timestamp = new Date().toISOString();
+    ids.forEach(id => setLeadStatus(id, {
+      status,
+      timestamp,
+      message: 'Statut modifié manuellement'
+    } as ProcessingStatus));
+  };
   
   // Hook de sélection des leads dans le tableau
   const {
@@ -369,6 +382,7 @@ export function Dashboard() {
           isAllSelected={isAllDataSelected}
           onSelectByStatus={selectByStatus}
           statusCounts={statusCounts}
+          onUpdateSelectedStatus={handleUpdateSelectedStatus}
         />
 
         {/* Modal détail */}

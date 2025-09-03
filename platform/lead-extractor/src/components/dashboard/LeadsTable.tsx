@@ -35,6 +35,7 @@ interface LeadsTableProps {
     error: number;
     undefined: number;
   };
+  onUpdateSelectedStatus?: (status: 'pending' | 'processing' | 'success' | 'error') => void;
 }
 
 export function LeadsTable({ 
@@ -56,7 +57,8 @@ export function LeadsTable({
   onRetrySingleLead,
   isAllSelected = false,
   onSelectByStatus,
-  statusCounts
+  statusCounts,
+  onUpdateSelectedStatus
 }: LeadsTableProps) {
   const { table, allSortedAndFilteredData, columns } = useLeadsTable({
     data,
@@ -108,6 +110,7 @@ export function LeadsTable({
         isAllSelected={isAllSelected}
         onSelectByStatus={onSelectByStatus}
         statusCounts={statusCounts}
+        onUpdateStatus={onUpdateSelectedStatus}
       />
 
       {/* Bouton de sélection rapide */}
