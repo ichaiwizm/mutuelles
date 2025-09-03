@@ -36,9 +36,15 @@ export const checkAuth = (req, res, next) => {
 // Sauvegarder de nouveaux tokens
 export const saveTokens = (tokens) => {
   cachedTokens = tokens;
-  oauth2Client.setCredentials(tokens);
+  if (tokens === null) {
+    // Effacer les credentials OAuth2 lors de la déconnexion
+    oauth2Client.setCredentials({});
+    logger.info('Tokens cleared and OAuth2 credentials reset');
+  } else {
+    oauth2Client.setCredentials(tokens);
+    logger.info('New tokens saved and cached');
+  }
   TokensService.save(tokens);
-  logger.info('New tokens saved and cached');
 };
 
 // Vérifier le statut d'authentification

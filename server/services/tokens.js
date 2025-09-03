@@ -7,6 +7,11 @@ const TOKENS_FILE = path.join(process.cwd(), 'tokens.json');
 export class TokensService {
   static save(tokens) {
     try {
+      if (tokens === null) {
+        // Si tokens est null, supprimer le fichier
+        this.delete();
+        return;
+      }
       fs.writeFileSync(TOKENS_FILE, JSON.stringify(tokens, null, 2));
       logger.info('Tokens saved successfully');
     } catch (error) {
@@ -32,6 +37,20 @@ export class TokensService {
 
   static exists() {
     return fs.existsSync(TOKENS_FILE);
+  }
+
+  static delete() {
+    try {
+      if (fs.existsSync(TOKENS_FILE)) {
+        fs.unlinkSync(TOKENS_FILE);
+        logger.info('Tokens file deleted successfully');
+      } else {
+        logger.info('No tokens file to delete');
+      }
+    } catch (error) {
+      logger.error('Error deleting tokens file:', error);
+      throw error;
+    }
   }
 
 }

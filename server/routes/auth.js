@@ -50,4 +50,28 @@ router.get('/status', (req, res) => {
   res.json(status);
 });
 
+// Déconnexion
+router.post('/logout', (req, res) => {
+  try {
+    logger.info('User logout requested');
+    
+    // Effacer les tokens stockés
+    saveTokens(null);
+    
+    logger.info('User logged out successfully');
+    res.json({ 
+      success: true, 
+      message: 'Déconnexion réussie',
+      authenticated: false,
+      hasTokens: false
+    });
+  } catch (error) {
+    logger.error('Error during logout:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Erreur lors de la déconnexion' 
+    });
+  }
+});
+
 export default router;

@@ -1,13 +1,15 @@
 import { Button } from '@/components/ui/button';
-import { Loader2 } from 'lucide-react';
+import { Loader2, LogOut } from 'lucide-react';
 
 interface AuthStatusProps {
   isAuthenticated: boolean | null;
   hasTokens: boolean | null;
   onRedirectToLogin: () => void;
+  onLogout: () => void;
+  loading?: boolean;
 }
 
-export function AuthStatus({ isAuthenticated, hasTokens, onRedirectToLogin }: AuthStatusProps) {
+export function AuthStatus({ isAuthenticated, hasTokens, onRedirectToLogin, onLogout, loading = false }: AuthStatusProps) {
   if (isAuthenticated === null || hasTokens === null) {
     return (
       <div className="flex items-center gap-2 text-slate-600">
@@ -19,9 +21,27 @@ export function AuthStatus({ isAuthenticated, hasTokens, onRedirectToLogin }: Au
 
   if (isAuthenticated && hasTokens) {
     return (
-      <div className="flex items-center gap-2 text-green-700 bg-green-50 px-3 py-1 rounded-full border border-green-200">
-        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-        <span className="text-sm font-medium">Gmail connecté</span>
+      <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 text-green-700 bg-green-50 px-3 py-1 rounded-full border border-green-200">
+          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+          <span className="text-sm font-medium">Gmail connecté</span>
+        </div>
+        <Button 
+          onClick={onLogout}
+          size="sm"
+          variant="outline"
+          disabled={loading}
+          className="text-red-600 border-red-200 hover:bg-red-50 hover:border-red-300"
+        >
+          {loading ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <>
+              <LogOut className="h-4 w-4 mr-1" />
+              Se déconnecter
+            </>
+          )}
+        </Button>
       </div>
     );
   }

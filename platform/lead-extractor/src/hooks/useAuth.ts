@@ -28,6 +28,21 @@ export const useAuth = () => {
     window.location.href = `${API_URL}/auth/google/start`;
   };
 
+  const logout = async () => {
+    try {
+      setLoading(true);
+      await axios.post(`${API_URL}/auth/logout`);
+      setIsAuthenticated(false);
+      setHasTokens(false);
+      return { success: true };
+    } catch (error) {
+      console.error('Erreur déconnexion:', error);
+      return { success: false };
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     checkAuthStatus();
   }, []);
@@ -37,6 +52,7 @@ export const useAuth = () => {
     hasTokens,
     loading,
     checkAuthStatus,
-    redirectToLogin
+    redirectToLogin,
+    logout
   };
 };
