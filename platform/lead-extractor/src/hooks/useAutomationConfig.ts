@@ -7,12 +7,14 @@ export interface AutomationConfig {
   maxRetryAttempts: number;
   retryDelay: number;
   timeoutRetryDelay: number;
+  parallelTabs: number; // 1 à 10
 }
 
 const DEFAULT_CONFIG: AutomationConfig = {
   maxRetryAttempts: 2,
   retryDelay: 2000,
-  timeoutRetryDelay: 3000
+  timeoutRetryDelay: 3000,
+  parallelTabs: 3
 };
 
 export const useAutomationConfig = () => {
@@ -41,6 +43,10 @@ export const useAutomationConfig = () => {
       
       if (newConfig.retryDelay < 500 || newConfig.retryDelay > 30000) {
         throw new Error('Le délai de retry doit être entre 500ms et 30s');
+      }
+
+      if (newConfig.parallelTabs < 1 || newConfig.parallelTabs > 10) {
+        throw new Error('Le nombre d\'onglets parallèles doit être entre 1 et 10');
       }
 
       // Sauvegarder en local
@@ -91,6 +97,7 @@ export const useAutomationConfig = () => {
     // Propriétés individuelles pour faciliter l'usage
     maxRetryAttempts: config.maxRetryAttempts,
     retryDelay: config.retryDelay,
-    timeoutRetryDelay: config.timeoutRetryDelay
+    timeoutRetryDelay: config.timeoutRetryDelay,
+    parallelTabs: config.parallelTabs
   };
 };

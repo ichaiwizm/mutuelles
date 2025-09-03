@@ -10,7 +10,7 @@ const SWISSLIFE_URL_PATTERN_LOOSE = /swisslifeone\.fr/; // Pattern plus permissi
 // Écouter les messages externes (depuis la plateforme localhost:5174)
 chrome.runtime.onMessageExternal.addListener(
   (message, sender, sendResponse) => {
-    handleMessage(message)
+    handleMessage(message, sender)
       .then(response => {
         sendResponse(response);
       })
@@ -27,7 +27,7 @@ chrome.runtime.onMessageExternal.addListener(
 
 // Écouter les messages internes (depuis le content script)
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  handleMessage(message)
+  handleMessage(message, sender)
     .then(response => {
       sendResponse(response);
     })
@@ -42,7 +42,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 });
 
 // Gestionnaire principal des messages
-async function handleMessage(message) {
+async function handleMessage(message, sender) {
   const { action, data } = message;
   
   switch (action) {
@@ -60,6 +60,9 @@ async function handleMessage(message) {
 
     case 'UPDATE_CONFIG':
       return await updateAutomationConfig(data);
+    
+    case 'GROUP_QUEUE_COMPLETED':
+      return await handleGroupQueueCompleted(data, sender);
       
     default:
       throw new Error(`Action inconnue: ${action}`);
@@ -350,6 +353,21 @@ async function appendLeadToExistingGroup(groupId, lead) {
   queue.status = 'pending';
 
   await chrome.storage.local.set({ [leadsKey]: leads, [queueKey]: queue });
+
+  // Marquer le groupe comme non complété dans le pool
+  try {
+    let pool = await getProcessingPool();
+    pool = await validateAndPrunePool(pool);
+    if (pool && pool.tabs) {
+      const t = pool.tabs.find(t => t.groupId === groupId);
+      if (t) {
+        t.completed = false;
+        await setProcessingPool(pool);
+      }
+    }
+  } catch (e) {
+    // ignore
+  }
 }
 
 // Crée un nouvel onglet de traitement dans la fenêtre du pool
@@ -376,7 +394,7 @@ async function createProcessingTab(pool, groupId, lead) {
   await chrome.storage.local.set(storageData);
 
   // Mettre à jour le pool
-  pool.tabs.push({ tabId: tab.id, groupId, leadCount: 1 });
+  pool.tabs.push({ tabId: tab.id, groupId, leadCount: 1, completed: false });
   pool.lastUsedAt = new Date().toISOString();
   await setProcessingPool(pool);
 
@@ -394,6 +412,66 @@ async function createProcessingTab(pool, groupId, lead) {
     });
   } catch (error) {
     // l'onglet n'est peut-être pas encore prêt, pas grave
+  }
+}
+
+// Marquer un groupe comme terminé et fermer la fenêtre si tous sont finis
+async function handleGroupQueueCompleted(data, sender) {
+  try {
+    const incomingGroupId = data && data.groupId;
+    const senderTabId = sender && sender.tab && sender.tab.id;
+    let pool = await getProcessingPool();
+    pool = await validateAndPrunePool(pool);
+    if (!pool) {
+      return { success: true, data: { ignored: true } };
+    }
+
+    // Trouver l'entrée du tab/groupe
+    let target = null;
+    for (const t of pool.tabs || []) {
+      if ((incomingGroupId && t.groupId === incomingGroupId) || (senderTabId && t.tabId === senderTabId)) {
+        target = t;
+        break;
+      }
+    }
+
+    if (!target) {
+      return { success: true, data: { updated: false } };
+    }
+
+    target.completed = true;
+    pool.lastUsedAt = new Date().toISOString();
+    await setProcessingPool(pool);
+
+    // Vérifier si tous les onglets sont complétés
+    const tabs = pool.tabs || [];
+    const allCompleted = tabs.length > 0 && tabs.every(t => t.completed);
+
+    if (allCompleted) {
+      // Nettoyage des clés de storage pour les groupes du pool
+      try {
+        const groupIds = tabs.map(t => t.groupId);
+        const all = await chrome.storage.local.get(null);
+        const keysToRemove = Object.keys(all).filter(k => groupIds.some(g => k.endsWith(`__${g}`)));
+        if (keysToRemove.length > 0) {
+          await chrome.storage.local.remove(keysToRemove);
+        }
+      } catch (e) {
+        // ignore cleanup errors
+      }
+
+      try {
+        await chrome.windows.remove(pool.windowId);
+      } catch (e) {
+        // fenêtre peut déjà être fermée
+      }
+      await chrome.storage.local.remove([POOL_KEY]);
+      return { success: true, data: { windowClosed: true } };
+    }
+
+    return { success: true, data: { updated: true } };
+  } catch (error) {
+    return { success: false, error: error.message || 'Erreur handleGroupQueueCompleted' };
   }
 }
 
@@ -449,12 +527,22 @@ async function sendSingleLeadToProcessingPool(lead, parallelTabs) {
 // Stocker les leads pour l'extension (version multi-onglets)
 async function sendLeadsToStorage(data) {
   try {
-    const { leads, timestamp, count, parallelTabs = 1 } = data || {};
+    let { leads, timestamp, count, parallelTabs } = data || {};
     
     if (!leads || !Array.isArray(leads) || leads.length === 0) {
       throw new Error('Aucun lead valide à stocker');
     }
     
+    // Déterminer parallelTabs si non fourni
+    if (typeof parallelTabs !== 'number') {
+      try {
+        const { automation_config } = await chrome.storage.local.get(['automation_config']);
+        parallelTabs = Math.min(10, Math.max(1, Number(automation_config?.parallelTabs ?? 1)));
+      } catch (_) {
+        parallelTabs = 1;
+      }
+    }
+
     const batchId = Date.now().toString();
     const actualParallelTabs = Math.min(parallelTabs, leads.length); // Pas plus d'onglets que de leads
     
@@ -518,7 +606,8 @@ async function sendLeadsToStorage(data) {
       createdTabs.push({
         tabId: tab.id,
         groupId: groupId,
-        leadCount: chunk.length
+        leadCount: chunk.length,
+        completed: false
       });
       
       console.log(`✅ [BACKGROUND] Groupe ${i + 1}/${leadChunks.length} créé: ${chunk.length} leads, groupId: ${groupId}`);
@@ -735,6 +824,10 @@ async function updateAutomationConfig(data) {
     if (typeof config.timeoutRetryDelay !== 'number' || config.timeoutRetryDelay < 1000 || config.timeoutRetryDelay > 60000) {
       throw new Error('timeoutRetryDelay doit être un nombre entre 1000 et 60000');
     }
+
+    if (typeof config.parallelTabs !== 'number' || config.parallelTabs < 1 || config.parallelTabs > 10) {
+      throw new Error('parallelTabs doit être un nombre entre 1 et 10');
+    }
     
     // Stocker dans chrome.storage.local
     const configData = {
@@ -743,8 +836,21 @@ async function updateAutomationConfig(data) {
     };
     
     await chrome.storage.local.set(configData);
-    
+
     console.log('✅ [BACKGROUND] Configuration automation mise à jour:', config);
+
+    // Mettre à jour la capacité du pool existant s'il existe
+    try {
+      let pool = await getProcessingPool();
+      pool = await validateAndPrunePool(pool);
+      if (pool) {
+        pool.capacity = Math.min(10, Math.max(1, config.parallelTabs));
+        await setProcessingPool(pool);
+        console.log('✅ [BACKGROUND] Capacité du pool mise à jour:', pool.capacity);
+      }
+    } catch (e) {
+      // ignore pool update errors
+    }
     
     return {
       success: true,

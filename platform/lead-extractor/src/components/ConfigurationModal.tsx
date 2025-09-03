@@ -57,7 +57,7 @@ export function ConfigurationModal({ open, onOpenChange }: ConfigurationModalPro
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="sm:max-w-lg max-w-md w-[95vw] max-h-[80vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Settings className="h-5 w-5" />
@@ -68,7 +68,8 @@ export function ConfigurationModal({ open, onOpenChange }: ConfigurationModalPro
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6">
+        {/* Zone scrollable pour le contenu afin d'éviter les débordements */}
+        <div className="space-y-6 flex-1 overflow-y-auto pr-1">
           {/* Configuration principale */}
           <Card>
             <CardHeader>
@@ -136,6 +137,34 @@ export function ConfigurationModal({ open, onOpenChange }: ConfigurationModalPro
                   Attente supplémentaire après un timeout
                 </p>
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Parallélisme */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Parallélisme</CardTitle>
+              <CardDescription>
+                Définissez le nombre d'onglets SwissLife ouverts en parallèle (1 à 10).
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <Label htmlFor="parallelTabs">Onglets parallèles</Label>
+              <Input
+                id="parallelTabs"
+                type="number"
+                min="1"
+                max="10"
+                value={localConfig.parallelTabs}
+                onChange={(e) => setLocalConfig({
+                  ...localConfig,
+                  parallelTabs: Math.min(10, Math.max(1, parseInt(e.target.value) || 1))
+                })}
+                className="w-32"
+              />
+              <p className="text-sm text-muted-foreground">
+                Maximum 10 onglets simultanés.
+              </p>
             </CardContent>
           </Card>
 

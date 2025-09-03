@@ -197,6 +197,17 @@ async function handleLeadSuccess(lead, progress, onProgress) {
         totalProcessed: updatedQueueState.processedLeads.length
       });
     }
+
+    // Notifier le background que la queue de ce groupe est terminée
+    try {
+      const groupId = KEYS.groupId();
+      await chrome.runtime.sendMessage({
+        action: 'GROUP_QUEUE_COMPLETED',
+        data: { groupId }
+      });
+    } catch (e) {
+      // ignore
+    }
   }
 }
 
@@ -262,6 +273,18 @@ async function handleLeadError(lead, progress, error, onProgress) {
     
     if (remaining > 0) {
       scheduleReload(CONFIG.RELOAD_DELAY_ERROR, 'prochain lead après erreur définitive');
+    } else {
+      // Dernier lead terminé avec erreur → notifier la fin de queue
+      try {
+        const groupId = KEYS.groupId();
+        await updateQueueState({ status: 'completed', completedAt: new Date().toISOString() });
+        await chrome.runtime.sendMessage({
+          action: 'GROUP_QUEUE_COMPLETED',
+          data: { groupId }
+        });
+      } catch (e) {
+        // ignore
+      }
     }
   }
 }
@@ -281,6 +304,16 @@ export async function processLeadsQueue(leadProcessor, onProgress = null) {
           type: 'queue_complete',
           totalProcessed: (await getQueueState()).processedLeads.length
         });
+      }
+      // Notifier le background que la queue de ce groupe est terminée
+      try {
+        const groupId = KEYS.groupId();
+        await chrome.runtime.sendMessage({
+          action: 'GROUP_QUEUE_COMPLETED',
+          data: { groupId }
+        });
+      } catch (e) {
+        // ignore
       }
       return { completed: true };
     }

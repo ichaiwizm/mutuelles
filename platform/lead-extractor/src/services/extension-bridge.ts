@@ -2,6 +2,7 @@
 import type { Lead } from '@/types/lead';
 import type { AutomationConfig } from '@/hooks/useAutomationConfig';
 import { formatLeadsForExtension } from '@/utils/lead-formatter';
+import { StorageManager } from '@/lib/storage';
 
 export interface ExtensionMessage {
   action: 'CHECK_SWISSLIFE_TAB' | 'OPEN_SWISSLIFE_TAB' | 'SEND_LEADS' | 'UPDATE_CONFIG';
@@ -142,8 +143,9 @@ export class ExtensionBridge {
       // Formater les leads pour l'extension
       const formattedLeads = formatLeadsForExtension(leads);
       
-      // Récupérer le nombre d'onglets parallèles depuis l'env
-      const parallelTabs = Number(import.meta.env.VITE_PARALLEL_TABS) || 1;
+      // Récupérer le nombre d'onglets parallèles depuis la configuration sauvegardée
+      const savedConfig = StorageManager.getAutomationConfig();
+      const parallelTabs = Math.min(10, Math.max(1, Number(savedConfig?.parallelTabs ?? 1)));
       
       const message: ExtensionMessage = {
         action: 'SEND_LEADS',

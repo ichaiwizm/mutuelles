@@ -19,6 +19,7 @@ import { AuthStatus } from '@/components/dashboard/AuthStatus';
 import { LeadsTable } from '@/components/dashboard/LeadsTable';
 import { ConfigurationModal } from '@/components/ConfigurationModal';
 import type { Lead } from '@/types/lead';
+import { useAutomationConfig } from '@/hooks/useAutomationConfig';
 
 export function Dashboard() {
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
@@ -88,6 +89,7 @@ export function Dashboard() {
 
   // Données du tableau
   const tableData = getTableData();
+  const { parallelTabs } = useAutomationConfig();
   
   // Hook de sélection des leads dans le tableau
   const {
@@ -163,8 +165,7 @@ export function Dashboard() {
       }
 
       // 2. Vérifier/ouvrir onglet SwissLife uniquement si mode mono-onglet
-      const parallelTabs = Number(import.meta.env.VITE_PARALLEL_TABS) || 1;
-      if (parallelTabs <= 1) {
+      if ((parallelTabs || 1) <= 1) {
         const tabResult = await ExtensionBridge.openSwissLifeTab();
         if (!tabResult.success) {
           toast.error('Impossible d\'accéder à SwissLife');
@@ -218,9 +219,7 @@ export function Dashboard() {
       console.log('✅ Extension détectée');
 
       // 2. Vérifier/ouvrir onglet SwissLife uniquement si mode mono-onglet
-      const parallelTabs = Number(import.meta.env.VITE_PARALLEL_TABS) || 1;
-      
-      if (parallelTabs <= 1) {
+      if ((parallelTabs || 1) <= 1) {
         // Mode mono-onglet : vérifier/ouvrir un onglet
         toast.info('Vérification des onglets SwissLife...');
         
