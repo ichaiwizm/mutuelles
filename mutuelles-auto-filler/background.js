@@ -412,7 +412,7 @@ async function appendLeadToExistingGroup(groupId, lead) {
 async function createProcessingTab(pool, groupId, lead) {
   const tab = await chrome.tabs.create({
     windowId: pool.windowId,
-    url: buildSwissLifeUrlWithGroupId(groupId),
+    url: await buildSwissLifeUrlWithGroupId(groupId),
     active: false
   });
 
