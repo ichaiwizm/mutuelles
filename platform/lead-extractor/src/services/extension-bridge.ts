@@ -152,7 +152,9 @@ export class ExtensionBridge {
       
       // Récupérer le nombre d'onglets parallèles depuis la configuration sauvegardée
       const savedConfig = StorageManager.getAutomationConfig();
-      const parallelTabs = Math.min(10, Math.max(1, Number(savedConfig?.parallelTabs ?? 1)));
+      // Par défaut, on considère 3 onglets si aucune config sauvegardée
+      const fallback = 3;
+      const parallelTabs = Math.min(10, Math.max(1, Number(savedConfig?.parallelTabs ?? fallback)));
       
       const message: ExtensionMessage = {
         action: 'SEND_LEADS',
