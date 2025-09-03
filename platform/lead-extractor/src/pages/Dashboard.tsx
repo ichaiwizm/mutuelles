@@ -162,12 +162,16 @@ export function Dashboard() {
         return;
       }
 
-      // 2. Vérifier/ouvrir onglet SwissLife
-      const tabResult = await ExtensionBridge.openSwissLifeTab();
-      
-      if (!tabResult.success) {
-        toast.error('Impossible d\'accéder à SwissLife');
-        return;
+      // 2. Vérifier/ouvrir onglet SwissLife uniquement si mode mono-onglet
+      const parallelTabs = Number(import.meta.env.VITE_PARALLEL_TABS) || 1;
+      if (parallelTabs <= 1) {
+        const tabResult = await ExtensionBridge.openSwissLifeTab();
+        if (!tabResult.success) {
+          toast.error('Impossible d\'accéder à SwissLife');
+          return;
+        }
+      } else {
+        console.log(`Retry en mode multi-onglets (${parallelTabs}). L'ouverture sera gérée par SEND_LEADS`);
       }
 
       // 3. Envoyer le lead unique

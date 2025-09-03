@@ -235,6 +235,217 @@ async function notifyTabWithRetry(tabInfo, index, totalTabs, timestamp, maxRetri
   }
 }
 
+// Clé de stockage pour le pool multi-onglets réutilisable
+const POOL_KEY = 'swisslife_processing_pool';
+
+// Récupérer le pool depuis le storage
+async function getProcessingPool() {
+  const res = await chrome.storage.local.get([POOL_KEY]);
+  return res[POOL_KEY] || null;
+}
+
+// Sauvegarder le pool dans le storage
+async function setProcessingPool(pool) {
+  await chrome.storage.local.set({ [POOL_KEY]: pool });
+}
+
+// Vérifie que la fenêtre du pool existe encore et nettoie les tabs inexistants
+async function validateAndPrunePool(pool) {
+  if (!pool) return null;
+  try {
+    // Vérifier la fenêtre
+    await chrome.windows.get(pool.windowId);
+  } catch (e) {
+    // Fenêtre inexistante → pool invalide
+    return null;
+  }
+
+  // Vérifier que les tabs existent encore
+  const validTabs = [];
+  for (const t of (pool.tabs || [])) {
+    try {
+      const tab = await chrome.tabs.get(t.tabId);
+      if (tab && tab.windowId === pool.windowId) {
+        validTabs.push(t);
+      }
+    } catch (e) {
+      // Tab n'existe plus → on l'ignore
+    }
+  }
+
+  if (validTabs.length !== (pool.tabs || []).length) {
+    pool.tabs = validTabs;
+    await setProcessingPool(pool);
+  }
+
+  return pool;
+}
+
+// Crée une fenêtre de traitement si nécessaire
+async function ensureProcessingWindow(capacity) {
+  let pool = await getProcessingPool();
+  pool = await validateAndPrunePool(pool);
+  if (pool) return pool;
+
+  // Créer une nouvelle fenêtre dédiée
+  const newWindow = await chrome.windows.create({
+    type: 'normal',
+    focused: false,
+    width: 800,
+    height: 600,
+    url: 'about:blank'
+  });
+
+  // Minimiser pour rester en arrière-plan
+  await chrome.windows.update(newWindow.id, { state: 'minimized' }).catch(() => {});
+
+  const newPool = {
+    windowId: newWindow.id,
+    capacity: capacity,
+    tabs: [],
+    createdAt: new Date().toISOString(),
+    lastUsedAt: new Date().toISOString()
+  };
+  await setProcessingPool(newPool);
+  return newPool;
+}
+
+// Choisit le groupe le moins chargé parmi les tabs du pool
+async function chooseLeastLoadedGroup(pool) {
+  if (!pool || !pool.tabs || pool.tabs.length === 0) return null;
+
+  let best = null;
+  let bestPending = Number.POSITIVE_INFINITY;
+
+  for (const t of pool.tabs) {
+    try {
+      const queueKey = `swisslife_queue_state__${t.groupId}`;
+      const leadsKey = `swisslife_leads__${t.groupId}`;
+      const res = await chrome.storage.local.get([queueKey, leadsKey]);
+      const queue = res[queueKey];
+      const leads = res[leadsKey] || [];
+      const pending = queue ? Math.max(0, (queue.totalLeads || leads.length) - (queue.currentIndex || 0)) : leads.length;
+      if (pending < bestPending) {
+        bestPending = pending;
+        best = { ...t, pending };
+      }
+    } catch (e) {
+      // Ignore et ne sélectionne pas ce tab
+    }
+  }
+  return best;
+}
+
+// Ajoute un lead à un groupe existant (tab déjà ouvert)
+async function appendLeadToExistingGroup(groupId, lead) {
+  const leadsKey = `swisslife_leads__${groupId}`;
+  const queueKey = `swisslife_queue_state__${groupId}`;
+
+  const res = await chrome.storage.local.get([leadsKey, queueKey]);
+  const leads = res[leadsKey] || [];
+  const queue = res[queueKey] || { currentIndex: 0, totalLeads: 0, processedLeads: [], status: 'pending' };
+
+  leads.push(lead);
+  queue.totalLeads = (queue.totalLeads || 0) + 1;
+  queue.status = 'pending';
+
+  await chrome.storage.local.set({ [leadsKey]: leads, [queueKey]: queue });
+}
+
+// Crée un nouvel onglet de traitement dans la fenêtre du pool
+async function createProcessingTab(pool, groupId, lead) {
+  const tab = await chrome.tabs.create({
+    windowId: pool.windowId,
+    url: buildSwissLifeUrlWithGroupId(groupId),
+    active: false
+  });
+
+  // Stocker les données pour ce groupe
+  const storageData = {
+    [`swisslife_leads__${groupId}`]: [lead],
+    [`swisslife_queue_state__${groupId}`]: {
+      currentIndex: 0,
+      totalLeads: 1,
+      processedLeads: [],
+      status: 'pending',
+      startedAt: new Date().toISOString(),
+      completedAt: null,
+      groupId: groupId
+    }
+  };
+  await chrome.storage.local.set(storageData);
+
+  // Mettre à jour le pool
+  pool.tabs.push({ tabId: tab.id, groupId, leadCount: 1 });
+  pool.lastUsedAt = new Date().toISOString();
+  await setProcessingPool(pool);
+
+  // Notifier l'onglet
+  try {
+    await chrome.tabs.sendMessage(tab.id, {
+      action: 'LEADS_UPDATED',
+      data: {
+        count: 1,
+        timestamp: new Date().toISOString(),
+        autoExecute: true,
+        groupId
+      },
+      source: 'background'
+    });
+  } catch (error) {
+    // l'onglet n'est peut-être pas encore prêt, pas grave
+  }
+}
+
+// Ajoute un lead au pool (création fenêtre/onglet si nécessaire)
+async function sendSingleLeadToProcessingPool(lead, parallelTabs) {
+  // 1) S'assurer qu'une fenêtre de pool existe
+  let pool = await ensureProcessingWindow(parallelTabs);
+  pool = await validateAndPrunePool(pool);
+
+  // 2) S'il reste de la capacité en onglets, créer un nouvel onglet
+  if ((pool.tabs || []).length < (pool.capacity || parallelTabs)) {
+    const groupId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    await createProcessingTab(pool, groupId, lead);
+    return {
+      success: true,
+      data: { stored: true, count: 1, parallelTabs: (pool.tabs || []).length + 0 }
+    };
+  }
+
+  // 3) Sinon, ajouter au groupe le moins chargé
+  const target = await chooseLeastLoadedGroup(pool);
+  if (!target) {
+    // fallback: créer un nouvel onglet si possible
+    const groupId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    await createProcessingTab(pool, groupId, lead);
+    return { success: true, data: { stored: true, count: 1 } };
+  }
+
+  await appendLeadToExistingGroup(target.groupId, lead);
+
+  // Notifier l'onglet cible pour déclencher l'auto-exécution
+  try {
+    await chrome.tabs.sendMessage(target.tabId, {
+      action: 'LEADS_UPDATED',
+      data: {
+        count: 1,
+        timestamp: new Date().toISOString(),
+        autoExecute: true,
+        groupId: target.groupId
+      },
+      source: 'background'
+    });
+  } catch (error) {
+    // ignore
+  }
+
+  pool.lastUsedAt = new Date().toISOString();
+  await setProcessingPool(pool);
+
+  return { success: true, data: { stored: true, count: 1 } };
+}
+
 // Stocker les leads pour l'extension (version multi-onglets)
 async function sendLeadsToStorage(data) {
   try {
@@ -250,6 +461,10 @@ async function sendLeadsToStorage(data) {
     console.log(`📊 [BACKGROUND] Traitement ${leads.length} leads avec ${actualParallelTabs} onglet(s) parallèle(s)`);
     
     if (actualParallelTabs <= 1) {
+      // Cas particulier: un seul lead mais on souhaite le mode pool parallèle
+      if (parallelTabs > 1 && leads.length === 1) {
+        return await sendSingleLeadToProcessingPool(leads[0], parallelTabs);
+      }
       // Mode mono-onglet (backward compatibility)
       return await sendLeadsToStorageSingle(leads, timestamp, count);
     }
@@ -323,7 +538,17 @@ async function sendLeadsToStorage(data) {
       console.log('⚠️ [BACKGROUND] Minimisation échouée:', err);
     });
     
-    // 5. Notifier chaque onglet avec un délai progressif pour éviter la surcharge
+    // 5. Enregistrer le pool pour réutilisation ultérieure
+    const pool = {
+      windowId: window.id,
+      capacity: parallelTabs,
+      tabs: createdTabs,
+      createdAt: new Date().toISOString(),
+      lastUsedAt: new Date().toISOString()
+    };
+    await setProcessingPool(pool);
+
+    // 6. Notifier chaque onglet avec un délai progressif pour éviter la surcharge
     for (let i = 0; i < createdTabs.length; i++) {
       const tabInfo = createdTabs[i];
       
