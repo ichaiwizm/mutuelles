@@ -3,6 +3,8 @@
  * Gère les redirections automatiques et la navigation SPA
  */
 
+import { KEYS } from '../core/orchestrator/storage-keys.js';
+
 export class NavigationManager {
   constructor(autoExecutionManager) {
     this.autoExecutionManager = autoExecutionManager;
@@ -52,16 +54,18 @@ export class NavigationManager {
     // Gérer la redirection depuis /accueil
     this.handleAccueilRedirect();
     
-    // Si on arrive sur la bonne page, vérifier l'auto-exécution
-    if (window.location.hash === '#/tarification-et-simulation/slsis') {
+    // Si on arrive sur la bonne page, vérifier l'auto-exécution (ignorer les paramètres après ?)
+    const hashWithoutParams = window.location.hash.split('?')[0];
+    if (hashWithoutParams === '#/tarification-et-simulation/slsis') {
       console.log('🎯 Navigation vers page tarification - Vérification auto-exécution...');
       
       setTimeout(async () => {
         try {
           // Recharger les leads pour vérifier s'il y en a
-          const currentLeads = await chrome.storage.local.get(['swisslife_leads']);
+          const leadsKey = KEYS.LEADS();
+          const currentLeads = await chrome.storage.local.get([leadsKey]);
           
-          if (currentLeads.swisslife_leads && currentLeads.swisslife_leads.length > 0) {
+          if (currentLeads[leadsKey] && currentLeads[leadsKey].length > 0) {
             console.log('🤖 Leads détectés après navigation - Lancement auto-exécution...');
             
             // Attendre que la page soit prête

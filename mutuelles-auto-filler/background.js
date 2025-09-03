@@ -177,57 +177,223 @@ async function openSwissLifeTab(data) {
   }
 }
 
-// Stocker les leads pour l'extension
+// Découpe un tableau en N groupes de taille égale
+function splitIntoChunks(array, numChunks) {
+  if (numChunks <= 1) return [array];
+  
+  const chunks = [];
+  const chunkSize = Math.ceil(array.length / numChunks);
+  
+  for (let i = 0; i < array.length; i += chunkSize) {
+    chunks.push(array.slice(i, i + chunkSize));
+  }
+  
+  return chunks;
+}
+
+// Construit une URL SwissLife avec groupId
+function buildSwissLifeUrlWithGroupId(groupId) {
+  const baseUrl = 'https://www.swisslifeone.fr';
+  const path = '/index-swisslifeOne.html#/tarification-et-simulation/slsis';
+  const refreshTime = Date.now();
+  
+  return `${baseUrl}${path}?refreshTime=${refreshTime}&groupId=${groupId}`;
+}
+
+// Notifie un onglet avec retry automatique
+async function notifyTabWithRetry(tabInfo, index, totalTabs, timestamp, maxRetries = 2) {
+  const message = {
+    action: 'LEADS_UPDATED',
+    data: {
+      count: tabInfo.leadCount,
+      timestamp: timestamp || new Date().toISOString(),
+      autoExecute: true,
+      groupId: tabInfo.groupId,
+      groupIndex: index,
+      totalGroups: totalTabs
+    },
+    source: 'background'
+  };
+
+  for (let attempt = 1; attempt <= maxRetries + 1; attempt++) {
+    try {
+      await chrome.tabs.sendMessage(tabInfo.tabId, message);
+      console.log(`📡 [BACKGROUND] Notification envoyée à l'onglet ${index + 1}/${totalTabs} (groupId: ${tabInfo.groupId})${attempt > 1 ? ` (tentative ${attempt})` : ''}`);
+      return; // Succès, arrêter les tentatives
+    } catch (error) {
+      console.warn(`⚠️ [BACKGROUND] Tentative ${attempt}/${maxRetries + 1} échouée pour l'onglet ${tabInfo.groupId}:`, error.message);
+      
+      if (attempt <= maxRetries) {
+        // Attendre avant la prochaine tentative (délai croissant)
+        const retryDelay = attempt * 2000; // 2s, puis 4s
+        console.log(`🔄 [BACKGROUND] Retry dans ${retryDelay}ms...`);
+        await new Promise(resolve => setTimeout(resolve, retryDelay));
+      } else {
+        console.error(`❌ [BACKGROUND] Impossible de notifier l'onglet ${tabInfo.groupId} après ${maxRetries + 1} tentatives`);
+      }
+    }
+  }
+}
+
+// Stocker les leads pour l'extension (version multi-onglets)
 async function sendLeadsToStorage(data) {
   try {
-    const { leads, timestamp, count } = data || {};
+    const { leads, timestamp, count, parallelTabs = 1 } = data || {};
     
     if (!leads || !Array.isArray(leads) || leads.length === 0) {
       throw new Error('Aucun lead valide à stocker');
     }
     
-    // Stocker dans le format attendu par l'orchestrateur
-    const storageData = {
-      swisslife_leads: leads,
-      timestamp: timestamp || new Date().toISOString(),
-      count: count || leads.length,
-      source: 'platform-lead-extractor'
-    };
+    const batchId = Date.now().toString();
+    const actualParallelTabs = Math.min(parallelTabs, leads.length); // Pas plus d'onglets que de leads
     
-    // Initialiser la queue de traitement pour plusieurs leads
-    const queueState = {
-      currentIndex: 0,
-      totalLeads: leads.length,
-      processedLeads: [],
-      status: 'pending',
-      startedAt: new Date().toISOString(),
-      completedAt: null
-    };
+    console.log(`📊 [BACKGROUND] Traitement ${leads.length} leads avec ${actualParallelTabs} onglet(s) parallèle(s)`);
     
-    await chrome.storage.local.set({
-      ...storageData,
-      swisslife_queue_state: queueState
+    if (actualParallelTabs <= 1) {
+      // Mode mono-onglet (backward compatibility)
+      return await sendLeadsToStorageSingle(leads, timestamp, count);
+    }
+    
+    // Mode multi-onglets
+    const leadChunks = splitIntoChunks(leads, actualParallelTabs);
+    const createdTabs = [];
+    
+    console.log(`📦 [BACKGROUND] Découpage en ${leadChunks.length} groupes:`, leadChunks.map(chunk => chunk.length));
+    
+    // 1. Créer une fenêtre principale
+    const window = await chrome.windows.create({
+      type: 'normal',
+      focused: false,
+      width: 800,
+      height: 600,
+      url: 'about:blank' // Onglet temporaire qui sera fermé
     });
     
-    // Notifier tous les onglets SwissLife de la mise à jour avec auto-exécution
-    await notifySwissLifeTabs('LEADS_UPDATED', {
-      count: storageData.count,
-      timestamp: storageData.timestamp,
-      autoExecute: true // Flag pour déclencher l'exécution automatique
+    // 2. Créer les onglets pour chaque groupe
+    for (let i = 0; i < leadChunks.length; i++) {
+      const groupId = `${batchId}-${i}`;
+      const chunk = leadChunks[i];
+      
+      // Créer l'onglet avec l'URL contenant le groupId
+      const tab = await chrome.tabs.create({
+        windowId: window.id,
+        url: buildSwissLifeUrlWithGroupId(groupId),
+        active: false
+      });
+      
+      // Stocker les données pour ce groupe
+      const storageData = {
+        [`swisslife_leads__${groupId}`]: chunk,
+        [`swisslife_queue_state__${groupId}`]: {
+          currentIndex: 0,
+          totalLeads: chunk.length,
+          processedLeads: [],
+          status: 'pending',
+          startedAt: new Date().toISOString(),
+          completedAt: null,
+          groupId: groupId,
+          batchId: batchId,
+          groupIndex: i,
+          totalGroups: leadChunks.length
+        }
+      };
+      
+      await chrome.storage.local.set(storageData);
+      
+      createdTabs.push({
+        tabId: tab.id,
+        groupId: groupId,
+        leadCount: chunk.length
+      });
+      
+      console.log(`✅ [BACKGROUND] Groupe ${i + 1}/${leadChunks.length} créé: ${chunk.length} leads, groupId: ${groupId}`);
+    }
+    
+    // 3. Fermer l'onglet temporaire
+    const tabs = await chrome.tabs.query({ windowId: window.id });
+    const tempTab = tabs.find(tab => tab.url === 'about:blank');
+    if (tempTab) {
+      await chrome.tabs.remove(tempTab.id);
+    }
+    
+    // 4. Minimiser la fenêtre
+    await chrome.windows.update(window.id, { 
+      state: 'minimized' 
+    }).catch(err => {
+      console.log('⚠️ [BACKGROUND] Minimisation échouée:', err);
     });
+    
+    // 5. Notifier chaque onglet avec un délai progressif pour éviter la surcharge
+    for (let i = 0; i < createdTabs.length; i++) {
+      const tabInfo = createdTabs[i];
+      
+      setTimeout(async () => {
+        await notifyTabWithRetry(tabInfo, i, createdTabs.length, timestamp);
+      }, i * 3000); // Délai de 3s entre chaque notification
+    }
     
     return {
       success: true,
       data: {
         stored: true,
-        count: storageData.count,
-        timestamp: storageData.timestamp
+        count: leads.length,
+        timestamp: timestamp || new Date().toISOString(),
+        parallelTabs: createdTabs.length,
+        groups: createdTabs.map(tab => ({
+          groupId: tab.groupId,
+          leadCount: tab.leadCount
+        }))
       }
     };
   } catch (error) {
-    console.error('Erreur lors du stockage des leads:', error);
+    console.error('Erreur lors du stockage des leads (multi-onglets):', error);
     throw error;
   }
+}
+
+// Version mono-onglet (backward compatibility)
+async function sendLeadsToStorageSingle(leads, timestamp, count) {
+  // Stocker dans le format attendu par l'orchestrateur (mode legacy)
+  const storageData = {
+    swisslife_leads: leads,
+    timestamp: timestamp || new Date().toISOString(),
+    count: count || leads.length,
+    source: 'platform-lead-extractor'
+  };
+  
+  // Initialiser la queue de traitement pour plusieurs leads
+  const queueState = {
+    currentIndex: 0,
+    totalLeads: leads.length,
+    processedLeads: [],
+    status: 'pending',
+    startedAt: new Date().toISOString(),
+    completedAt: null
+  };
+  
+  await chrome.storage.local.set({
+    ...storageData,
+    swisslife_queue_state: queueState
+  });
+  
+  // Notifier tous les onglets SwissLife de la mise à jour avec auto-exécution
+  await notifySwissLifeTabs('LEADS_UPDATED', {
+    count: storageData.count,
+    timestamp: storageData.timestamp,
+    autoExecute: true // Flag pour déclencher l'exécution automatique
+  });
+  
+  console.log(`✅ [BACKGROUND] Mode mono-onglet: ${leads.length} leads stockés`);
+  
+  return {
+    success: true,
+    data: {
+      stored: true,
+      count: storageData.count,
+      timestamp: storageData.timestamp,
+      parallelTabs: 1
+    }
+  };
 }
 
 // Notifier tous les onglets SwissLife d'un événement

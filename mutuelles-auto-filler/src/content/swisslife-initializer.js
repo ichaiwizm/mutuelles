@@ -6,6 +6,7 @@
 import { NavigationManager } from './navigation-manager.js';
 import { AutoExecutionManager } from './auto-execution-manager.js';
 import { MessageHandler } from './message-handler.js';
+import { KEYS } from '../core/orchestrator/storage-keys.js';
 
 export class SwissLifeInitializer {
   constructor() {
@@ -57,15 +58,16 @@ export class SwissLifeInitializer {
     // Nettoyer le flag de traitement au démarrage
     if (leads && leads.length > 0) {
       // Si on a des leads, réinitialiser la queue si elle était incomplète
-      const queueResult = await chrome.storage.local.get(['swisslife_queue_state']);
-      const queueState = queueResult.swisslife_queue_state;
+      const queueKey = KEYS.QUEUE_STATE();
+      const queueResult = await chrome.storage.local.get([queueKey]);
+      const queueState = queueResult[queueKey];
       
       if (queueState && queueState.status === 'processing') {
         // Ne reset que si aucun lead n'a été traité (éviter la boucle infinie)
         if (!queueState.processedLeads || queueState.processedLeads.length === 0) {
           console.log('🔧 Reset queue state incomplète au démarrage (aucun lead traité)');
           await chrome.storage.local.set({
-            swisslife_queue_state: {
+            [queueKey]: {
               currentIndex: 0,
               totalLeads: leads.length,
               processedLeads: [],
@@ -80,7 +82,7 @@ export class SwissLifeInitializer {
           if (queueState.currentIndex >= leads.length) {
             console.log('🎉 Tous les leads ont été traités - Finalisation de la queue');
             await chrome.storage.local.set({
-              swisslife_queue_state: {
+              [queueKey]: {
                 ...queueState,
                 status: 'completed',
                 completedAt: new Date().toISOString()

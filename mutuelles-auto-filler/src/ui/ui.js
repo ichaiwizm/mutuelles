@@ -20,16 +20,23 @@ function loadAndDisplayHistory() {
   }
 }
 
+// Import du module storage-keys
+import { KEYS } from '../core/orchestrator/storage-keys.js';
+
 // Initialiser l'UI avec les données chrome.storage
 async function initializeStats() {
   try {
     // Récupérer les données de queue depuis chrome.storage
-    const result = await chrome.storage.local.get(['swisslife_leads', 'swisslife_queue_state']);
+    const leadsKey = KEYS.LEADS();
+    const queueKey = KEYS.QUEUE_STATE();
+    const result = await chrome.storage.local.get([leadsKey, queueKey]);
     
-    const leads = result.swisslife_leads || [];
-    const queueState = result.swisslife_queue_state;
+    const leads = result[leadsKey] || [];
+    const queueState = result[queueKey];
     
     const statusLineEl = document.getElementById('orch-status-line');
+    const groupInfo = KEYS.groupId(); // Récupérer le groupId actuel
+    const groupDisplay = groupInfo !== 'default' ? ` [Groupe: ${groupInfo}]` : '';
     
     if (leads.length > 0) {
       if (queueState && queueState.currentIndex < leads.length) {
@@ -37,25 +44,25 @@ async function initializeStats() {
         const processed = queueState.processedLeads ? queueState.processedLeads.length : 0;
         
         if (statusLineEl && currentLead) {
-          statusLineEl.textContent = `🎯 ${currentLead.lead?.nom} ${currentLead.lead?.prenom} (${processed}/${leads.length} traités)`;
+          statusLineEl.textContent = `🎯 ${currentLead.lead?.nom} ${currentLead.lead?.prenom} (${processed}/${leads.length} traités)${groupDisplay}`;
         }
       } else if (queueState && queueState.currentIndex >= leads.length) {
         // Tous traités
         const processed = queueState.processedLeads ? queueState.processedLeads.length : 0;
         if (statusLineEl) {
-          statusLineEl.textContent = `✅ ${processed} lead${processed > 1 ? 's' : ''} traité${processed > 1 ? 's' : ''} avec succès`;
+          statusLineEl.textContent = `✅ ${processed} lead${processed > 1 ? 's' : ''} traité${processed > 1 ? 's' : ''} avec succès${groupDisplay}`;
         }
       } else {
         // Pas de queue state, on est au début
         const firstLead = leads[0];
         if (statusLineEl && firstLead) {
-          statusLineEl.textContent = `🎯 ${firstLead.lead?.nom} ${firstLead.lead?.prenom} (0/${leads.length} traités)`;
+          statusLineEl.textContent = `🎯 ${firstLead.lead?.nom} ${firstLead.lead?.prenom} (0/${leads.length} traités)${groupDisplay}`;
         }
       }
     } else {
       // Pas de leads
       if (statusLineEl) {
-        statusLineEl.textContent = 'En attente de leads...';
+        statusLineEl.textContent = `En attente de leads...${groupDisplay}`;
       }
     }
     

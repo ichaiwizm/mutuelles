@@ -142,18 +142,25 @@ export class ExtensionBridge {
       // Formater les leads pour l'extension
       const formattedLeads = formatLeadsForExtension(leads);
       
+      // Récupérer le nombre d'onglets parallèles depuis l'env
+      const parallelTabs = Number(import.meta.env.VITE_PARALLEL_TABS) || 1;
+      
       const message: ExtensionMessage = {
         action: 'SEND_LEADS',
         data: {
           leads: formattedLeads,
           timestamp: new Date().toISOString(),
-          count: formattedLeads.length
+          count: formattedLeads.length,
+          parallelTabs: parallelTabs
         }
       };
+
+      console.log(`📊 [EXTENSION BRIDGE] Envoi de ${formattedLeads.length} leads avec ${parallelTabs} onglet(s) parallèle(s)`);
 
       const response = await this.sendMessageToExtension(message);
       
       if (response.success) {
+        console.log('✅ [EXTENSION BRIDGE] Leads envoyés avec succès:', response.data);
         return { success: true };
       } else {
         return { success: false, error: response.error || 'Erreur inconnue' };

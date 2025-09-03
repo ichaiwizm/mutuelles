@@ -3,6 +3,8 @@
  * Vérifie l'état de la page et lance le traitement automatique
  */
 
+import { KEYS } from '../core/orchestrator/storage-keys.js';
+
 export class AutoExecutionManager {
   constructor() {
     this.orchestratorRunning = false;
@@ -80,8 +82,9 @@ export class AutoExecutionManager {
     // Vérifier si on doit lancer l'auto-exécution au démarrage
     // (cas où l'onglet SwissLife est créé après l'envoi des leads)
     try {
-      const currentLeads = await chrome.storage.local.get(['swisslife_leads']);
-      const leads = currentLeads.swisslife_leads || [];
+      const leadsKey = KEYS.LEADS();
+      const currentLeads = await chrome.storage.local.get([leadsKey]);
+      const leads = currentLeads[leadsKey] || [];
       
       if (leads.length > 0) {
         console.log('🔍 Leads présents au démarrage - Vérification auto-exécution...');

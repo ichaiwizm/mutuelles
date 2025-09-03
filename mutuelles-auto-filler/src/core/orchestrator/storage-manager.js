@@ -2,6 +2,8 @@
  * Gestionnaire de stockage - Gestion des opérations chrome.storage
  */
 
+import { KEYS } from './storage-keys.js';
+
 /**
  * Configuration par défaut des retry
  */
@@ -36,8 +38,9 @@ async function getAutomationConfig() {
  */
 export async function saveProcessingStatus(leadId, status, details = {}) {
   try {
-    const result = await chrome.storage.local.get(['swisslife_processing_status']);
-    const statusHistory = result.swisslife_processing_status || {};
+    const statusKey = KEYS.PROCESSING_STATUS();
+    const result = await chrome.storage.local.get([statusKey]);
+    const statusHistory = result[statusKey] || {};
     
     statusHistory[leadId] = {
       status,
@@ -45,8 +48,8 @@ export async function saveProcessingStatus(leadId, status, details = {}) {
       ...details
     };
     
-    await chrome.storage.local.set({ swisslife_processing_status: statusHistory });
-    console.log(`💾 Statut sauvegardé pour lead ${leadId}:`, status);
+    await chrome.storage.local.set({ [statusKey]: statusHistory });
+    console.log(`💾 Statut sauvegardé pour lead ${leadId} (clé: ${statusKey}):`, status);
   } catch (error) {
     console.error('❌ Erreur sauvegarde statut:', error);
   }
@@ -57,8 +60,9 @@ export async function saveProcessingStatus(leadId, status, details = {}) {
  */
 export async function getQueueState() {
   try {
-    const result = await chrome.storage.local.get(['swisslife_queue_state']);
-    return result.swisslife_queue_state || null;
+    const queueKey = KEYS.QUEUE_STATE();
+    const result = await chrome.storage.local.get([queueKey]);
+    return result[queueKey] || null;
   } catch (error) {
     console.error('❌ Erreur récupération queue state:', error);
     return null;
@@ -72,8 +76,9 @@ export async function updateQueueState(updates) {
   try {
     const currentState = await getQueueState();
     if (currentState) {
+      const queueKey = KEYS.QUEUE_STATE();
       const newState = { ...currentState, ...updates };
-      await chrome.storage.local.set({ swisslife_queue_state: newState });
+      await chrome.storage.local.set({ [queueKey]: newState });
       console.log('📊 Queue state mise à jour:', newState);
       return newState;
     }
@@ -114,8 +119,9 @@ export async function markLeadAsProcessed(leadId, status = 'success', error = nu
  */
 export async function getLeadRetryCount(leadId) {
   try {
-    const result = await chrome.storage.local.get(['swisslife_lead_retries']);
-    const retries = result.swisslife_lead_retries || {};
+    const retriesKey = KEYS.RETRIES();
+    const result = await chrome.storage.local.get([retriesKey]);
+    const retries = result[retriesKey] || {};
     return retries[leadId] || 0;
   } catch (error) {
     console.error('❌ Erreur récupération retry count:', error);
@@ -128,12 +134,13 @@ export async function getLeadRetryCount(leadId) {
  */
 export async function incrementLeadRetryCount(leadId) {
   try {
-    const result = await chrome.storage.local.get(['swisslife_lead_retries']);
-    const retries = result.swisslife_lead_retries || {};
+    const retriesKey = KEYS.RETRIES();
+    const result = await chrome.storage.local.get([retriesKey]);
+    const retries = result[retriesKey] || {};
     
     retries[leadId] = (retries[leadId] || 0) + 1;
     
-    await chrome.storage.local.set({ swisslife_lead_retries: retries });
+    await chrome.storage.local.set({ [retriesKey]: retries });
     console.log(`🔄 Retry count pour lead ${leadId}: ${retries[leadId]}`);
     
     return retries[leadId];
@@ -161,12 +168,13 @@ export async function canRetryLead(leadId) {
  */
 export async function clearLeadRetryCount(leadId) {
   try {
-    const result = await chrome.storage.local.get(['swisslife_lead_retries']);
-    const retries = result.swisslife_lead_retries || {};
+    const retriesKey = KEYS.RETRIES();
+    const result = await chrome.storage.local.get([retriesKey]);
+    const retries = result[retriesKey] || {};
     
     if (retries[leadId]) {
       delete retries[leadId];
-      await chrome.storage.local.set({ swisslife_lead_retries: retries });
+      await chrome.storage.local.set({ [retriesKey]: retries });
       console.log(`🧹 Retry count cleared pour lead ${leadId}`);
     }
   } catch (error) {
@@ -178,6 +186,7 @@ export async function clearLeadRetryCount(leadId) {
  * Initialise une nouvelle queue avec les leads donnés
  */
 export async function initializeQueue(totalLeads) {
+  const queueKey = KEYS.QUEUE_STATE();
   const queueState = {
     status: 'initialized',
     currentIndex: 0,
@@ -186,7 +195,7 @@ export async function initializeQueue(totalLeads) {
     createdAt: new Date().toISOString()
   };
   
-  await chrome.storage.local.set({ swisslife_queue_state: queueState });
+  await chrome.storage.local.set({ [queueKey]: queueState });
   console.log('📊 Queue initialisée:', queueState);
   return queueState;
 }

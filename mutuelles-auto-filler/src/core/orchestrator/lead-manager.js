@@ -2,6 +2,8 @@
  * Gestionnaire des leads - Chargement et accès aux données des leads
  */
 
+import { KEYS } from './storage-keys.js';
+
 let availableLeads = [];
 
 /**
@@ -9,16 +11,17 @@ let availableLeads = [];
  */
 export async function loadLeads() {
   try {
-    const result = await chrome.storage.local.get(['swisslife_leads']);
+    const leadsKey = KEYS.LEADS();
+    const result = await chrome.storage.local.get([leadsKey]);
     
-    if (result.swisslife_leads && Array.isArray(result.swisslife_leads)) {
-      availableLeads = result.swisslife_leads;
-      console.log('✅ Leads chargés depuis chrome.storage:', availableLeads.length, 'leads');
+    if (result[leadsKey] && Array.isArray(result[leadsKey])) {
+      availableLeads = result[leadsKey];
+      console.log(`✅ Leads chargés depuis chrome.storage (clé: ${leadsKey}):`, availableLeads.length, 'leads');
       
       return availableLeads;
     } else {
       availableLeads = [];
-      console.log('❌ Aucun lead trouvé dans chrome.storage');
+      console.log(`❌ Aucun lead trouvé dans chrome.storage (clé: ${leadsKey})`);
       return [];
     }
   } catch (error) {

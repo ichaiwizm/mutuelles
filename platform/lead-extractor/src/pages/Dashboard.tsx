@@ -213,24 +213,33 @@ export function Dashboard() {
 
       console.log('✅ Extension détectée');
 
-      // 2. Vérifier si un onglet SwissLife est ouvert
-      toast.info('Vérification des onglets SwissLife...');
+      // 2. Vérifier/ouvrir onglet SwissLife uniquement si mode mono-onglet
+      const parallelTabs = Number(import.meta.env.VITE_PARALLEL_TABS) || 1;
       
-      const tabResult = await ExtensionBridge.openSwissLifeTab();
-      
-      if (!tabResult.success) {
-        toast.error('Impossible d\'accéder à SwissLife', {
-          description: 'Erreur lors de l\'ouverture/activation de l\'onglet SwissLife.'
-        });
-        return;
-      }
+      if (parallelTabs <= 1) {
+        // Mode mono-onglet : vérifier/ouvrir un onglet
+        toast.info('Vérification des onglets SwissLife...');
+        
+        const tabResult = await ExtensionBridge.openSwissLifeTab();
+        
+        if (!tabResult.success) {
+          toast.error('Impossible d\'accéder à SwissLife', {
+            description: 'Erreur lors de l\'ouverture/activation de l\'onglet SwissLife.'
+          });
+          return;
+        }
 
-      if (tabResult.wasExisting) {
-        console.log('Onglet SwissLife déjà ouvert - Activé');
-        toast.success('Onglet SwissLife activé');
+        if (tabResult.wasExisting) {
+          console.log('Onglet SwissLife déjà ouvert - Activé');
+          toast.success('Onglet SwissLife activé');
+        } else {
+          console.log('Nouvel onglet SwissLife créé');
+          toast.success('Onglet SwissLife ouvert en arrière-plan');
+        }
       } else {
-        console.log('Nouvel onglet SwissLife créé');
-        toast.success('Onglet SwissLife ouvert en arrière-plan');
+        // Mode multi-onglets : SEND_LEADS gèrera l'ouverture des onglets
+        console.log(`Mode multi-onglets (${parallelTabs} onglets) - L'ouverture sera gérée par SEND_LEADS`);
+        toast.info(`Préparation de ${parallelTabs} onglets parallèles...`);
       }
 
       // 3. Envoyer les leads à l'extension

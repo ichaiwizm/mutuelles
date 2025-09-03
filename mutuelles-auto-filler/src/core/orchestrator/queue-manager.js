@@ -12,6 +12,7 @@ import {
   clearLeadRetryCount,
   getLeadRetryCount
 } from './storage-manager.js';
+import { cleanupGroupKeys, KEYS } from './storage-keys.js';
 
 /**
  * Configuration par défaut
@@ -79,6 +80,17 @@ export async function getNextLeadToProcess() {
       status: 'completed',
       completedAt: new Date().toISOString()
     });
+    
+    // Nettoyer les clés de ce groupe si ce n'est pas le groupe par défaut
+    const groupId = KEYS.groupId();
+    if (groupId !== 'default') {
+      console.log('🧹 Nettoyage des clés du groupe:', groupId);
+      setTimeout(async () => {
+        const cleanedCount = await cleanupGroupKeys(groupId);
+        console.log(`✅ ${cleanedCount} clés nettoyées pour le groupe ${groupId}`);
+      }, 5000); // Attendre 5s pour laisser l'UI se mettre à jour
+    }
+    
     return null;
   }
   
@@ -166,6 +178,16 @@ async function handleLeadSuccess(lead, progress, onProgress) {
       status: 'completed',
       completedAt: new Date().toISOString()
     });
+    
+    // Nettoyer les clés de ce groupe si ce n'est pas le groupe par défaut
+    const groupId = KEYS.groupId();
+    if (groupId !== 'default') {
+      console.log('🧹 Nettoyage des clés du groupe après succès complet:', groupId);
+      setTimeout(async () => {
+        const cleanedCount = await cleanupGroupKeys(groupId);
+        console.log(`✅ ${cleanedCount} clés nettoyées pour le groupe ${groupId}`);
+      }, 5000); // Attendre 5s pour laisser l'UI se mettre à jour
+    }
     
     if (onProgress) {
       // Recharger le queueState après markLeadAsProcessed pour avoir le bon compte
