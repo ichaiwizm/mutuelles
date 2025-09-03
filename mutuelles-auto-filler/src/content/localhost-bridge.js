@@ -6,10 +6,20 @@
 export class LocalhostBridge {
   constructor(messageHandler) {
     this.messageHandler = messageHandler;
+    this._config = null;
   }
 
   initialize() {
-    console.log('✅ Extension active sur localhost:5174 - Initialisation pont de communication...');
+    console.log('✅ Extension active sur la plateforme - Initialisation pont de communication...');
+    // Charger la config dynamiquement
+    import(chrome.runtime.getURL('src/config/config.js'))
+      .then((mod) => {
+        this._config = mod;
+        console.log('✅ Origines autorisées:', mod.getDefaultPlatformOrigins());
+      })
+      .catch(() => {
+        // ignore
+      });
     
     this.injectExtensionId();
     this.setupMessageListener();
@@ -17,7 +27,7 @@ export class LocalhostBridge {
     // Initialiser le gestionnaire de messages pour localhost
     this.messageHandler.initializeForLocalhost();
     
-    console.log('✅ Pont de communication localhost:5174 prêt');
+    console.log('✅ Pont de communication plateforme prêt');
   }
 
   injectExtensionId() {
@@ -31,8 +41,19 @@ export class LocalhostBridge {
   setupMessageListener() {
     // Écouter les messages de la plateforme via window.postMessage
     window.addEventListener('message', async (event) => {
-      if (event.data?.type === 'TO_EXTENSION' && event.origin === 'http://localhost:5174') {
-        await this.handlePlatformMessage(event);
+      try {
+        let allowed = false;
+        try {
+          if (!this._config) {
+            this._config = await import(chrome.runtime.getURL('src/config/config.js'));
+          }
+          allowed = await this._config.isAllowedPlatformOrigin(event.origin);
+        } catch (_) {}
+        if (event.data?.type === 'TO_EXTENSION' && allowed) {
+          await this.handlePlatformMessage(event);
+        }
+      } catch (_) {
+        // ignore
       }
     });
   }

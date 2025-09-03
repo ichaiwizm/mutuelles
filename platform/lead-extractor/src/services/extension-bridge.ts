@@ -32,7 +32,14 @@ export interface ExtensionResponse {
 }
 
 export class ExtensionBridge {
-  private static readonly EXTENSION_ID = 'extension-id-will-be-set-in-production'; // TODO: Définir l'ID réel en production
+  // ID d'extension lu depuis l'env Vite si disponible
+  private static getExtensionId(): string | null {
+    const envId = (import.meta as any).env?.VITE_EXTENSION_ID as string | undefined;
+    if (envId && envId.trim() && !/will-be-set/i.test(envId)) return envId.trim();
+    // fallback legacy (ancien hardcode, à éviter)
+    const legacy = 'extension-id-will-be-set-in-production';
+    return /will-be-set/i.test(legacy) ? null : legacy;
+  }
   private static statusUpdateCallbacks: Set<(update: LeadStatusUpdate) => void> = new Set();
 
   // Vérifier si l'extension est installée
@@ -175,60 +182,57 @@ export class ExtensionBridge {
 
   // Envoyer un message à l'extension
   private static async sendMessageToExtension(message: ExtensionMessage): Promise<ExtensionResponse> {
-    
+    // Stratégie: essayer chrome.runtime.sendMessage si un ID d'extension est disponible;
+    // sinon ou en échec, fallback vers window.postMessage (bridge contenu) quel que soit l'host.
+
     return new Promise((resolve) => {
-      // Pour le développement, on simule la communication via window.postMessage
-      // En production, on utilisera chrome.runtime.sendMessage
-      
-      if (window.location.hostname === 'localhost') {
-        // Mode développement : communication via events
+      const chromeApi = (window as any).chrome;
+      const extId = this.getExtensionId();
+
+      const fallbackViaWindow = () => {
         const targetOrigin = window.location.origin;
         const messageId = `extension-message-${Date.now()}`;
-        
+
         const handleResponse = (event: MessageEvent) => {
-          if (event.origin !== targetOrigin) return;           // sécurité
-          if (event.source !== window) return;                 // même fenêtre
+          if (event.origin !== targetOrigin) return;
+          if (event.source !== window) return;
           const data = event.data;
-          if (!data || data.type !== 'FROM_EXTENSION') return; // ne traiter que les réponses
-          if (data.messageId !== messageId) return;            // bon corrélateur
-          
+          if (!data || data.type !== 'FROM_EXTENSION') return;
+          if (data.messageId !== messageId) return;
+
           window.removeEventListener('message', handleResponse);
           resolve(data.response || { success: false, error: 'Empty response' });
         };
-        
+
         window.addEventListener('message', handleResponse);
-        
-        // Envoyer le message
-        const messagePayload = {
-          type: 'TO_EXTENSION',        // requête
-          message,
-          messageId
-        };
-        window.postMessage(messagePayload, targetOrigin);
-        
-        // Timeout plus réaliste pour réveiller le service worker
+
+        window.postMessage({ type: 'TO_EXTENSION', message, messageId }, targetOrigin);
+
         setTimeout(() => {
           window.removeEventListener('message', handleResponse);
           resolve({ success: false, error: 'Timeout - Extension ne répond pas' });
         }, 5000);
-      } else {
-        // Mode production : utiliser chrome.runtime.sendMessage
-        const chromeApi = (window as any).chrome;
-        if (typeof chromeApi !== 'undefined' && chromeApi.runtime) {
+      };
+
+      if (chromeApi?.runtime && extId) {
+        try {
           chromeApi.runtime.sendMessage(
-            this.EXTENSION_ID,
+            extId,
             message,
             (response: ExtensionResponse) => {
               if (chromeApi.runtime.lastError) {
-                resolve({ success: false, error: chromeApi.runtime.lastError.message });
+                // Échec: fallback vers window.postMessage
+                fallbackViaWindow();
               } else {
                 resolve(response || { success: false, error: 'No response' });
               }
             }
           );
-        } else {
-          resolve({ success: false, error: 'Chrome runtime not available' });
+        } catch (_) {
+          fallbackViaWindow();
         }
+      } else {
+        fallbackViaWindow();
       }
     });
   }

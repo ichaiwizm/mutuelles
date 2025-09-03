@@ -3,9 +3,46 @@
 
 // Background script pour l'extension SwissLife - Chargé
 
-// Pattern pour identifier les onglets SwissLife (ignore les paramètres comme refreshTime)
+// Patterns par défaut (peuvent être étendus via config)
 const SWISSLIFE_URL_PATTERN = /swisslifeone\.fr.*\/tarification-et-simulation\/slsis/;
 const SWISSLIFE_URL_PATTERN_LOOSE = /swisslifeone\.fr/; // Pattern plus permissif pour debug
+
+// Configuration par défaut (service worker ne peut pas utiliser import())
+const DEFAULT_DEPLOYMENT_CONFIG = {
+  platformOrigins: [
+    'http://localhost:5174',
+    'https://mutuelles-lead-extractor.vercel.app'
+  ],
+  swisslifeBaseUrl: 'https://www.swisslifeone.fr',
+  swisslifeTarifPath: '/index-swisslifeOne.html#/tarification-et-simulation/slsis'
+};
+
+async function getDeploymentConfigSW() {
+  try {
+    const res = await chrome.storage.local.get(['deployment_config']);
+    const cfg = res.deployment_config || {};
+    return {
+      platformOrigins: Array.isArray(cfg.platformOrigins) && cfg.platformOrigins.length > 0
+        ? cfg.platformOrigins
+        : DEFAULT_DEPLOYMENT_CONFIG.platformOrigins,
+      swisslifeBaseUrl: cfg.swisslifeBaseUrl || DEFAULT_DEPLOYMENT_CONFIG.swisslifeBaseUrl,
+      swisslifeTarifPath: cfg.swisslifeTarifPath || DEFAULT_DEPLOYMENT_CONFIG.swisslifeTarifPath
+    };
+  } catch (_) {
+    return { ...DEFAULT_DEPLOYMENT_CONFIG };
+  }
+}
+
+function hostsFromOrigins(origins) {
+  const out = [];
+  (origins || []).forEach(o => {
+    try {
+      const u = new URL(o);
+      out.push(u.host);
+    } catch (_) {}
+  });
+  return out;
+}
 
 // Écouter les messages externes (depuis la plateforme localhost:5174)
 chrome.runtime.onMessageExternal.addListener(
@@ -194,13 +231,14 @@ function splitIntoChunks(array, numChunks) {
   return chunks;
 }
 
-// Construit une URL SwissLife avec groupId
-function buildSwissLifeUrlWithGroupId(groupId) {
-  const baseUrl = 'https://www.swisslifeone.fr';
-  const path = '/index-swisslifeOne.html#/tarification-et-simulation/slsis';
+// Construit une URL SwissLife avec groupId (sans import dynamique)
+async function buildSwissLifeUrlWithGroupId(groupId) {
+  const cfg = await getDeploymentConfigSW();
+  const base = (cfg.swisslifeBaseUrl || '').replace(/\/$/, '');
+  const path = (cfg.swisslifeTarifPath || '').startsWith('/') ? cfg.swisslifeTarifPath : '/' + (cfg.swisslifeTarifPath || '');
   const refreshTime = Date.now();
-  
-  return `${baseUrl}${path}?refreshTime=${refreshTime}&groupId=${groupId}`;
+  const sep = path.includes('?') ? '&' : '?';
+  return `${base}${path}${sep}refreshTime=${refreshTime}&groupId=${groupId}`;
 }
 
 // Notifie un onglet avec retry automatique
@@ -580,7 +618,7 @@ async function sendLeadsToStorage(data) {
       // Créer l'onglet avec l'URL contenant le groupId
       const tab = await chrome.tabs.create({
         windowId: window.id,
-        url: buildSwissLifeUrlWithGroupId(groupId),
+        url: await buildSwissLifeUrlWithGroupId(groupId),
         active: false
       });
       
@@ -775,14 +813,18 @@ async function notifyPlatformLeadStatus(data) {
 async function notifyPlatformTabs(statusUpdate) {
   try {
     const tabs = await chrome.tabs.query({});
-    
-    // Trouver tous les onglets localhost:5174
-    const platformTabs = tabs.filter(tab => 
-      tab.url && tab.url.includes('localhost:5174')
-    );
+    // Origines plateforme supportées (dev + prod)
+    const cfg = await getDeploymentConfigSW();
+    const hostSubstrings = hostsFromOrigins(cfg.platformOrigins);
+
+    // Trouver tous les onglets plateforme
+    const platformTabs = tabs.filter(tab => {
+      if (!tab.url) return false;
+      return hostSubstrings.some(h => tab.url.includes(h));
+    });
     
     if (platformTabs.length === 0) {
-      console.log('⚠️ [BACKGROUND] Aucun onglet localhost:5174 trouvé');
+      console.log('⚠️ [BACKGROUND] Aucun onglet plateforme trouvé');
       return;
     }
     

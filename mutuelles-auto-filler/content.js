@@ -12,7 +12,7 @@
       const env = detectEnvironment();
       
       if (!env.isValid) {
-        console.log('❌ Pas sur SwissLife ni localhost:5174, exit');
+        console.log('❌ Pas sur SwissLife ni plateforme autorisée, exit');
         return;
       }
       
@@ -21,7 +21,7 @@
           const { SwissLifeInitializer } = await import(chrome.runtime.getURL('src/content/swisslife-initializer.js'));
           const initializer = new SwissLifeInitializer();
           await initializer.initialize();
-        } else if (env.isLocalhost) {
+        } else if (env.isPlatform) {
           const { LocalhostBridge } = await import(chrome.runtime.getURL('src/content/localhost-bridge.js'));
           const { MessageHandler } = await import(chrome.runtime.getURL('src/content/message-handler.js'));
           const messageHandler = new MessageHandler(null, null);
