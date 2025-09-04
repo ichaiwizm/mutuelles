@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { X, Send, Download, Filter, Edit3 } from 'lucide-react';
+import { X, Send, Download, Filter, Edit3, Trash, MoreHorizontal } from 'lucide-react';
 import { 
   DropdownMenu, 
   DropdownMenuContent, 
@@ -28,6 +28,7 @@ interface FloatingSelectionToolbarProps {
     undefined: number;
   };
   onUpdateStatus?: (status: 'pending' | 'processing' | 'success' | 'error') => void;
+  onDeleteSelected?: () => void;
   className?: string;
 }
 
@@ -43,6 +44,7 @@ export function FloatingSelectionToolbar({
   onSelectByStatus,
   statusCounts,
   onUpdateStatus,
+  onDeleteSelected,
   className = ''
 }: FloatingSelectionToolbarProps) {
   if (selectedCount === 0) return null;
@@ -172,6 +174,24 @@ export function FloatingSelectionToolbar({
           </DropdownMenu>
         )}
       </div>
+
+      {/* Menu "plus" discret */}
+      {onDeleteSelected && (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button size="sm" variant="ghost" className="p-1">
+              <MoreHorizontal className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={onDeleteSelected} className="text-red-600 focus:text-red-700">
+              <Trash className="h-4 w-4 mr-2" /> Supprimer
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )}
 
       {/* Bouton fermer */}
       <Button

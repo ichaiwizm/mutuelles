@@ -34,7 +34,7 @@ export function Dashboard() {
   const {
     days, setDays, dateRange, setDateRange, filterMode
   } = useSettings();
-  const { leads, qualifiedLeads, addLeads, clearAllLeads, stats } = useLeads();
+  const { leads, qualifiedLeads, addLeads, clearAllLeads, removeLeadsByIds, stats } = useLeads();
   const { enrichLeadsWithStatus, applyStatusUpdate, cleanupOrphanedStatuses, isLoaded, setLeadStatus } = useProcessingStatus();
   const {
     uiState,
@@ -299,6 +299,20 @@ export function Dashboard() {
   const handleClearSelection = deselectAll;
   const isAllDataSelected = allFilteredSelected;
 
+  const handleDeleteSelected = () => {
+    const count = selectedLeadIds.size;
+    if (count === 0) return;
+    const confirmed = window.confirm(`Supprimer ${count} lead${count>1?'s':''} sélectionné${count>1?'s':''} ? Cette action est irréversible.`);
+    if (!confirmed) return;
+    const removed = removeLeadsByIds(Array.from(selectedLeadIds));
+    if (removed > 0) {
+      toast.success(`${removed} lead${removed>1?'s':''} supprimé${removed>1?'s':''}`);
+      handleClearSelection();
+    } else {
+      toast.info('Aucun lead supprimé');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-slate-50">
       {/* Progress flottant */}
@@ -392,6 +406,7 @@ export function Dashboard() {
           onSelectByStatus={selectByStatus}
           statusCounts={statusCounts}
           onUpdateSelectedStatus={handleUpdateSelectedStatus}
+          onDeleteSelected={handleDeleteSelected}
         />
 
         {/* Modal détail */}

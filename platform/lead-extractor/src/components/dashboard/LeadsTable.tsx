@@ -36,6 +36,7 @@ interface LeadsTableProps {
     undefined: number;
   };
   onUpdateSelectedStatus?: (status: 'pending' | 'processing' | 'success' | 'error') => void;
+  onDeleteSelected?: () => void;
 }
 
 export function LeadsTable({ 
@@ -58,7 +59,8 @@ export function LeadsTable({
   isAllSelected = false,
   onSelectByStatus,
   statusCounts,
-  onUpdateSelectedStatus
+  onUpdateSelectedStatus,
+  onDeleteSelected
 }: LeadsTableProps) {
   const { table, allSortedAndFilteredData, columns } = useLeadsTable({
     data,
@@ -111,6 +113,7 @@ export function LeadsTable({
         onSelectByStatus={onSelectByStatus}
         statusCounts={statusCounts}
         onUpdateStatus={onUpdateSelectedStatus}
+        onDeleteSelected={onDeleteSelected}
       />
 
       {/* Bouton de sélection rapide */}
