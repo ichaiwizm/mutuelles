@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Settings } from 'lucide-react';
+import { Settings, Workflow } from 'lucide-react';
 import { LeadDetailModal } from '@/components/LeadDetailModal';
 import { useAuth } from '@/hooks/useAuth';
 import { useLeads } from '@/hooks/useLeads';
@@ -19,8 +19,12 @@ import { ProgressPanel } from '@/components/dashboard/ProgressPanel';
 import { AuthStatus } from '@/components/dashboard/AuthStatus';
 import { LeadsTable } from '@/components/dashboard/LeadsTable';
 import { ConfigurationModal } from '@/components/ConfigurationModal';
+import { AutomationStatusBar } from '@/components/dashboard/AutomationStatusBar';
 import type { Lead } from '@/types/lead';
 import { useAutomationConfig } from '@/hooks/useAutomationConfig';
+import { useAutoPilot } from '@/hooks/useAutoPilot';
+import { useAutoPilotSettings } from '@/hooks/useAutoPilotSettings';
+import { AutomationModal } from '@/components/AutomationModal';
 
 export function Dashboard() {
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
@@ -28,6 +32,7 @@ export function Dashboard() {
   const [currentLeadIndex, setCurrentLeadIndex] = useState(0);
   const [modalOpen, setModalOpen] = useState(false);
   const [configModalOpen, setConfigModalOpen] = useState(false);
+  const [automationModalOpen, setAutomationModalOpen] = useState(false);
 
   // Hooks personnalisés
   const { isAuthenticated, hasTokens, email, loading: authLoading, checkAuthStatus, redirectToLogin, logout } = useAuth();
@@ -96,6 +101,20 @@ export function Dashboard() {
   // Données du tableau
   const tableData = getTableData();
   const { parallelTabs } = useAutomationConfig();
+
+  // AutoPilot settings + wiring
+  const { settings: autoPilotSettings } = useAutoPilotSettings();
+  // Wrapper pour extraire uniquement les nouveaux (merge)
+  const extractNewWrapper = () => {
+    handleExtractNew();
+  };
+  // Fournir des leads enrichis pour l'auto‑send (filtrage par statut fait dans le hook)
+  const getLeadsForAutoSend = () => {
+    // Utiliser tous les leads (pas seulement qualifiés) enrichis avec leur statut
+    return enrichLeadsWithStatus(leads);
+  };
+  // Activer l'autopilot (gère timers selon settings)
+  useAutoPilot(autoPilotSettings, extractNewWrapper, getLeadsForAutoSend);
 
   // Mettre à jour manuellement le statut des leads sélectionnés
   const handleUpdateSelectedStatus = (status: ProcessingStatus['status']) => {
@@ -331,26 +350,38 @@ export function Dashboard() {
           <h1 className="text-2xl font-bold text-slate-800">
             Tableau de bord - Extraction de leads
           </h1>
-          <div className="flex items-center gap-3">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setConfigModalOpen(true)}
-              className="flex items-center gap-2"
-            >
-              <Settings className="h-4 w-4" />
-              Configuration
-            </Button>
-            <AuthStatus 
-              isAuthenticated={isAuthenticated}
-              hasTokens={hasTokens}
-              email={email}
-              onRedirectToLogin={redirectToLogin}
-              onLogout={logout}
-              loading={authLoading}
-            />
-          </div>
+        <div className="flex items-center gap-3">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setConfigModalOpen(true)}
+            className="flex items-center gap-2"
+          >
+            <Settings className="h-4 w-4" />
+            Configuration
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setAutomationModalOpen(true)}
+            className="p-2 h-8 w-8"
+            title="Automatisation"
+          >
+            <Workflow className="h-4 w-4" />
+          </Button>
+          <AuthStatus 
+            isAuthenticated={isAuthenticated}
+            hasTokens={hasTokens}
+            email={email}
+            onRedirectToLogin={redirectToLogin}
+            onLogout={logout}
+            loading={authLoading}
+          />
         </div>
+        </div>
+
+        {/* Statut d'automatisation visible */}
+        <AutomationStatusBar onOpenAutomation={() => setAutomationModalOpen(true)} />
 
         {/* Contrôles */}
         <ControlsPanel
@@ -423,6 +454,14 @@ export function Dashboard() {
         <ConfigurationModal
           open={configModalOpen}
           onOpenChange={setConfigModalOpen}
+        />
+
+        {/* Modal automatisation (front-only) */}
+        <AutomationModal
+          open={automationModalOpen}
+          onOpenChange={setAutomationModalOpen}
+          onRunRefreshNow={extractNewWrapper}
+          getLeadsForAutoSend={getLeadsForAutoSend}
         />
       </div>
     </div>

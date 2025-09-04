@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { StorageManager } from '@/lib/storage';
+import { ExtensionBridge } from '@/services/extension-bridge';
+import { appendAutoLog } from '@/utils/automation-log';
 import { toast } from 'sonner';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
@@ -75,6 +77,32 @@ export const useSSEExtraction = (addLeads: any, checkAuthStatus: any) => {
 
           setShowProgress(false);
           end();
+
+          // Auto-envoi après extraction (par défaut 2 minutes)
+          try {
+            const raw = localStorage.getItem('autopilot_settings_v1');
+            const ap = raw ? JSON.parse(raw) : {};
+            const enabled = ap.postExtractAutoSendEnabled !== false; // par défaut ON
+            const delayMs = typeof ap.postExtractAutoSendDelayMs === 'number' ? ap.postExtractAutoSendDelayMs : 120000;
+            if (enabled && addedQualified > 0) {
+              const qualifiedJustExtracted = (collectedLeads || []).filter((l: any) => (l?.score ?? 0) >= 3);
+              if (qualifiedJustExtracted.length > 0) {
+                const when = new Date(Date.now() + delayMs);
+                appendAutoLog({ ts: new Date().toISOString(), type: 'send', ok: true, message: `Planification d'un envoi auto dans ${Math.round(delayMs/1000)}s (${qualifiedJustExtracted.length} lead(s))` });
+                toast.info(`Auto‑envoi dans ${Math.round(delayMs/1000)}s`, { description: `${qualifiedJustExtracted.length} lead(s) seront envoyés à l'extension` });
+                setTimeout(async () => {
+                  try {
+                    const installed = await ExtensionBridge.checkExtensionInstalled();
+                    if (!installed) return;
+                    await ExtensionBridge.sendLeadsToExtension(qualifiedJustExtracted as any);
+                    appendAutoLog({ ts: new Date().toISOString(), type: 'send', ok: true, message: `Envoi post-extraction de ${qualifiedJustExtracted.length} lead(s)` });
+                  } catch (e: any) {
+                    appendAutoLog({ ts: new Date().toISOString(), type: 'send', ok: false, message: e?.message || 'Erreur envoi post-extraction' });
+                  }
+                }, delayMs);
+              }
+            }
+          } catch (_) {}
         } else {
           // Updates de progression
           setProgressPhase(data.phase || '');

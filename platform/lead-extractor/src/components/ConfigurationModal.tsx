@@ -21,11 +21,16 @@ export function ConfigurationModal({ open, onOpenChange }: ConfigurationModalPro
   const [localConfig, setLocalConfig] = useState<AutomationConfig>(config);
   const [hasChanges, setHasChanges] = useState(false);
 
+  // AutoPilot settings déplacés dans un modal dédié
+
   // Synchroniser avec la config globale quand elle change
   useEffect(() => {
     setLocalConfig(config);
     setHasChanges(false);
   }, [config]);
+
+  // Synchroniser AutoPilot quand il change
+  
 
   // Détecter les changements
   useEffect(() => {
@@ -33,9 +38,13 @@ export function ConfigurationModal({ open, onOpenChange }: ConfigurationModalPro
     setHasChanges(changed);
   }, [localConfig, config]);
 
+  
+
   const handleSave = async () => {
     try {
-      await saveConfig(localConfig);
+      if (hasChanges) {
+        await saveConfig(localConfig);
+      }
       onOpenChange(false);
     } catch (error) {
       // L'erreur est déjà affichée par useAutomationConfig
@@ -74,6 +83,8 @@ export function ConfigurationModal({ open, onOpenChange }: ConfigurationModalPro
       toast.error('Test extension échoué', { description: e instanceof Error ? e.message : String(e) });
     }
   };
+
+  
 
 
   return (
