@@ -51,7 +51,8 @@ export const useSSEExtraction = (addLeads: any, checkAuthStatus: any) => {
       // Mode nombre de jours
       endpoint = `${API_URL}/api/ingest/gmail/stream?days=${days}`;
     }
-    const eventSource = new EventSource(endpoint);
+    // Envoyer les cookies d'auth (stateless) avec la requête SSE
+    const eventSource = new EventSource(endpoint, { withCredentials: true });
     let collectedLeads = [];
 
     eventSource.onmessage = (event) => {

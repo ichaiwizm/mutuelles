@@ -12,6 +12,7 @@ interface ControlsPanelProps {
   filterMode?: 'predefined' | 'custom';
   onClearAll: () => void;
   onRefresh: () => void;
+  onExtractNew?: () => void;
   busy: boolean;
 }
 
@@ -23,6 +24,7 @@ export function ControlsPanel({
   filterMode = 'predefined',
   onClearAll,
   onRefresh,
+  onExtractNew,
   busy
 }: ControlsPanelProps) {
   return (
@@ -42,6 +44,16 @@ export function ControlsPanel({
 
         {/* Actions */}
         <div className="flex gap-2 ml-auto">
+          <Button 
+            onClick={onExtractNew}
+            disabled={busy}
+            variant="outline"
+            className="flex items-center gap-2"
+            title="Extraire uniquement les nouveaux leads (merge, sans remplacer)"
+          >
+            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+            {busy ? 'Extraction...' : 'Extraire nouveaux'}
+          </Button>
           
           <Button 
             onClick={onRefresh} 

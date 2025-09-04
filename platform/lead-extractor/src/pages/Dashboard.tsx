@@ -62,6 +62,11 @@ export function Dashboard() {
     extractWithSSE('gmail', days, true, filterMode === 'custom' ? dateRange : null);
   };
 
+  // Extraction "nouveaux seulement" (merge, sans remplacer)
+  const handleExtractNew = () => {
+    extractWithSSE('gmail', days, false, filterMode === 'custom' ? dateRange : null);
+  };
+
   const handleRowClick = (lead: Lead, allSortedData: Lead[], leadIndex: number) => {
     setSelectedLead(lead);
     setModalLeads(allSortedData);
@@ -342,6 +347,7 @@ export function Dashboard() {
           filterMode={filterMode}
           onClearAll={clearAllLeads}
           onRefresh={handleRefresh}
+          onExtractNew={handleExtractNew}
           busy={busy}
         />
 

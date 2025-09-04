@@ -5,15 +5,20 @@ import logger from '../logger.js';
 
 const router = express.Router();
 
-// Helper pour setup SSE
-const setupSSE = (res) => {
-  res.writeHead(200, {
+// Helper pour setup SSE (support credentials/CORS)
+const setupSSE = (req, res) => {
+  const origin = req.headers.origin || '*';
+  const headers = {
     'Content-Type': 'text/event-stream',
     'Cache-Control': 'no-cache',
     'Connection': 'keep-alive',
-    'Access-Control-Allow-Origin': '*'
-  });
-  
+    'Access-Control-Allow-Origin': origin
+  };
+  // Si une origine est fournie (CORS), autoriser l'envoi des cookies
+  if (origin !== '*') {
+    headers['Access-Control-Allow-Credentials'] = 'true';
+  }
+  res.writeHead(200, headers);
   return (data) => {
     res.write(`data: ${JSON.stringify(data)}\n\n`);
   };
@@ -22,7 +27,7 @@ const setupSSE = (res) => {
 // SSE Gmail
 router.get('/gmail/stream', checkAuth, async (req, res) => {
   const days = parseInt(req.query.days) || 30;
-  const sendEvent = setupSSE(res);
+  const sendEvent = setupSSE(req, res);
   
   logger.info(`Starting Gmail SSE extraction for ${days} days`);
   
