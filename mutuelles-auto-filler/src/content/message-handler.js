@@ -41,7 +41,25 @@ export class MessageHandler {
     if (message.action === 'LEADS_UPDATED' && message.source === 'background') {
       // Recharger les leads
       this.loadLeads().then(updatedLeads => {
-        // L'UI sera automatiquement mise à jour via les watchers existants
+        // Si pas d'UI, la créer à la volée (affichage uniquement quand leads présents)
+        if (!document.getElementById('orchestrator-panel')) {
+          (async () => {
+            try {
+              const uiMod = await import(chrome.runtime.getURL('src/ui/ui.js'));
+              // Créer l'UI maintenant
+              uiMod.createUI();
+              // Créer/brancher le gestionnaire de progression global
+              const progressHandler = uiMod.createQueueProgressHandler();
+              this.autoExecutionManager.setDependencies(
+                this.autoExecutionManager.processLeadsQueue,
+                progressHandler
+              );
+              window.orchestratorProgressHandler = progressHandler;
+            } catch (e) {
+              console.warn('[MESSAGE-HANDLER] Impossible de créer l\'UI à la volée:', e);
+            }
+          })();
+        }
       }).catch(error => {
         // Ignore silently
       });

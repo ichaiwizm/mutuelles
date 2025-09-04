@@ -119,7 +119,7 @@ export function createQueueProgressHandler() {
       if (progressContainerEl) {
         progressContainerEl.classList.add('orch-hidden');
       }
-      
+
       saveLastResult({
         leadName: `Queue de ${update.totalProcessed} leads`,
         status: 'success',
@@ -128,6 +128,14 @@ export function createQueueProgressHandler() {
         isQueue: true,
         totalProcessed: update.totalProcessed
       });
+
+      // Détruire l'UI après un court délai afin d'éviter d'afficher le panneau hors traitement
+      setTimeout(() => {
+        const panel = document.getElementById('orchestrator-panel');
+        if (panel && panel.parentNode) {
+          panel.parentNode.removeChild(panel);
+        }
+      }, 1500);
     } 
     else if (update.type === 'lead_complete') {
       if (statusLineEl) {

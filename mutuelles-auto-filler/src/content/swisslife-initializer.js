@@ -95,17 +95,35 @@ export class SwissLifeInitializer {
   }
 
   initializeUI(createUI, createQueueProgressHandler) {
-    createUI();
-    
-    // Créer le gestionnaire de progression global
-    window.orchestratorProgressHandler = createQueueProgressHandler();
-    this.autoExecutionManager.setDependencies(
-      this.autoExecutionManager.processLeadsQueue, 
-      window.orchestratorProgressHandler
-    );
-    
-    // Flag pour éviter la double exécution
-    window.orchestratorRunning = false;
+    // Ne créer l'UI que si des leads/une queue existent
+    (async () => {
+      try {
+        const leadsKey = KEYS.LEADS();
+        const queueKey = KEYS.QUEUE_STATE();
+        const result = await chrome.storage.local.get([leadsKey, queueKey]);
+        const leads = result[leadsKey] || [];
+        const queueState = result[queueKey] || null;
+        const hasQueue = !!queueState && (queueState.status === 'processing' || queueState.status === 'pending' || (queueState.processedLeads||[]).length > 0);
+
+        if (leads.length > 0 || hasQueue) {
+          createUI();
+          // Créer le gestionnaire de progression global
+          window.orchestratorProgressHandler = createQueueProgressHandler();
+          this.autoExecutionManager.setDependencies(
+            this.autoExecutionManager.processLeadsQueue,
+            window.orchestratorProgressHandler
+          );
+        } else {
+          // Pas de leads → ne rien afficher par défaut
+          window.orchestratorProgressHandler = null;
+        }
+      } catch (_) {
+        // En cas d'erreur, ne pas bloquer l'initialisation
+      } finally {
+        // Flag pour éviter la double exécution
+        window.orchestratorRunning = false;
+      }
+    })();
   }
 
   initializeNavigation() {
