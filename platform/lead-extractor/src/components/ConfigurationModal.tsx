@@ -7,6 +7,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Separator } from '@/components/ui/separator';
 import { AlertCircle, Settings } from 'lucide-react';
 import { useAutomationConfig, type AutomationConfig } from '@/hooks/useAutomationConfig';
+import { Switch } from '@/components/ui/switch';
+import { ExtensionBridge } from '@/services/extension-bridge';
+import { toast } from 'sonner';
 
 interface ConfigurationModalProps {
   open: boolean;
@@ -54,6 +57,24 @@ export function ConfigurationModal({ open, onOpenChange }: ConfigurationModalPro
     onOpenChange(false);
   };
 
+  const handleTestExtension = async () => {
+    try {
+      const installed = await ExtensionBridge.checkExtensionInstalled();
+      if (!installed) {
+        toast.error('Extension non détectée', { description: "Installez et activez l'extension." });
+        return;
+      }
+      const tab = await ExtensionBridge.checkSwissLifeTab();
+      if (tab?.exists) {
+        toast.success('Extension connectée', { description: 'Onglet SwissLife détecté.' });
+      } else {
+        toast.success('Extension connectée', { description: 'Extension détectée. Aucun onglet SwissLife ouvert.' });
+      }
+    } catch (e) {
+      toast.error('Test extension échoué', { description: e instanceof Error ? e.message : String(e) });
+    }
+  };
+
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -70,6 +91,21 @@ export function ConfigurationModal({ open, onOpenChange }: ConfigurationModalPro
 
         {/* Zone scrollable pour le contenu afin d'éviter les débordements */}
         <div className="space-y-6 flex-1 overflow-y-auto pr-1">
+          {/* Extension */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Extension</CardTitle>
+              <CardDescription>Vérifiez la connexion de l'extension et son état.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="flex items-center gap-3">
+                <Button variant="outline" size="sm" onClick={handleTestExtension}>Tester l'extension</Button>
+                <span className="text-xs text-muted-foreground">
+                  ID extension: {(import.meta as any).env?.VITE_EXTENSION_ID || 'bridge indirect (postMessage)'}
+                </span>
+              </div>
+            </CardContent>
+          </Card>
           {/* Configuration principale */}
           <Card>
             <CardHeader>
@@ -165,6 +201,48 @@ export function ConfigurationModal({ open, onOpenChange }: ConfigurationModalPro
               <p className="text-sm text-muted-foreground">
                 Maximum 10 onglets simultanés.
               </p>
+            </CardContent>
+          </Card>
+
+          {/* Comportement des fenêtres */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Comportement des fenêtres</CardTitle>
+              <CardDescription>Contrôlez minimisation et fermeture automatique.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label>Minimiser la fenêtre SwissLife</Label>
+                  <p className="text-xs text-muted-foreground">Garder la fenêtre en arrière‑plan pendant le traitement.</p>
+                </div>
+                <Switch checked={!!localConfig.minimizeWindow} onCheckedChange={(v) => setLocalConfig({ ...localConfig, minimizeWindow: !!v })} />
+              </div>
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label>Fermer la fenêtre à la fin</Label>
+                  <p className="text-xs text-muted-foreground">Fermer automatiquement quand tous les onglets sont terminés.</p>
+                </div>
+                <Switch checked={!!localConfig.closeWindowOnFinish} onCheckedChange={(v) => setLocalConfig({ ...localConfig, closeWindowOnFinish: !!v })} />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Aide */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Comment ça marche ?</CardTitle>
+              <CardDescription>Guide rapide d'utilisation.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-2 text-sm text-slate-700">
+              <ul className="list-disc pl-5 space-y-1">
+                <li>Connectez votre Gmail (consentement Google) pour extraire les emails pertinents.</li>
+                <li>Sélectionnez dans le tableau les leads que vous souhaitez envoyer.</li>
+                <li>Connectez‑vous aux plateformes cibles (actuellement SwissLife) dans votre navigateur.</li>
+                <li>Envoyez vers l'extension: les formulaires sont remplis automatiquement selon les données extraites.</li>
+                <li>Retrouvez vos simulations/contrats directement sur les plateformes.</li>
+              </ul>
+              <p className="text-xs text-slate-500">Pré‑requis: être connecté sur les plateformes; en mode minimisé, tout fonctionne en arrière‑plan.</p>
             </CardContent>
           </Card>
 

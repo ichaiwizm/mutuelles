@@ -8,13 +8,17 @@ export interface AutomationConfig {
   retryDelay: number;
   timeoutRetryDelay: number;
   parallelTabs: number; // 1 à 10
+  minimizeWindow?: boolean; // Minimiser la fenêtre SwissLife
+  closeWindowOnFinish?: boolean; // Fermer à la fin
 }
 
 const DEFAULT_CONFIG: AutomationConfig = {
   maxRetryAttempts: 2,
   retryDelay: 2000,
   timeoutRetryDelay: 3000,
-  parallelTabs: 3
+  parallelTabs: 3,
+  minimizeWindow: true,
+  closeWindowOnFinish: true
 };
 
 export const useAutomationConfig = () => {
@@ -47,6 +51,14 @@ export const useAutomationConfig = () => {
 
       if (newConfig.parallelTabs < 1 || newConfig.parallelTabs > 10) {
         throw new Error('Le nombre d\'onglets parallèles doit être entre 1 et 10');
+      }
+
+      if (typeof newConfig.minimizeWindow !== 'boolean') {
+        newConfig.minimizeWindow = DEFAULT_CONFIG.minimizeWindow;
+      }
+
+      if (typeof newConfig.closeWindowOnFinish !== 'boolean') {
+        newConfig.closeWindowOnFinish = DEFAULT_CONFIG.closeWindowOnFinish;
       }
 
       // Sauvegarder en local
@@ -98,6 +110,8 @@ export const useAutomationConfig = () => {
     maxRetryAttempts: config.maxRetryAttempts,
     retryDelay: config.retryDelay,
     timeoutRetryDelay: config.timeoutRetryDelay,
-    parallelTabs: config.parallelTabs
+    parallelTabs: config.parallelTabs,
+    minimizeWindow: config.minimizeWindow ?? DEFAULT_CONFIG.minimizeWindow!,
+    closeWindowOnFinish: config.closeWindowOnFinish ?? DEFAULT_CONFIG.closeWindowOnFinish!
   };
 };

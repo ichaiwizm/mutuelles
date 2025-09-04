@@ -486,6 +486,13 @@ async function handleGroupQueueCompleted(data, sender) {
     const allCompleted = tabs.length > 0 && tabs.every(t => t.completed);
 
     if (allCompleted) {
+      // Lecture config pour fermeture auto
+      let shouldClose = true;
+      try {
+        const { automation_config } = await chrome.storage.local.get(['automation_config']);
+        shouldClose = typeof automation_config?.closeWindowOnFinish === 'boolean' ? automation_config.closeWindowOnFinish : true;
+      } catch (_) {}
+
       // Nettoyage des clés de storage pour les groupes du pool
       try {
         const groupIds = tabs.map(t => t.groupId);
@@ -498,10 +505,12 @@ async function handleGroupQueueCompleted(data, sender) {
         // ignore cleanup errors
       }
 
-      try {
-        await chrome.windows.remove(pool.windowId);
-      } catch (e) {
-        // fenêtre peut déjà être fermée
+      if (shouldClose) {
+        try {
+          await chrome.windows.remove(pool.windowId);
+        } catch (e) {
+          // fenêtre peut déjà être fermée
+        }
       }
       await chrome.storage.local.remove([POOL_KEY]);
       return { success: true, data: { windowClosed: true } };
@@ -658,12 +667,16 @@ async function sendLeadsToStorage(data) {
       await chrome.tabs.remove(tempTab.id);
     }
     
-    // 4. Minimiser la fenêtre
-    await chrome.windows.update(window.id, { 
-      state: 'minimized' 
-    }).catch(err => {
-      console.log('⚠️ [BACKGROUND] Minimisation échouée:', err);
-    });
+    // 4. Minimiser la fenêtre si configuré
+    try {
+      const { automation_config } = await chrome.storage.local.get(['automation_config']);
+      const minimize = typeof automation_config?.minimizeWindow === 'boolean' ? automation_config.minimizeWindow : true;
+      if (minimize) {
+        await chrome.windows.update(window.id, { state: 'minimized' }).catch(err => {
+          console.log('⚠️ [BACKGROUND] Minimisation échouée:', err);
+        });
+      }
+    } catch (_) {}
     
     // 5. Enregistrer le pool pour réutilisation ultérieure
     const pool = {
@@ -871,9 +884,13 @@ async function updateAutomationConfig(data) {
       throw new Error('parallelTabs doit être un nombre entre 1 et 10');
     }
     
+    // Flags optionnels
+    const minimizeWindow = typeof config.minimizeWindow === 'boolean' ? config.minimizeWindow : true;
+    const closeWindowOnFinish = typeof config.closeWindowOnFinish === 'boolean' ? config.closeWindowOnFinish : true;
+
     // Stocker dans chrome.storage.local
     const configData = {
-      automation_config: config,
+      automation_config: { ...config, minimizeWindow, closeWindowOnFinish },
       updated_at: timestamp || new Date().toISOString()
     };
     
@@ -898,7 +915,7 @@ async function updateAutomationConfig(data) {
       success: true,
       data: {
         updated: true,
-        config: config,
+        config: { ...config, minimizeWindow, closeWindowOnFinish },
         timestamp: configData.updated_at
       }
     };
