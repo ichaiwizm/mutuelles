@@ -1,58 +1,83 @@
 import { oauth2Client } from '../config/oauth.js';
-import { TokensService } from '../services/tokens.js';
 import logger from '../logger.js';
+import { getEncryptedCookie, setEncryptedCookie, clearCookie } from '../utils/secure-cookie.js';
 
-let cachedTokens = null;
+const COOKIE_NAME = process.env.COOKIE_NAME || 'auth';
+const COOKIE_MAX_AGE = parseInt(process.env.COOKIE_MAX_AGE || '2592000', 10); // 30 jours en secondes
+const IS_PROD = process.env.NODE_ENV === 'production';
 
-// Charger les tokens au démarrage
+// Initialisation (stateless)
 export const initAuth = () => {
-  cachedTokens = TokensService.load();
-  logger.info(`[AUTH INIT] cachedTokens: ${cachedTokens ? 'EXISTS' : 'NULL'}`);
-  if (cachedTokens) {
-    oauth2Client.setCredentials(cachedTokens);
-    logger.info('Authentication initialized with cached tokens');
-  } else {
-    logger.info('[AUTH INIT] No tokens found, clearing oauth2Client credentials');
-    oauth2Client.setCredentials({});
-  }
+  logger.info('[AUTH INIT] Stateless cookie-based sessions enabled');
+  oauth2Client.setCredentials({});
 };
 
 // Middleware de vérification d'authentification
-export const checkAuth = (req, res, next) => {
-  logger.info(`[CHECK AUTH] cachedTokens: ${cachedTokens ? 'EXISTS' : 'NULL'}, path: ${req.path}`);
-  
-  if (!cachedTokens) {
-    // IMPORTANT: Vider complètement les credentials pour éviter d'utiliser des tokens expirés en cache
-    oauth2Client.setCredentials({});
-    logger.warn('[CHECK AUTH] Authentication required - no tokens, clearing credentials');
+export const checkAuth = async (req, res, next) => {
+  try {
+    const session = getEncryptedCookie(req, COOKIE_NAME);
+    if (!session || !session.tokens) {
+      oauth2Client.setCredentials({});
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+
+    oauth2Client.setCredentials(session.tokens);
+
+    // Tenter un refresh si nécessaire (getAccessToken rafraîchit si besoin)
+    try {
+      await oauth2Client.getAccessToken();
+      const credentials = oauth2Client.credentials;
+      if (credentials && credentials.access_token) {
+        const newSession = {
+          email: session.email,
+          tokens: {
+            access_token: credentials.access_token,
+            refresh_token: session.tokens.refresh_token,
+            expiry_date: credentials.expiry_date
+          }
+        };
+        setEncryptedCookie(res, COOKIE_NAME, newSession, {
+          httpOnly: true,
+          secure: IS_PROD,
+          sameSite: IS_PROD ? 'None' : 'Lax',
+          maxAgeSeconds: COOKIE_MAX_AGE,
+          path: '/'
+        });
+      }
+    } catch (err) {
+      logger.warn('[AUTH] Token refresh attempt failed:', err?.message || err);
+    }
+
+    next();
+  } catch (error) {
+    logger.error('[AUTH] checkAuth error:', error);
     return res.status(401).json({ error: 'Not authenticated' });
   }
-  
-  logger.info('[CHECK AUTH] Setting credentials and proceeding');
-  oauth2Client.setCredentials(cachedTokens);
-  next();
 };
 
-// Sauvegarder de nouveaux tokens
-export const saveTokens = (tokens) => {
-  cachedTokens = tokens;
-  if (tokens === null) {
-    // Effacer les credentials OAuth2 lors de la déconnexion
-    oauth2Client.setCredentials({});
-    logger.info('Tokens cleared and OAuth2 credentials reset');
-  } else {
-    oauth2Client.setCredentials(tokens);
-    logger.info('New tokens saved and cached');
+// Définir le cookie d'auth après OAuth
+export const setAuthCookie = (res, payload) => {
+  setEncryptedCookie(res, COOKIE_NAME, payload, {
+    httpOnly: true,
+    secure: IS_PROD,
+    sameSite: IS_PROD ? 'None' : 'Lax',
+    maxAgeSeconds: COOKIE_MAX_AGE,
+    path: '/'
+  });
+};
+
+export const clearAuth = (res) => {
+  clearCookie(res, COOKIE_NAME, { path: '/' });
+};
+
+export const getAuthStatusFromRequest = (req) => {
+  try {
+    const session = getEncryptedCookie(req, COOKIE_NAME);
+    if (session && session.email) {
+      return { authenticated: true, email: session.email };
+    }
+    return { authenticated: false };
+  } catch (_) {
+    return { authenticated: false };
   }
-  TokensService.save(tokens);
-};
-
-// Vérifier le statut d'authentification
-export const getAuthStatus = () => {
-  const status = {
-    authenticated: !!cachedTokens,
-    hasTokens: TokensService.exists()
-  };
-  logger.info(`[GET AUTH STATUS] authenticated: ${status.authenticated}, hasTokens: ${status.hasTokens}`);
-  return status;
 };

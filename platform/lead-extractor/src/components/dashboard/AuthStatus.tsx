@@ -4,12 +4,13 @@ import { Loader2, LogOut } from 'lucide-react';
 interface AuthStatusProps {
   isAuthenticated: boolean | null;
   hasTokens: boolean | null;
+  email?: string | null;
   onRedirectToLogin: () => void;
   onLogout: () => void;
   loading?: boolean;
 }
 
-export function AuthStatus({ isAuthenticated, hasTokens, onRedirectToLogin, onLogout, loading = false }: AuthStatusProps) {
+export function AuthStatus({ isAuthenticated, hasTokens, email, onRedirectToLogin, onLogout, loading = false }: AuthStatusProps) {
   if (isAuthenticated === null || hasTokens === null) {
     return (
       <div className="flex items-center gap-2 text-slate-600">
@@ -24,7 +25,7 @@ export function AuthStatus({ isAuthenticated, hasTokens, onRedirectToLogin, onLo
       <div className="flex items-center gap-3">
         <div className="flex items-center gap-2 text-green-700 bg-green-50 px-3 py-1 rounded-full border border-green-200">
           <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-          <span className="text-sm font-medium">Gmail connecté</span>
+          <span className="text-sm font-medium">{email ? email : 'Gmail connecté'}</span>
         </div>
         <Button 
           onClick={onLogout}

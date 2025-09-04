@@ -1,7 +1,8 @@
 import express from 'express';
 import { oauth2Client, SCOPES } from '../config/oauth.js';
-import { saveTokens, getAuthStatus } from '../middleware/auth.js';
+import { setAuthCookie, getAuthStatusFromRequest, clearAuth } from '../middleware/auth.js';
 import logger from '../logger.js';
+import { google } from 'googleapis';
 
 const router = express.Router();
 
@@ -33,9 +34,29 @@ router.get('/google/callback', async (req, res) => {
     logger.info('Processing OAuth callback');
     
     const { tokens } = await oauth2Client.getToken(code);
-    saveTokens(tokens);
-    
-    logger.info('OAuth flow completed successfully');
+    oauth2Client.setCredentials(tokens);
+
+    // Récupérer l'email utilisateur
+    let email = null;
+    try {
+      const oauth2 = google.oauth2({ version: 'v2', auth: oauth2Client });
+      const me = await oauth2.userinfo.get();
+      email = me.data.email || null;
+    } catch (e) {
+      logger.warn('Failed to fetch user email:', e?.message || e);
+    }
+
+    // Placer tokens + email dans un cookie chiffré (stateless)
+    setAuthCookie(res, {
+      email,
+      tokens: {
+        access_token: tokens.access_token,
+        refresh_token: tokens.refresh_token,
+        expiry_date: tokens.expiry_date
+      }
+    });
+
+    logger.info('OAuth flow completed successfully for', email || 'unknown');
     res.redirect(`${FRONTEND_URL}/dashboard`);
   } catch (error) {
     logger.error('Error in OAuth callback:', error);
@@ -45,9 +66,19 @@ router.get('/google/callback', async (req, res) => {
 
 // Statut d'authentification
 router.get('/status', (req, res) => {
-  const status = getAuthStatus();
+  const status = getAuthStatusFromRequest(req);
   logger.info('Auth status requested:', status);
   res.json(status);
+});
+
+// Déconnexion
+router.post('/logout', (req, res) => {
+  try {
+    clearAuth(res);
+    res.json({ success: true });
+  } catch (e) {
+    res.status(500).json({ success: false });
+  }
 });
 
 // Déconnexion

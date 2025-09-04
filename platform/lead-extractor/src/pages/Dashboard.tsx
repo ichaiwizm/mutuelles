@@ -30,7 +30,7 @@ export function Dashboard() {
   const [configModalOpen, setConfigModalOpen] = useState(false);
 
   // Hooks personnalisés
-  const { isAuthenticated, hasTokens, loading: authLoading, checkAuthStatus, redirectToLogin, logout } = useAuth();
+  const { isAuthenticated, hasTokens, email, loading: authLoading, checkAuthStatus, redirectToLogin, logout } = useAuth();
   const {
     days, setDays, dateRange, setDateRange, filterMode
   } = useSettings();
@@ -325,6 +325,7 @@ export function Dashboard() {
             <AuthStatus 
               isAuthenticated={isAuthenticated}
               hasTokens={hasTokens}
+              email={email}
               onRedirectToLogin={redirectToLogin}
               onLogout={logout}
               loading={authLoading}
