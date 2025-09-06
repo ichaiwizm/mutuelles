@@ -224,7 +224,7 @@ export function ConfigurationModal({ open, onOpenChange }: ConfigurationModalPro
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <Label>Minimiser la fenêtre SwissLife</Label>
+                  <Label>Minimiser la fenêtre</Label>
                   <p className="text-xs text-muted-foreground">Garder la fenêtre en arrière‑plan pendant le traitement.</p>
                 </div>
                 <Switch checked={!!localConfig.minimizeWindow} onCheckedChange={(v) => setLocalConfig({ ...localConfig, minimizeWindow: !!v })} />
@@ -239,23 +239,7 @@ export function ConfigurationModal({ open, onOpenChange }: ConfigurationModalPro
             </CardContent>
           </Card>
 
-          {/* Aide */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Comment ça marche ?</CardTitle>
-              <CardDescription>Guide rapide d'utilisation.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-2 text-sm text-slate-700">
-              <ul className="list-disc pl-5 space-y-1">
-                <li>Connectez votre Gmail (consentement Google) pour extraire les emails pertinents.</li>
-                <li>Sélectionnez dans le tableau les leads que vous souhaitez envoyer.</li>
-                <li>Connectez‑vous aux plateformes cibles (actuellement SwissLife) dans votre navigateur.</li>
-                <li>Envoyez vers l'extension: les formulaires sont remplis automatiquement selon les données extraites.</li>
-                <li>Retrouvez vos simulations/contrats directement sur les plateformes.</li>
-              </ul>
-              <p className="text-xs text-slate-500">Pré‑requis: être connecté sur les plateformes; en mode minimisé, tout fonctionne en arrière‑plan.</p>
-            </CardContent>
-          </Card>
+          
 
           {/* Avertissement changements non sauvegardés */}
           {hasChanges && (

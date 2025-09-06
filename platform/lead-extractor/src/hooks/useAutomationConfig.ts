@@ -8,7 +8,7 @@ export interface AutomationConfig {
   retryDelay: number;
   timeoutRetryDelay: number;
   parallelTabs: number; // 1 à 10
-  minimizeWindow?: boolean; // Minimiser la fenêtre SwissLife
+  minimizeWindow?: boolean; // Minimiser la fenêtre
   closeWindowOnFinish?: boolean; // Fermer à la fin
 }
 
@@ -30,7 +30,29 @@ export const useAutomationConfig = () => {
   useEffect(() => {
     const savedConfig = StorageManager.getAutomationConfig();
     if (savedConfig) {
-      setConfig(savedConfig);
+      // Fusionne avec les valeurs par défaut pour supporter les nouvelles clés ajoutées au fil du temps
+      const merged: AutomationConfig = {
+        ...DEFAULT_CONFIG,
+        ...savedConfig,
+      };
+
+      // Normalisation/sécurisation des bornes
+      merged.maxRetryAttempts = Math.min(10, Math.max(0, Number(merged.maxRetryAttempts ?? DEFAULT_CONFIG.maxRetryAttempts)));
+      merged.retryDelay = Math.min(30000, Math.max(500, Number(merged.retryDelay ?? DEFAULT_CONFIG.retryDelay)));
+      merged.timeoutRetryDelay = Math.min(60000, Math.max(1000, Number(merged.timeoutRetryDelay ?? DEFAULT_CONFIG.timeoutRetryDelay)));
+      merged.parallelTabs = Math.min(10, Math.max(1, Number(merged.parallelTabs ?? DEFAULT_CONFIG.parallelTabs)));
+      merged.minimizeWindow = typeof merged.minimizeWindow === 'boolean' ? merged.minimizeWindow : DEFAULT_CONFIG.minimizeWindow;
+      merged.closeWindowOnFinish = typeof merged.closeWindowOnFinish === 'boolean' ? merged.closeWindowOnFinish : DEFAULT_CONFIG.closeWindowOnFinish;
+
+      setConfig(merged);
+
+      // Si des clés manquaient ou des valeurs étaient hors bornes, persiste la config normalisée
+      try {
+        const changed = JSON.stringify(savedConfig) !== JSON.stringify(merged);
+        if (changed) {
+          StorageManager.saveAutomationConfig(merged);
+        }
+      } catch {}
     }
     setIsLoaded(true);
   }, []);
