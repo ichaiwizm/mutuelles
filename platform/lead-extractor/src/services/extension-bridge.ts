@@ -1,11 +1,10 @@
 // Service de communication avec l'extension Chrome SwissLife
 import type { Lead } from '@/types/lead';
-import type { AutomationConfig } from '@/hooks/useAutomationConfig';
 import { formatLeadsForExtension } from '@/utils/lead-formatter';
 import { StorageManager } from '@/lib/storage';
 
 export interface ExtensionMessage {
-  action: 'CHECK_SWISSLIFE_TAB' | 'OPEN_SWISSLIFE_TAB' | 'SEND_LEADS' | 'UPDATE_CONFIG';
+  action: 'CHECK_SWISSLIFE_TAB' | 'OPEN_SWISSLIFE_TAB' | 'SEND_LEADS';
   data?: any;
 }
 
@@ -150,23 +149,16 @@ export class ExtensionBridge {
       // Formater les leads pour l'extension
       const formattedLeads = formatLeadsForExtension(leads);
       
-      // Récupérer le nombre d'onglets parallèles depuis la configuration sauvegardée
-      const savedConfig = StorageManager.getAutomationConfig();
-      // Par défaut, on considère 3 onglets si aucune config sauvegardée
-      const fallback = 3;
-      const parallelTabs = Math.min(10, Math.max(1, Number(savedConfig?.parallelTabs ?? fallback)));
-      
       const message: ExtensionMessage = {
         action: 'SEND_LEADS',
         data: {
           leads: formattedLeads,
           timestamp: new Date().toISOString(),
-          count: formattedLeads.length,
-          parallelTabs: parallelTabs
+          count: formattedLeads.length
         }
       };
 
-      console.log(`📊 [EXTENSION BRIDGE] Envoi de ${formattedLeads.length} leads avec ${parallelTabs} onglet(s) parallèle(s)`);
+      console.log(`📊 [EXTENSION BRIDGE] Envoi de ${formattedLeads.length} leads`);
 
       const response = await this.sendMessageToExtension(message);
       
@@ -239,35 +231,6 @@ export class ExtensionBridge {
     });
   }
 
-  // Mettre à jour la configuration d'automatisation dans l'extension
-  static async updateAutomationConfig(config: AutomationConfig): Promise<{ success: boolean; error?: string }> {
-    try {
-      const message: ExtensionMessage = {
-        action: 'UPDATE_CONFIG',
-        data: {
-          config: config,
-          timestamp: new Date().toISOString()
-        }
-      };
-
-      const response = await this.sendMessageToExtension(message);
-      
-      if (response && response.success) {
-        console.log('✅ Configuration mise à jour dans l\'extension');
-        return { success: true };
-      } else {
-        const error = response?.error || 'Erreur inconnue lors de la mise à jour';
-        console.error('❌ Erreur mise à jour config extension:', error);
-        return { success: false, error };
-      }
-    } catch (error) {
-      console.error('❌ Exception mise à jour config extension:', error);
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Erreur inconnue' 
-      };
-    }
-  }
 
   // Ajouter un callback pour les mises à jour de statut
   static onLeadStatusUpdate(callback: (update: LeadStatusUpdate) => void): () => void {

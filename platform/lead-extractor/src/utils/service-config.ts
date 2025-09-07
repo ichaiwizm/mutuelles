@@ -1,4 +1,4 @@
-// Configuration des services d'automation
+// Configuration des services
 
 export interface SwissLifeConfig {
   // Valeurs forcées

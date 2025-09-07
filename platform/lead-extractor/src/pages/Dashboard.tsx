@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Settings, Workflow } from 'lucide-react';
+import { Settings } from 'lucide-react';
 import { LeadDetailModal } from '@/components/LeadDetailModal';
 import { useAuth } from '@/hooks/useAuth';
 import { useLeads } from '@/hooks/useLeads';
@@ -19,12 +19,7 @@ import { ProgressPanel } from '@/components/dashboard/ProgressPanel';
 import { AuthStatus } from '@/components/dashboard/AuthStatus';
 import { LeadsTable } from '@/components/dashboard/LeadsTable';
 import { ConfigurationModal } from '@/components/ConfigurationModal';
-import { AutomationStatusBar } from '@/components/dashboard/AutomationStatusBar';
 import type { Lead } from '@/types/lead';
-import { useAutomationConfig } from '@/hooks/useAutomationConfig';
-import { useAutoPilot } from '@/hooks/useAutoPilot';
-import { useAutoPilotSettings } from '@/hooks/useAutoPilotSettings';
-import { AutomationModal } from '@/components/AutomationModal';
 
 export function Dashboard() {
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
@@ -32,7 +27,6 @@ export function Dashboard() {
   const [currentLeadIndex, setCurrentLeadIndex] = useState(0);
   const [modalOpen, setModalOpen] = useState(false);
   const [configModalOpen, setConfigModalOpen] = useState(false);
-  const [automationModalOpen, setAutomationModalOpen] = useState(false);
 
   // Hooks personnalisés
   const { isAuthenticated, hasTokens, email, loading: authLoading, checkAuthStatus, redirectToLogin, logout } = useAuth();
@@ -100,21 +94,6 @@ export function Dashboard() {
 
   // Données du tableau
   const tableData = getTableData();
-  const { parallelTabs } = useAutomationConfig();
-
-  // AutoPilot settings + wiring
-  const { settings: autoPilotSettings } = useAutoPilotSettings();
-  // Wrapper pour extraire uniquement les nouveaux (merge)
-  const extractNewWrapper = () => {
-    handleExtractNew();
-  };
-  // Fournir des leads enrichis pour l'auto‑send (filtrage par statut fait dans le hook)
-  const getLeadsForAutoSend = () => {
-    // Utiliser tous les leads (pas seulement qualifiés) enrichis avec leur statut
-    return enrichLeadsWithStatus(leads);
-  };
-  // Activer l'autopilot (gère timers selon settings)
-  useAutoPilot(autoPilotSettings, extractNewWrapper, getLeadsForAutoSend);
 
   // Mettre à jour manuellement le statut des leads sélectionnés
   const handleUpdateSelectedStatus = (status: ProcessingStatus['status']) => {
@@ -201,15 +180,11 @@ export function Dashboard() {
         return;
       }
 
-      // 2. Vérifier/ouvrir onglet SwissLife uniquement si mode mono-onglet
-      if ((parallelTabs || 1) <= 1) {
-        const tabResult = await ExtensionBridge.openSwissLifeTab();
-        if (!tabResult.success) {
-          toast.error('Impossible d\'accéder à SwissLife');
-          return;
-        }
-      } else {
-        console.log(`Retry en mode multi-onglets (${parallelTabs}). L'ouverture sera gérée par SEND_LEADS`);
+      // 2. Vérifier/ouvrir onglet SwissLife
+      const tabResult = await ExtensionBridge.openSwissLifeTab();
+      if (!tabResult.success) {
+        toast.error('Impossible d\'accéder à SwissLife');
+        return;
       }
 
       // 3. Envoyer le lead unique
@@ -255,31 +230,24 @@ export function Dashboard() {
 
       console.log('✅ Extension détectée');
 
-      // 2. Vérifier/ouvrir onglet SwissLife uniquement si mode mono-onglet
-      if ((parallelTabs || 1) <= 1) {
-        // Mode mono-onglet : vérifier/ouvrir un onglet
-        toast.info('Vérification des onglets SwissLife...');
-        
-        const tabResult = await ExtensionBridge.openSwissLifeTab();
-        
-        if (!tabResult.success) {
-          toast.error('Impossible d\'accéder à SwissLife', {
-            description: 'Erreur lors de l\'ouverture/activation de l\'onglet SwissLife.'
-          });
-          return;
-        }
+      // 2. Vérifier/ouvrir onglet SwissLife
+      toast.info('Vérification des onglets SwissLife...');
+      
+      const tabResult = await ExtensionBridge.openSwissLifeTab();
+      
+      if (!tabResult.success) {
+        toast.error('Impossible d\'accéder à SwissLife', {
+          description: 'Erreur lors de l\'ouverture/activation de l\'onglet SwissLife.'
+        });
+        return;
+      }
 
-        if (tabResult.wasExisting) {
-          console.log('Onglet SwissLife déjà ouvert - Activé');
-          toast.success('Onglet SwissLife activé');
-        } else {
-          console.log('Nouvel onglet SwissLife créé');
-          toast.success('Onglet SwissLife ouvert en arrière-plan');
-        }
+      if (tabResult.wasExisting) {
+        console.log('Onglet SwissLife déjà ouvert - Activé');
+        toast.success('Onglet SwissLife activé');
       } else {
-        // Mode multi-onglets : SEND_LEADS gèrera l'ouverture des onglets
-        console.log(`Mode multi-onglets (${parallelTabs} onglets) - L'ouverture sera gérée par SEND_LEADS`);
-        toast.info(`Préparation de ${parallelTabs} onglets parallèles...`);
+        console.log('Nouvel onglet SwissLife créé');
+        toast.success('Onglet SwissLife ouvert en arrière-plan');
       }
 
       // 3. Envoyer les leads à l'extension
@@ -360,15 +328,6 @@ export function Dashboard() {
             <Settings className="h-4 w-4" />
             Configuration
           </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setAutomationModalOpen(true)}
-            className="p-2 h-8 w-8"
-            title="Automatisation"
-          >
-            <Workflow className="h-4 w-4" />
-          </Button>
           <AuthStatus 
             isAuthenticated={isAuthenticated}
             hasTokens={hasTokens}
@@ -380,8 +339,6 @@ export function Dashboard() {
         </div>
         </div>
 
-        {/* Statut d'automatisation visible */}
-        <AutomationStatusBar onOpenAutomation={() => setAutomationModalOpen(true)} />
 
         {/* Contrôles */}
         <ControlsPanel
@@ -456,13 +413,6 @@ export function Dashboard() {
           onOpenChange={setConfigModalOpen}
         />
 
-        {/* Modal automatisation (front-only) */}
-        <AutomationModal
-          open={automationModalOpen}
-          onOpenChange={setAutomationModalOpen}
-          onRunRefreshNow={extractNewWrapper}
-          getLeadsForAutoSend={getLeadsForAutoSend}
-        />
       </div>
     </div>
   );
