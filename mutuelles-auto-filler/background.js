@@ -6,6 +6,11 @@ importScripts(
   'src/bg/constants.js',
   'src/bg/config-sw.js',
   'src/bg/providers-registry.js',
+  'src/bg/core/constants.js',
+  'src/bg/core/TabPoolManager.js',
+  'src/bg/core/RunStateManager.js', 
+  'src/bg/core/IsolatedGroupManager.js',
+  'src/bg/core/SchedulerOrchestrator.js',
   'src/bg/scheduler.js',
   'src/bg/messaging.js'
 );

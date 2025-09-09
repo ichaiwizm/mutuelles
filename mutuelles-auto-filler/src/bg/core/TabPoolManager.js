@@ -1,0 +1,178 @@
+/**
+ * Gestionnaire du pool d'onglets
+ * Responsabilité: Gérer la fenêtre unique et les onglets partagés
+ */
+
+self.BG = self.BG || {};
+
+self.BG.TabPoolManager = class TabPoolManager {
+  constructor() {
+    this.storageKey = self.BG.SCHEDULER_CONSTANTS.STORAGE_KEYS.POOL;
+    this.config = self.BG.SCHEDULER_CONSTANTS.CONFIG;
+    this.tabStatus = self.BG.SCHEDULER_CONSTANTS.TAB_STATUS;
+  }
+
+  async getPool() {
+    const result = await chrome.storage.local.get([this.storageKey]);
+    return result[this.storageKey] || null;
+  }
+
+  async setPool(pool) {
+    await chrome.storage.local.set({ [this.storageKey]: pool });
+  }
+
+  async validatePool(pool) {
+    if (!pool) return null;
+
+    try {
+      await chrome.windows.get(pool.windowId);
+    } catch (error) {
+      return null;
+    }
+
+    const validTabs = [];
+    for (const tab of pool.tabs || []) {
+      try {
+        const chromeTab = await chrome.tabs.get(tab.tabId);
+        if (chromeTab && chromeTab.windowId === pool.windowId) {
+          validTabs.push(tab);
+        }
+      } catch (error) {
+        // Onglet fermé, ignorer
+      }
+    }
+
+    if (validTabs.length !== (pool.tabs || []).length) {
+      pool.tabs = validTabs;
+      await this.setPool(pool);
+    }
+
+    return pool;
+  }
+
+  async ensureWindow(initialUrl = 'about:blank') {
+    let pool = await this.getPool();
+    pool = await this.validatePool(pool);
+    
+    if (pool) return pool;
+
+    const window = await chrome.windows.create({
+      type: 'normal',
+      focused: false,
+      width: this.config.WINDOW_WIDTH,
+      height: this.config.WINDOW_HEIGHT,
+      url: initialUrl
+    });
+
+    try {
+      const { automation_config } = await chrome.storage.local.get(['automation_config']);
+      const minimize = automation_config?.minimizeWindow !== false;
+      if (minimize) {
+        await chrome.windows.update(window.id, { state: 'minimized' });
+      }
+    } catch (error) {
+      // Ignore si impossible de minimiser
+    }
+
+    const newPool = {
+      windowId: window.id,
+      capacity: 1,
+      tabs: [],
+      createdAt: new Date().toISOString(),
+      lastUsedAt: new Date().toISOString()
+    };
+
+    await this.setPool(newPool);
+    return newPool;
+  }
+
+  async ensureCapacity(targetCapacity) {
+    const capacity = Math.max(
+      this.config.MIN_PARALLEL_TABS,
+      Math.min(this.config.MAX_PARALLEL_TABS, targetCapacity || this.config.DEFAULT_PARALLEL_TABS)
+    );
+
+    let pool = await this.ensureWindow();
+    pool = await this.validatePool(pool);
+
+    while (pool.tabs.length < capacity) {
+      const tab = await chrome.tabs.create({
+        windowId: pool.windowId,
+        url: 'about:blank',
+        active: false
+      });
+
+      pool.tabs.push({
+        tabId: tab.id,
+        status: this.tabStatus.IDLE,
+        assigned: null,
+        createdAt: new Date().toISOString()
+      });
+    }
+
+    while (pool.tabs.length > capacity && pool.tabs.length > 1) {
+      const tabToRemove = pool.tabs.pop();
+      try {
+        await chrome.tabs.remove(tabToRemove.tabId);
+      } catch (error) {
+        // Ignore si impossible de fermer
+      }
+    }
+
+    pool.capacity = capacity;
+    pool.lastUsedAt = new Date().toISOString();
+    await this.setPool(pool);
+
+    return pool;
+  }
+
+  async findFreeTab() {
+    const pool = await this.validatePool(await this.getPool());
+    if (!pool) return null;
+
+    return pool.tabs.find(tab => tab.status === this.tabStatus.IDLE) || null;
+  }
+
+  async assignTab(tabId, provider, groupId) {
+    const pool = await this.getPool();
+    if (!pool) return false;
+
+    const tab = pool.tabs.find(t => t.tabId === tabId);
+    if (!tab) return false;
+
+    tab.status = this.tabStatus.ASSIGNED;
+    tab.assigned = { provider, groupId };
+    tab.assignedAt = new Date().toISOString();
+
+    await this.setPool(pool);
+    return true;
+  }
+
+  async releaseTab(tabId) {
+    const pool = await this.getPool();
+    if (!pool) return false;
+
+    const tab = pool.tabs.find(t => t.tabId === tabId);
+    if (!tab) return false;
+
+    tab.status = this.tabStatus.IDLE;
+    tab.assigned = null;
+    tab.releasedAt = new Date().toISOString();
+
+    await this.setPool(pool);
+    return true;
+  }
+
+  async closePool() {
+    const pool = await this.getPool();
+    if (!pool) return;
+
+    try {
+      await chrome.windows.remove(pool.windowId);
+    } catch (error) {
+      // Ignore si fenêtre déjà fermée
+    }
+
+    await chrome.storage.local.remove([this.storageKey]);
+  }
+};
