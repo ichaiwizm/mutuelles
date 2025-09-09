@@ -15,7 +15,6 @@ import { toast } from 'sonner';
 import { ControlsPanel } from '@/components/dashboard/ControlsPanel';
 import { ManualLeadDialog } from '@/components/ManualLeadDialog';
 import type { ProcessingStatus } from '@/utils/processing-status-storage';
-import { TabsNavigation } from '@/components/dashboard/TabsNavigation';
 import { ProgressPanel } from '@/components/dashboard/ProgressPanel';
 import { AuthStatus } from '@/components/dashboard/AuthStatus';
 import { LeadsTable } from '@/components/dashboard/LeadsTable';
@@ -55,13 +54,12 @@ export function Dashboard() {
   const {
     days, setDays, dateRange, setDateRange, filterMode, parallelTabs
   } = useSettings();
-  const { leads, qualifiedLeads, addLeads, clearAllLeads, removeLeadsByIds, stats } = useLeads();
+  const { leads, addLeads, clearAllLeads, removeLeadsByIds, stats } = useLeads();
   const { enrichLeadsWithStatus, applyStatusUpdate, cleanupOrphanedStatuses, isLoaded, setLeadStatus } = useProcessingStatus();
   const {
     uiState,
     setPageSize,
     setCurrentPage,
-    setActiveTab,
     setGlobalFilter
   } = useUIState();
 
@@ -82,6 +80,27 @@ export function Dashboard() {
     extractWithSSE('gmail', days, false, filterMode === 'custom' ? dateRange : null);
   };
 
+  // Stop retries isolés en cours
+  const handleStopIsolated = async () => {
+    try {
+      setStoppingIsolated(true);
+      const ok = await ExtensionBridge.cancelIsolated();
+      if (ok) {
+        toast.success('Retry(s) isolé(s) arrêté(s)');
+        try {
+          const iso = await ExtensionBridge.getIsolatedState();
+          setIsolatedCount(iso?.isolatedCount || 0);
+        } catch { /* ignore, poll mettra à jour */ }
+      } else {
+        toast.error("Impossible d'arrêter les retries isolés");
+      }
+    } catch (e) {
+      toast.error('Erreur arrêt retries isolés', { description: e instanceof Error ? e.message : 'Erreur inconnue' });
+    } finally {
+      setStoppingIsolated(false);
+    }
+  };
+
   const handleRowClick = (lead: Lead, allSortedData: Lead[], leadIndex: number) => {
     setSelectedLead(lead);
     setModalLeads(allSortedData);
@@ -94,18 +113,10 @@ export function Dashboard() {
     setCurrentLeadIndex(newIndex);
   };
 
-  // Données de table selon l'onglet actif (enrichies avec les statuts de traitement)
+  // Données de table (tous les leads enrichis avec les statuts de traitement)
   const getTableData = () => {
-    const baseData = (() => {
-      switch (uiState?.activeTab || 'leads') {
-        case 'leads': return qualifiedLeads;
-        case 'all': return leads;
-        default: return leads;
-      }
-    })();
-    
     // Enrichir avec les statuts de traitement
-    return enrichLeadsWithStatus(baseData);
+    return enrichLeadsWithStatus(leads);
   };
 
   // Données du tableau
@@ -420,20 +431,13 @@ export function Dashboard() {
           />
         </div>
 
-        {/* Navigation onglets */}
-        <TabsNavigation
-          activeTab={uiState?.activeTab || 'leads'}
-          onTabChange={setActiveTab}
-          qualifiedCount={stats.qualified}
-          totalCount={stats.total}
-        />
 
         {/* Table */}
         <LeadsTable
           data={tableData}
           globalFilter={uiState?.globalFilter || ''}
           onRowClick={handleRowClick}
-          activeTab={uiState?.activeTab || 'leads'}
+          activeTab="all"
           pageSize={uiState?.pageSize || 10}
           currentPage={uiState?.currentPage || 0}
           onPageSizeChange={setPageSize}
