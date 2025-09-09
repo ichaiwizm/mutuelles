@@ -1,5 +1,6 @@
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { Button } from '@/components/ui/button';
 import { Mail, Calendar } from 'lucide-react';
 
 interface ProgressPanelProps {
@@ -9,6 +10,7 @@ interface ProgressPanelProps {
   message: string;
   current: number;
   total: number;
+  onCancel?: () => void;
 }
 
 export function ProgressPanel({
@@ -17,7 +19,8 @@ export function ProgressPanel({
   phase,
   message,
   current,
-  total
+  total,
+  onCancel
 }: ProgressPanelProps) {
   if (!show) return null;
 
@@ -32,9 +35,13 @@ export function ProgressPanel({
           )}
           <span>{source === 'gmail' ? 'Gmail' : 'Agenda'}</span>
         </div>
-        <Badge variant="secondary" className="text-xs">
-          {phase}
-        </Badge>
+        <div className="flex items-center gap-2">
+          {onCancel && (
+            <Button size="sm" variant="outline" onClick={onCancel} className="h-7 px-2 text-xs">
+              Annuler
+            </Button>
+          )}
+        </div>
       </div>
       
       {total > 0 && (

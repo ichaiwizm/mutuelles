@@ -13,6 +13,7 @@ import { useLeadSelection } from '@/hooks/useLeadSelection';
 import { ExtensionBridge, type LeadStatusUpdate } from '@/services/extension-bridge';
 import { toast } from 'sonner';
 import { ControlsPanel } from '@/components/dashboard/ControlsPanel';
+import { ManualLeadDialog } from '@/components/ManualLeadDialog';
 import type { ProcessingStatus } from '@/utils/processing-status-storage';
 import { TabsNavigation } from '@/components/dashboard/TabsNavigation';
 import { ProgressPanel } from '@/components/dashboard/ProgressPanel';
@@ -20,6 +21,7 @@ import { AuthStatus } from '@/components/dashboard/AuthStatus';
 import { LeadsTable } from '@/components/dashboard/LeadsTable';
 import { ConfigurationModal } from '@/components/ConfigurationModal';
 import type { Lead } from '@/types/lead';
+import { StorageManager } from '@/lib/storage';
 
 export function Dashboard() {
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
@@ -27,6 +29,9 @@ export function Dashboard() {
   const [currentLeadIndex, setCurrentLeadIndex] = useState(0);
   const [modalOpen, setModalOpen] = useState(false);
   const [configModalOpen, setConfigModalOpen] = useState(false);
+  const [manualDialogOpen, setManualDialogOpen] = useState(false);
+  const [manualInitialTab, setManualInitialTab] = useState<'form' | 'csv'>('form');
+  const [lastSyncGmail, setLastSyncGmail] = useState<string | null>(null);
 
   // Hooks personnalisés
   const { isAuthenticated, hasTokens, email, loading: authLoading, checkAuthStatus, redirectToLogin, logout } = useAuth();
@@ -51,15 +56,9 @@ export function Dashboard() {
     progressTotal,
     progressCurrent,
     busy,
-    extractWithSSE
+    extractWithSSE,
+    cancelExtraction
   } = useSSEExtraction(addLeads, checkAuthStatus);
-
-  // Handlers
-  const handleRefresh = () => {
-    // Utiliser le mode replaceAll pour remplacer tous les leads existants
-    // Passer les paramètres selon le mode (prédéfini ou dates personnalisées)
-    extractWithSSE('gmail', days, true, filterMode === 'custom' ? dateRange : null);
-  };
 
   // Extraction "nouveaux seulement" (merge, sans remplacer)
   const handleExtractNew = () => {
@@ -164,6 +163,18 @@ export function Dashboard() {
       console.log(`[DASHBOARD] ${removedCount} statuts orphelins nettoyés`);
     }
   }, [leads, isLoaded, cleanupOrphanedStatuses]);
+
+  // Mettre à jour la dernière synchro Gmail (lecture storage)
+  useEffect(() => {
+    try {
+      const last = (StorageManager.getLastSync() as any)?.gmail || null;
+      setLastSyncGmail(last);
+    } catch {
+      setLastSyncGmail(null);
+    }
+  }, [leads]);
+
+  // plus de libellé période: le sélecteur est inline dans la barre
   
   // Handler pour l'envoi d'un seul lead (retry)
   const handleRetrySingleLead = async (lead: Lead) => {
@@ -273,6 +284,7 @@ export function Dashboard() {
         message={progressMessage}
         current={progressCurrent}
         total={progressTotal}
+        onCancel={cancelExtraction}
       />
 
       <div className="container mx-auto p-6">
@@ -302,17 +314,18 @@ export function Dashboard() {
           </div>
         </div>
 
-        {/* Contrôles */}
+        {/* Contrôles (bouton Gmail + période inline, ajout à gauche) */}
         <ControlsPanel
+          onOpenManual={(tab) => { setManualInitialTab(tab); setManualDialogOpen(true); }}
+          onExtractNow={handleExtractNew}
           days={days}
           setDays={setDays}
           dateRange={dateRange}
           setDateRange={setDateRange}
           filterMode={filterMode}
           onClearAll={clearAllLeads}
-          onRefresh={handleRefresh}
-          onExtractNew={handleExtractNew}
           busy={busy}
+          lastSyncGmail={lastSyncGmail}
         />
 
         {/* Recherche */}
@@ -369,10 +382,12 @@ export function Dashboard() {
         />
 
         {/* Modal configuration */}
-        <ConfigurationModal
-          open={configModalOpen}
-          onOpenChange={setConfigModalOpen}
-        />
+        <ConfigurationModal open={configModalOpen} onOpenChange={setConfigModalOpen} />
+
+        {/* Dialog Manuel (UI seulement) */}
+        <ManualLeadDialog open={manualDialogOpen} onOpenChange={setManualDialogOpen} initialTab={manualInitialTab} />
+
+        {/* Pas de modal Gmail: extraction directe via la barre */}
       </div>
     </div>
   );

@@ -19,7 +19,7 @@ export function TableHeader({ headerGroups }: TableHeaderProps) {
                   className={`flex items-center gap-1 ${
                     header.column.getCanSort() ? 'cursor-pointer hover:text-slate-900' : ''
                   }`}
-                  onClick={header.column.getToggleSortingHandler()}
+                  onClick={header.column.getCanSort() ? header.column.getToggleSortingHandler() : undefined}
                 >
                   {flexRender(header.column.columnDef.header, header.getContext())}
                   {header.column.getCanSort() && (

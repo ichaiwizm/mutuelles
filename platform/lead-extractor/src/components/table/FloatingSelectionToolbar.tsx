@@ -1,5 +1,4 @@
 import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
 import { X, Send, Download, Filter, Edit3, Trash, MoreHorizontal } from 'lucide-react';
 import { 
   DropdownMenu, 
@@ -59,10 +58,14 @@ export function FloatingSelectionToolbar({
     `}>
       {/* Sélection toggle */}
       <div className="flex items-center gap-2 text-sm">
-        <Checkbox
+        <input
+          type="checkbox"
+          aria-label={isAllSelected ? 'Désélectionner tout' : 'Sélectionner tout'}
           checked={isAllSelected}
-          onCheckedChange={isAllSelected ? onDeselectAll : onSelectAll}
-          aria-label={isAllSelected ? "Désélectionner tout" : "Sélectionner tout"}
+          onChange={(e) => {
+            if (e.target.checked) onSelectAll(); else onDeselectAll();
+          }}
+          className="h-4 w-4 accent-indigo-600"
         />
         <span className="text-gray-700 font-medium">
           {selectedCount} sur {totalCount} sélectionné{selectedCount > 1 ? 's' : ''}

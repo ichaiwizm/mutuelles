@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { StorageManager } from '@/lib/storage';
 import { toast } from 'sonner';
 
@@ -11,6 +11,7 @@ export const useSSEExtraction = (addLeads: any, checkAuthStatus: any) => {
   const [progressTotal, setProgressTotal] = useState(0);
   const [progressCurrent, setProgressCurrent] = useState(0);
   const [pendingOps, setPendingOps] = useState(0);
+  const eventSourceRef = useRef<EventSource | null>(null);
 
   const begin = () => setPendingOps(n => n + 1);
   const end = () => setPendingOps(n => Math.max(0, n - 1));
@@ -53,6 +54,7 @@ export const useSSEExtraction = (addLeads: any, checkAuthStatus: any) => {
     }
     // Envoyer les cookies d'auth (stateless) avec la requête SSE
     const eventSource = new EventSource(endpoint, { withCredentials: true });
+    eventSourceRef.current = eventSource;
     let collectedLeads = [];
 
     eventSource.onmessage = (event) => {
@@ -62,6 +64,7 @@ export const useSSEExtraction = (addLeads: any, checkAuthStatus: any) => {
         if (data.type === 'final') {
           collectedLeads = data.leads || [];
           eventSource.close();
+          eventSourceRef.current = null;
           
           // Ajouter les leads avec statistiques détaillées
           const { addedQualified, addedNon, totalAdded } = addLeads(collectedLeads, replaceAll);
@@ -91,10 +94,23 @@ export const useSSEExtraction = (addLeads: any, checkAuthStatus: any) => {
     eventSource.onerror = (error) => {
       console.error('Erreur EventSource:', error);
       eventSource.close();
+      eventSourceRef.current = null;
       toast.error('Erreur lors de l\'extraction Gmail');
       setShowProgress(false);
       end();
     };
+  };
+
+  const cancelExtraction = () => {
+    try {
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close();
+        eventSourceRef.current = null;
+      }
+    } catch (_) {}
+    setShowProgress(false);
+    end();
+    toast.info('Extraction annulée');
   };
 
   return {
@@ -105,6 +121,7 @@ export const useSSEExtraction = (addLeads: any, checkAuthStatus: any) => {
     progressTotal,
     progressCurrent,
     busy,
-    extractWithSSE
+    extractWithSSE,
+    cancelExtraction
   };
 };

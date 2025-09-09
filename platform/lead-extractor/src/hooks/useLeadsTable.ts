@@ -24,6 +24,7 @@ interface UseLeadsTableProps {
   onDeselectAll?: () => void;
   onRetrySingleLead?: (lead: Lead) => void;
   isAllSelected?: boolean;
+  someSelected?: boolean;
 }
 
 export function useLeadsTable({
@@ -38,6 +39,7 @@ export function useLeadsTable({
   onDeselectAll,
   onRetrySingleLead,
   isAllSelected,
+  someSelected,
 }: UseLeadsTableProps) {
   const [sorting, setSorting] = useState<SortingState>([{ id: 'score', desc: true }]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
@@ -49,6 +51,7 @@ export function useLeadsTable({
     onDeselectAll,
     onRetrySingleLead,
     isAllSelected,
+    someSelected,
   });
 
   const globalFilterFn = (row: any, _columnId: string, filterValue: string) => {

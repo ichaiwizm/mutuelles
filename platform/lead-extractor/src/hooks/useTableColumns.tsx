@@ -1,8 +1,8 @@
-import { useMemo, useCallback } from 'react';
+import { useMemo, useCallback, useEffect, useRef } from 'react';
 import { type ColumnDef } from '@tanstack/react-table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
+// Remplacement des Checkbox Radix dans le tableau pour éviter une boucle de rendu
 import { RotateCcw } from 'lucide-react';
 import type { Lead } from '@/types/lead';
 
@@ -12,6 +12,7 @@ interface UseTableColumnsProps {
   onSelectAll?: () => void;
   onDeselectAll?: () => void;
   isAllSelected?: boolean;
+  someSelected?: boolean;
   onRetrySingleLead?: (lead: Lead) => void;
 }
 
@@ -21,8 +22,31 @@ export function useTableColumns({
   onSelectAll,
   onDeselectAll,
   isAllSelected = false,
-  onRetrySingleLead
+  onRetrySingleLead,
+  someSelected = false
 }: UseTableColumnsProps = {}): ColumnDef<Lead>[] {
+  const IndeterminateCheckbox = ({
+    checked,
+    indeterminate,
+    onChange,
+  }: { checked: boolean; indeterminate: boolean; onChange: (e: React.ChangeEvent<HTMLInputElement>) => void }) => {
+    const ref = useRef<HTMLInputElement | null>(null);
+    useEffect(() => {
+      if (ref.current) {
+        ref.current.indeterminate = indeterminate;
+      }
+    }, [indeterminate]);
+    return (
+      <input
+        ref={ref}
+        type="checkbox"
+        aria-label="Sélectionner toutes les lignes"
+        checked={checked}
+        onChange={onChange}
+        className="mx-auto h-4 w-4 accent-indigo-600"
+      />
+    );
+  };
   
   // Stabiliser les callbacks
   const stableToggleSelect = useCallback((leadId: string) => {
@@ -44,25 +68,25 @@ export function useTableColumns({
     {
       id: 'select',
       header: () => (
-        <Checkbox
-          checked={isAllSelected}
-          onCheckedChange={(checked) => {
-            if (checked) {
+        <IndeterminateCheckbox
+          checked={!!isAllSelected}
+          indeterminate={!isAllSelected && !!someSelected}
+          onChange={(e) => {
+            if (e.target.checked) {
               stableSelectAll();
             } else {
               stableDeselectAll();
             }
           }}
-          aria-label="Sélectionner toutes les lignes"
-          className="mx-auto"
         />
       ),
       cell: ({ row }) => (
-        <Checkbox
-          checked={selectedLeadIds.has(row.original.id)}
-          onCheckedChange={() => stableToggleSelect(row.original.id)}
+        <input
+          type="checkbox"
           aria-label="Sélectionner cette ligne"
-          className="mx-auto"
+          checked={selectedLeadIds.has(row.original.id)}
+          onChange={() => stableToggleSelect(row.original.id)}
+          className="mx-auto h-4 w-4 accent-indigo-600"
         />
       ),
       size: 40,

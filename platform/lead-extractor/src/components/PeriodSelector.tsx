@@ -17,6 +17,8 @@ interface PeriodSelectorProps {
   setDateRange?: (range: DateRange | undefined) => void
   filterMode: 'predefined' | 'custom'
   className?: string
+  embedded?: boolean
+  onClose?: () => void
 }
 
 interface Preset {
@@ -39,7 +41,9 @@ export function PeriodSelector({
   dateRange,
   setDateRange,
   filterMode,
-  className
+  className,
+  embedded = false,
+  onClose
 }: PeriodSelectorProps) {
   const [isOpen, setIsOpen] = React.useState(false)
   const [showCustomPeriod, setShowCustomPeriod] = React.useState(false)
@@ -48,22 +52,32 @@ export function PeriodSelector({
 
   // Initialiser les dates temporaires quand on ouvre le popover
   React.useEffect(() => {
-    if (isOpen) {
-      // Réinitialiser la vue sur les presets par défaut
+    if (embedded) {
+      // En mode intégré: initialiser la vue presets
       setShowCustomPeriod(false)
-      
       if (dateRange?.from && dateRange?.to) {
         setTempStartDate(dateRange.from)
         setTempEndDate(dateRange.to)
       } else {
-        // Initialiser avec les 7 derniers jours par défaut
         const end = new Date()
-        const start = subDays(end, 7)
+        const start = subDays(end, days || 7)
+        setTempStartDate(start)
+        setTempEndDate(end)
+      }
+    } else if (isOpen) {
+      // En mode popover autonome: ouvrir sur les presets
+      setShowCustomPeriod(false)
+      if (dateRange?.from && dateRange?.to) {
+        setTempStartDate(dateRange.from)
+        setTempEndDate(dateRange.to)
+      } else {
+        const end = new Date()
+        const start = subDays(end, days || 7)
         setTempStartDate(start)
         setTempEndDate(end)
       }
     }
-  }, [isOpen, dateRange])
+  }, [embedded, isOpen, dateRange, days])
 
   // Obtenir le texte affiché sur le bouton
   const getDisplayText = () => {
@@ -77,8 +91,14 @@ export function PeriodSelector({
 
   // Gérer la sélection d'un preset
   const handlePresetClick = (presetDays: number) => {
+    if (presetDays === days && filterMode === 'predefined') {
+      if (!embedded) setIsOpen(false)
+      if (onClose) onClose()
+      return
+    }
     setDays(presetDays)
-    setIsOpen(false)
+    if (!embedded) setIsOpen(false)
+    if (onClose) onClose()
   }
 
   // Basculer vers la période personnalisée
@@ -103,11 +123,17 @@ export function PeriodSelector({
   // Appliquer les dates personnalisées
   const handleApplyCustomDates = () => {
     if (tempStartDate && tempEndDate && setDateRange) {
-      setDateRange({
-        from: startOfDay(tempStartDate),
-        to: endOfDay(tempEndDate)
-      })
-      setIsOpen(false)
+      const newFrom = startOfDay(tempStartDate)
+      const newTo = endOfDay(tempEndDate)
+      const unchanged = !!dateRange?.from && !!dateRange?.to &&
+        newFrom.getTime() === new Date(dateRange.from).getTime() &&
+        newTo.getTime() === new Date(dateRange.to).getTime()
+
+      if (!unchanged) {
+        setDateRange({ from: newFrom, to: newTo })
+      }
+      if (!embedded) setIsOpen(false)
+      if (onClose) onClose()
     }
   }
 
@@ -116,6 +142,110 @@ export function PeriodSelector({
     setTempStartDate(null)
     setTempEndDate(null)
     setIsOpen(false)
+  }
+
+  const content = (
+    <div className="p-4">
+      {!showCustomPeriod ? (
+        // Vue des presets rapides
+        <div className="period-selector-view space-y-4 w-64">
+          {/* Titre */}
+          <div className="flex items-center gap-2">
+            <CalendarIcon className="h-4 w-4" />
+            <h4 className="font-medium text-sm">Choisir une période</h4>
+          </div>
+
+          {/* Presets rapides */}
+          <div className="space-y-2">
+            <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Sélection rapide</p>
+            <div className="grid grid-cols-1 gap-1">
+              {PRESETS.map((preset) => (
+                <Button
+                  key={preset.days}
+                  variant={days === preset.days && filterMode === 'predefined' ? 'default' : 'ghost'}
+                  size="sm"
+                  className="justify-start"
+                  onClick={() => handlePresetClick(preset.days)}
+                >
+                  {preset.icon && <span className="mr-2">{preset.icon}</span>}
+                  {preset.label}
+                </Button>
+              ))}
+            </div>
+          </div>
+
+          {/* Bouton pour période personnalisée */}
+          <div className="border-t pt-4">
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full justify-start"
+              onClick={handleShowCustomPeriod}
+            >
+              <Settings className="mr-2 h-4 w-4" />
+              Période personnalisée
+            </Button>
+          </div>
+        </div>
+      ) : (
+        // Vue période personnalisée
+        <div className="period-selector-view space-y-4">
+          {/* En-tête avec bouton retour */}
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleBackToPresets}
+              className="back-button p-1 h-8 w-8"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <div className="flex items-center gap-2">
+              <CalendarIcon className="h-4 w-4" />
+              <h4 className="font-medium text-sm">Période personnalisée</h4>
+            </div>
+          </div>
+          
+          {/* DatePicker */}
+          <DatePicker
+            selected={tempStartDate}
+            onChange={handleDateChange}
+            startDate={tempStartDate}
+            endDate={tempEndDate}
+            selectsRange
+            inline
+            locale={fr}
+            dateFormat="dd/MM/yyyy"
+            monthsShown={1}
+            showPopperArrow={false}
+            maxDate={new Date()}
+            minDate={subDays(new Date(), 365)}
+          />
+          
+          {/* Boutons d'action */}
+          <div className="flex justify-end gap-2 pt-3 border-t">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleCancel}
+            >
+              Annuler
+            </Button>
+            <Button
+              size="sm"
+              onClick={handleApplyCustomDates}
+              disabled={!tempStartDate || !tempEndDate}
+            >
+              Appliquer
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+
+  if (embedded) {
+    return <div className={cn('w-auto', className)}>{content}</div>
   }
 
   return (
@@ -131,103 +261,7 @@ export function PeriodSelector({
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-auto p-0" align="start" sideOffset={4}>
-          <div className="p-4">
-            {!showCustomPeriod ? (
-              // Vue des presets rapides
-              <div className="period-selector-view space-y-4 w-64">
-                {/* Titre */}
-                <div className="flex items-center gap-2">
-                  <CalendarIcon className="h-4 w-4" />
-                  <h4 className="font-medium text-sm">Choisir une période</h4>
-                </div>
-
-                {/* Presets rapides */}
-                <div className="space-y-2">
-                  <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Sélection rapide</p>
-                  <div className="grid grid-cols-1 gap-1">
-                    {PRESETS.map((preset) => (
-                      <Button
-                        key={preset.days}
-                        variant={days === preset.days && filterMode === 'predefined' ? 'default' : 'ghost'}
-                        size="sm"
-                        className="justify-start"
-                        onClick={() => handlePresetClick(preset.days)}
-                      >
-                        {preset.icon && <span className="mr-2">{preset.icon}</span>}
-                        {preset.label}
-                      </Button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Bouton pour période personnalisée */}
-                <div className="border-t pt-4">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="w-full justify-start"
-                    onClick={handleShowCustomPeriod}
-                  >
-                    <Settings className="mr-2 h-4 w-4" />
-                    Période personnalisée
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              // Vue période personnalisée
-              <div className="period-selector-view space-y-4">
-                {/* En-tête avec bouton retour */}
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleBackToPresets}
-                    className="back-button p-1 h-8 w-8"
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                  </Button>
-                  <div className="flex items-center gap-2">
-                    <CalendarIcon className="h-4 w-4" />
-                    <h4 className="font-medium text-sm">Période personnalisée</h4>
-                  </div>
-                </div>
-                
-                {/* DatePicker */}
-                <DatePicker
-                  selected={tempStartDate}
-                  onChange={handleDateChange}
-                  startDate={tempStartDate}
-                  endDate={tempEndDate}
-                  selectsRange
-                  inline
-                  locale={fr}
-                  dateFormat="dd/MM/yyyy"
-                  monthsShown={1}
-                  showPopperArrow={false}
-                  maxDate={new Date()}
-                  minDate={subDays(new Date(), 365)}
-                />
-                
-                {/* Boutons d'action */}
-                <div className="flex justify-end gap-2 pt-3 border-t">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleCancel}
-                  >
-                    Annuler
-                  </Button>
-                  <Button
-                    size="sm"
-                    onClick={handleApplyCustomDates}
-                    disabled={!tempStartDate || !tempEndDate}
-                  >
-                    Appliquer
-                  </Button>
-                </div>
-              </div>
-            )}
-          </div>
+          {content}
         </PopoverContent>
       </Popover>
     </div>

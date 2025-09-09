@@ -74,6 +74,7 @@ export function LeadsTable({
     onDeselectAll,
     onRetrySingleLead,
     isAllSelected,
+    someSelected: selectedLeadIds && data.some(l => selectedLeadIds.has(l.id)),
   });
 
   const emptyMessage = getEmptyMessage(activeTab);
