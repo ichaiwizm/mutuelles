@@ -27,6 +27,7 @@ interface LeadsTableProps {
   onClearSelection?: () => void;
   onRetrySingleLead?: (lead: Lead) => void;
   isAllSelected?: boolean;
+  isSending?: boolean;
   onSelectByStatus?: (status: 'pending' | 'processing' | 'success' | 'error') => void;
   statusCounts?: {
     pending: number;
@@ -57,6 +58,7 @@ export function LeadsTable({
   onClearSelection,
   onRetrySingleLead,
   isAllSelected = false,
+  isSending = false,
   onSelectByStatus,
   statusCounts,
   onUpdateSelectedStatus,
@@ -110,6 +112,7 @@ export function LeadsTable({
         onDeselectAll={onDeselectAll || (() => {})}
         onSendToExtension={onSendToExtension || (() => {})}
         onClearSelection={onClearSelection || (() => {})}
+        isSending={isSending}
         isAllSelected={isAllSelected}
         onSelectByStatus={onSelectByStatus}
         statusCounts={statusCounts}

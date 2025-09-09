@@ -23,6 +23,55 @@ self.BG.setRunState = async function setRunState(state) {
   await chrome.storage.local.set({ [self.BG.RUN_STATE_KEY]: state });
 }
 
+// Provide a light summary for the platform UI
+self.BG.getRunStateSummary = async function getRunStateSummary() {
+  const state = await self.BG.getRunState();
+  const pool = await self.BG.getPool();
+  if (!state) return { active: false };
+  const activeProvider = state.providers?.[state.activeProviderIndex || 0] || null;
+  const backlogCounts = Object.fromEntries(Object.entries(state.backlog || {}).map(([p, arr]) => [p, (arr || []).length]));
+  return {
+    active: true,
+    providers: state.providers || [],
+    activeProvider,
+    backlogCounts,
+    windowId: pool?.windowId || null,
+  };
+}
+
+// Cancel run: close pool window and cleanup isolated groups
+self.BG.cancelRun = async function cancelRun() {
+  // Close pool window
+  let pool = await self.BG.getPool();
+  pool = await self.BG.validatePool(pool);
+  if (pool?.windowId) {
+    try { await chrome.windows.remove(pool.windowId); } catch (_) {}
+  }
+  try { await chrome.storage.local.remove([self.BG.POOL_KEY]); } catch (_) {}
+  try { await chrome.storage.local.remove([self.BG.RUN_STATE_KEY]); } catch (_) {}
+  // Close isolated groups
+  try {
+    const res = await chrome.storage.local.get([self.BG.ISOLATED_GROUPS_KEY]);
+    const map = res[self.BG.ISOLATED_GROUPS_KEY] || {};
+    for (const key of Object.keys(map)) {
+      const entry = map[key] || {};
+      if (entry.tabId) {
+        try { await chrome.tabs.remove(entry.tabId); } catch (_) {}
+      }
+      if (entry.windowId) {
+        try {
+          const tabs = await chrome.tabs.query({ windowId: entry.windowId });
+          if ((tabs || []).length === 0) {
+            try { await chrome.windows.remove(entry.windowId); } catch (_) {}
+          }
+        } catch (_) {}
+      }
+    }
+    await chrome.storage.local.remove([self.BG.ISOLATED_GROUPS_KEY]);
+  } catch (_) {}
+  return { cancelled: true };
+}
+
 self.BG.validatePool = async function validatePool(pool) {
   if (!pool) return null;
   try { await chrome.windows.get(pool.windowId); } catch (_) { return null; }

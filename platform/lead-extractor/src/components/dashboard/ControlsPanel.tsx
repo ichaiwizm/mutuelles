@@ -17,6 +17,9 @@ interface ControlsPanelProps {
   onClearAll: () => void;
   busy: boolean;
   lastSyncGmail?: string | null;
+  runActive?: boolean;
+  onStopRun?: () => void;
+  stopping?: boolean;
 }
 
 export function ControlsPanel({
@@ -29,7 +32,10 @@ export function ControlsPanel({
   filterMode = 'predefined',
   onClearAll,
   busy,
-  lastSyncGmail
+  lastSyncGmail,
+  runActive = false,
+  onStopRun,
+  stopping = false
 }: ControlsPanelProps) {
   const [gmailOpen, setGmailOpen] = useState(false);
   return (
@@ -95,8 +101,18 @@ export function ControlsPanel({
           </div>
         </div>
 
-        {/* Actions destructives à droite */}
-        <div className="ml-auto">
+        {/* Actions à droite */}
+        <div className="ml-auto flex items-center gap-3">
+          {runActive && onStopRun && (
+            <Button
+              onClick={onStopRun}
+              variant="outline"
+              disabled={stopping}
+              className={`flex items-center gap-2 ${stopping ? 'opacity-60 cursor-not-allowed' : ''}`}
+            >
+              {stopping ? 'Arrêt en cours...' : 'Stop run'}
+            </Button>
+          )}
           <Button 
             onClick={onClearAll} 
             variant="destructive" 

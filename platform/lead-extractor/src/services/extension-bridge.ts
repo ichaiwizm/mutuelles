@@ -91,6 +91,28 @@ export class ExtensionBridge {
     }
   }
 
+  // Demander l'état du run au background
+  static async getRunState(): Promise<{ active: boolean } & Record<string, any>> {
+    try {
+      const message: ExtensionMessage = { action: 'GET_RUN_STATE' } as any;
+      const res = await this.sendMessageToExtension(message);
+      return (res?.data as any) || { active: false };
+    } catch {
+      return { active: false } as any;
+    }
+  }
+
+  // Demander l'annulation du run en cours (fermer fenêtre/onglets)
+  static async cancelRun(): Promise<boolean> {
+    try {
+      const message: ExtensionMessage = { action: 'CANCEL_RUN' } as any;
+      const res = await this.sendMessageToExtension(message);
+      return !!res?.success;
+    } catch {
+      return false;
+    }
+  }
+
   // Démarrer un run (fenêtre unique + pool d'onglets)
   static async startRun(params: { providers: string[]; leads: Lead[]; parallelTabs: number; options?: { minimizeWindow?: boolean; closeOnFinish?: boolean } }): Promise<{ success: boolean; error?: string }> {
     try {

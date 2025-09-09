@@ -32,6 +32,19 @@ export function Dashboard() {
   const [manualDialogOpen, setManualDialogOpen] = useState(false);
   const [manualInitialTab, setManualInitialTab] = useState<'form' | 'csv'>('form');
   const [lastSyncGmail, setLastSyncGmail] = useState<string | null>(null);
+  const [sendingToExtension, setSendingToExtension] = useState(false);
+  const [runActive, setRunActive] = useState(false);
+  const [stoppingRun, setStoppingRun] = useState(false);
+
+  // Obtenir l'état du run au montage
+  useEffect(() => {
+    (async () => {
+      try {
+        const s = await ExtensionBridge.getRunState();
+        setRunActive(!!s?.active);
+      } catch { /* ignore */ }
+    })();
+  }, []);
 
   // Hooks personnalisés
   const { isAuthenticated, hasTokens, email, loading: authLoading, checkAuthStatus, redirectToLogin, logout } = useAuth();
@@ -228,9 +241,10 @@ export function Dashboard() {
 
   // Handler pour l'envoi à l'extension
   const handleSendToExtension = async () => {
-    
+    setSendingToExtension(true);
     if (selectedLeads.length === 0) {
       toast.error('Aucun lead sélectionné');
+      setSendingToExtension(false);
       return;
     }
 
@@ -242,6 +256,7 @@ export function Dashboard() {
         toast.error('Extension SwissLife non détectée', {
           description: 'Assurez-vous que l\'extension est installée et activée.'
         });
+        setSendingToExtension(false);
         return;
       }
 
@@ -253,6 +268,7 @@ export function Dashboard() {
       if (result.success) {
         toast.success(`${selectedLeads.length} leads envoyés`, { description: 'Traitement en cours dans l\'extension.' });
         handleClearSelection();
+        setRunActive(true);
       } else {
         toast.error('Erreur lors de l\'envoi des leads', { description: result.error || 'Erreur inconnue' });
       }
@@ -262,8 +278,44 @@ export function Dashboard() {
       toast.error('Erreur inattendue', {
         description: error instanceof Error ? error.message : 'Erreur inconnue'
       });
+    } finally {
+      setSendingToExtension(false);
     }
   };
+
+  // Stop run en cours
+  const handleStopRun = async () => {
+    try {
+      setStoppingRun(true);
+      const ok = await ExtensionBridge.cancelRun();
+      if (ok) {
+        toast.success('Run arrêté');
+        setRunActive(false);
+      } else {
+        toast.error('Impossible d\'arrêter le run');
+      }
+    } catch (e) {
+      toast.error('Erreur arrêt run', { description: e instanceof Error ? e.message : 'Erreur inconnue' });
+    } finally {
+      setStoppingRun(false);
+    }
+  };
+
+  // Poll léger de l'état du run quand on pense qu'il est actif
+  useEffect(() => {
+    let timer: any;
+    let cancelled = false;
+    const tick = async () => {
+      try {
+        const s = await ExtensionBridge.getRunState();
+        if (!cancelled) setRunActive(!!s?.active);
+      } finally {
+        if (!cancelled && runActive) timer = setTimeout(tick, 3000);
+      }
+    };
+    if (runActive) tick();
+    return () => { cancelled = true; if (timer) clearTimeout(timer); };
+  }, [runActive]);
 
   // Handlers pour la sélection
   const handleSelectAll = selectAll;
@@ -339,6 +391,9 @@ export function Dashboard() {
           onClearAll={clearAllLeads}
           busy={busy}
           lastSyncGmail={lastSyncGmail}
+          runActive={runActive}
+          onStopRun={handleStopRun}
+          stopping={stoppingRun}
         />
 
         {/* Recherche */}
@@ -378,6 +433,7 @@ export function Dashboard() {
           onClearSelection={handleClearSelection}
           onRetrySingleLead={handleRetrySingleLead}
           isAllSelected={isAllDataSelected}
+          isSending={sendingToExtension}
           onSelectByStatus={selectByStatus}
           statusCounts={statusCounts}
           onUpdateSelectedStatus={handleUpdateSelectedStatus}

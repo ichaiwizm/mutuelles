@@ -25,6 +25,14 @@ self.BG.handleMessage = async function handleMessage(message, sender) {
       const result = await self.BG.startRun(data || {});
       return { success: true, data: result };
     }
+    case 'GET_RUN_STATE': {
+      const summary = await self.BG.getRunStateSummary();
+      return { success: true, data: summary };
+    }
+    case 'CANCEL_RUN': {
+      const result = await self.BG.cancelRun();
+      return { success: true, data: result };
+    }
     case 'UPDATE_LEAD_STATUS': {
       // Reçu depuis le content script côté provider (SwissLife)
       // On relaie vers les onglets plateforme via le content script localhost

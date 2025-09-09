@@ -18,6 +18,7 @@ interface FloatingSelectionToolbarProps {
   onExport?: () => void;
   onClearSelection: () => void;
   isAllSelected: boolean;
+  isSending?: boolean;
   onSelectByStatus?: (status: 'pending' | 'processing' | 'success' | 'error') => void;
   statusCounts?: {
     pending: number;
@@ -40,6 +41,7 @@ export function FloatingSelectionToolbar({
   onExport,
   onClearSelection,
   isAllSelected,
+  isSending = false,
   onSelectByStatus,
   statusCounts,
   onUpdateStatus,
@@ -47,6 +49,10 @@ export function FloatingSelectionToolbar({
   className = ''
 }: FloatingSelectionToolbarProps) {
   if (selectedCount === 0) return null;
+
+  const handleSend = () => {
+    try { onSendToExtension(); } finally { onClearSelection(); }
+  };
 
   return (
     <div className={`
@@ -78,12 +84,13 @@ export function FloatingSelectionToolbar({
       {/* Actions principales */}
       <div className="flex items-center gap-2">
         <Button
-          onClick={onSendToExtension}
+          onClick={handleSend}
           size="sm"
-          className="bg-purple-600 hover:bg-purple-700 text-white"
+          disabled={isSending}
+          className={`bg-purple-600 text-white ${isSending ? 'opacity-60 cursor-not-allowed' : 'hover:bg-purple-700'}`}
         >
           <Send className="h-4 w-4 mr-1" />
-          Envoyer à l'extension
+          {isSending ? 'Envoi...' : "Envoyer à l'extension"}
         </Button>
 
         {onExport && (
