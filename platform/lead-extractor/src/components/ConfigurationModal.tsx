@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Settings } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useEffect, useState } from 'react';
 import { useSettings } from '@/hooks/useSettings';
 import { ExtensionBridge } from '@/services/extension-bridge';
 
@@ -14,16 +15,21 @@ interface ConfigurationModalProps {
 
 export function ConfigurationModal({ open, onOpenChange }: ConfigurationModalProps) {
   const { parallelTabs, setParallelTabs } = useSettings();
+  const [tempParallelTabs, setTempParallelTabs] = useState<number>(parallelTabs ?? 3);
 
-  const handleParallelTabsChange = async (value: number) => {
-    const sanitized = Math.max(1, Math.min(10, Math.floor(Number(value) || 1)));
+  useEffect(() => {
+    // Sync local temp when modal opens or global value changes
+    if (open) setTempParallelTabs(parallelTabs ?? 3);
+  }, [open, parallelTabs]);
+
+  const hasChanges = (tempParallelTabs ?? 3) !== (parallelTabs ?? 3);
+
+  const handleApply = async () => {
+    const sanitized = Math.max(1, Math.min(10, Math.floor(Number(tempParallelTabs) || 1)));
     setParallelTabs(sanitized);
     try {
-      // Mettre à jour la config côté extension (best-effort)
       await ExtensionBridge.setAutomationConfig({ parallelTabs: sanitized });
-    } catch (_) {
-      // silencieux si l'extension n'est pas dispo
-    }
+    } catch (_) {}
   };
 
   return (
@@ -55,8 +61,8 @@ export function ConfigurationModal({ open, onOpenChange }: ConfigurationModalPro
                   type="number"
                   min={1}
                   max={10}
-                  value={parallelTabs ?? 3}
-                  onChange={(e) => handleParallelTabsChange(Number(e.target.value))}
+                  value={tempParallelTabs}
+                  onChange={(e) => setTempParallelTabs(Number(e.target.value))}
                   className="w-24"
                 />
               </div>
@@ -65,6 +71,12 @@ export function ConfigurationModal({ open, onOpenChange }: ConfigurationModalPro
         </div>
 
         <DialogFooter className="gap-2">
+          <Button 
+            onClick={handleApply}
+            disabled={!hasChanges}
+          >
+            Appliquer
+          </Button>
           <Button 
             variant="outline" 
             onClick={() => onOpenChange(false)}

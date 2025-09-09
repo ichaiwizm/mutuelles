@@ -67,6 +67,12 @@ export class StorageManager {
 
   static saveSettings(settings: Settings): void {
     localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(settings));
+    try {
+      const event = new CustomEvent('settings-updated', { detail: settings });
+      window.dispatchEvent(event);
+    } catch (_) {
+      // ignore if window not available
+    }
   }
 
   static getLastSync(): LastSync {

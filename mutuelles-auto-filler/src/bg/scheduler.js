@@ -41,12 +41,12 @@ self.BG.validatePool = async function validatePool(pool) {
 }
 
 // Create/reuse single window
-self.BG.ensureWindow = async function ensureWindow() {
+self.BG.ensureWindow = async function ensureWindow(initialUrl) {
   let pool = await self.BG.getPool();
   pool = await self.BG.validatePool(pool);
   if (pool) return pool;
 
-  const win = await chrome.windows.create({ type: 'normal', focused: false, width: 1000, height: 800, url: 'about:blank' });
+  const win = await chrome.windows.create({ type: 'normal', focused: false, width: 1000, height: 800, url: initialUrl || 'about:blank' });
   try {
     const { automation_config } = await chrome.storage.local.get(['automation_config']);
     const minimize = typeof automation_config?.minimizeWindow === 'boolean' ? automation_config.minimizeWindow : true;
@@ -202,27 +202,61 @@ self.BG.startRun = async function startRun({ providers, leads, parallelTabs, opt
   };
   await self.BG.setRunState(runState);
 
-  // Prepare window + capacity
-  let pool = await self.BG.ensureCapacity(cap);
-
-  // Assign initial groups for active provider
+  // Open tabs directly with target URLs (no about:blank), in parallel
   const activeProvider = orderedProviders[0];
   const totalGroups = perProvider[activeProvider].length;
   const toAssign = Math.min(cap, totalGroups);
-  for (let i = 0; i < toAssign; i++) {
-    const tabSlot = pool.tabs[i];
-    const group = perProvider[activeProvider][i];
-    await self.BG.assignGroupToTab(tabSlot, activeProvider, group, i, totalGroups);
+  const groupsToOpen = perProvider[activeProvider].slice(0, toAssign);
+
+  // Ensure window exists, possibly created with first URL
+  const firstUrl = await self.BG.getProvider(activeProvider).buildUrlWithGroupId(groupsToOpen[0].groupId);
+  let pool = await self.BG.getPool();
+  pool = await self.BG.validatePool(pool);
+  if (!pool) {
+    pool = await self.BG.ensureWindow(firstUrl);
   }
 
-  // Remove the initial about:blank temp tab if any extra beyond capacity
-  try {
-    const tabs = await chrome.tabs.query({ windowId: pool.windowId });
-    const blanks = tabs.filter(t => (t.url || '') === 'about:blank');
-    if (blanks.length > 0 && tabs.length > cap) {
-      for (const b of blanks) { try { await chrome.tabs.remove(b.id); } catch (_) {} }
-    }
-  } catch (_) {}
+  // Find first tab if window was created with firstUrl
+  const tabsInWindow = await chrome.tabs.query({ windowId: pool.windowId });
+  const firstGroupId = groupsToOpen[0].groupId;
+  // Tenter de récupérer l'onglet actif de la fenêtre (créé avec firstUrl)
+  let firstTab = tabsInWindow.find(t => t.active) || tabsInWindow[0];
+  if (!firstTab) {
+    // Aucun onglet dans la fenêtre: créer le premier
+    firstTab = await chrome.tabs.create({ windowId: pool.windowId, url: firstUrl, active: false });
+  } else {
+    // S'assurer qu'il pointe bien vers l'URL attendue (éviter le doublon)
+    try { await chrome.tabs.update(firstTab.id, { url: firstUrl, active: false }); } catch (_) {}
+  }
+
+  // Create remaining tabs concurrently
+  const creations = groupsToOpen.slice(1).map(async (group) => {
+    const url = await self.BG.getProvider(activeProvider).buildUrlWithGroupId(group.groupId);
+    const tab = await chrome.tabs.create({ windowId: pool.windowId, url, active: false });
+    return { tab, group };
+  });
+  const created = await Promise.all(creations);
+
+  // Build pool tabs list: include first tab + created ones
+  pool.tabs = [];
+  const firstSlot = { tabId: firstTab.id, assigned: { provider: activeProvider, groupId: firstGroupId } };
+  pool.tabs.push(firstSlot);
+  for (let i = 0; i < created.length; i++) {
+    const { tab, group } = created[i];
+    pool.tabs.push({ tabId: tab.id, assigned: { provider: activeProvider, groupId: group.groupId } });
+  }
+  pool.capacity = cap;
+  pool.lastUsedAt = new Date().toISOString();
+  await self.BG.setPool(pool);
+
+  // Store group data and notify content scripts concurrently
+  const notifyAll = [];
+  const allAssigned = [{ tabId: firstTab.id, group: groupsToOpen[0], index: 0 }].concat(created.map((c, idx) => ({ tabId: c.tab.id, group: c.group, index: idx + 1 })));
+  for (const { tabId, group, index } of allAssigned) {
+    await self.BG.storeGroupData(activeProvider, group.groupId, group.leads, group.batchId, index, totalGroups);
+    notifyAll.push(self.BG.notifyTabLeadsUpdated(tabId, activeProvider, group.groupId, group.leads.length, index, totalGroups));
+  }
+  await Promise.all(notifyAll);
 
   return { started: true, providers: orderedProviders, capacity: cap };
 }

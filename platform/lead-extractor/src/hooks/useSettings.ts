@@ -38,6 +38,28 @@ export const useSettings = () => {
     setIsLoaded(true);
   }, []);
 
+  // Écouter les mises à jour externes (autres composants) des settings
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail as ReturnType<typeof StorageManager.getSettings>;
+      if (!detail) return;
+      setDays(detail.days);
+      setParallelTabs(typeof detail.parallelTabs === 'number' ? detail.parallelTabs : 3);
+      if (detail.dateRange) {
+        setDateRange({
+          from: detail.dateRange.from ? new Date(detail.dateRange.from) : undefined,
+          to: detail.dateRange.to ? new Date(detail.dateRange.to) : undefined
+        });
+        setFilterMode('custom');
+      } else {
+        setDateRange(null);
+        setFilterMode('predefined');
+      }
+    };
+    window.addEventListener('settings-updated' as any, handler as any);
+    return () => window.removeEventListener('settings-updated' as any, handler as any);
+  }, []);
+
   // Sauvegarder automatiquement quand les paramètres changent (mais seulement après le chargement initial)
   useEffect(() => {
     if (!isLoaded) return;
