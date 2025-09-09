@@ -5,8 +5,8 @@
 importScripts(
   'src/bg/constants.js',
   'src/bg/config-sw.js',
-  'src/bg/pool.js',
-  'src/bg/leads.js',
+  'src/bg/providers-registry.js',
+  'src/bg/scheduler.js',
   'src/bg/messaging.js'
 );
 

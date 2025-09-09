@@ -18,11 +18,11 @@ export function ConfigurationModal({ open, onOpenChange }: ConfigurationModalPro
         toast.error('Extension non détectée', { description: "Installez et activez l'extension." });
         return;
       }
-      const tab = await ExtensionBridge.checkSwissLifeTab();
-      if (tab?.exists) {
-        toast.success('Extension connectée', { description: 'Onglet SwissLife détecté.' });
+      const ok = await ExtensionBridge.ping();
+      if (ok) {
+        toast.success('Extension connectée', { description: 'Communication OK avec le service worker.' });
       } else {
-        toast.success('Extension connectée', { description: 'Extension détectée. Aucun onglet SwissLife ouvert.' });
+        toast.error('Extension présente mais ne répond pas');
       }
     } catch (e) {
       toast.error('Test extension échoué', { description: e instanceof Error ? e.message : String(e) });

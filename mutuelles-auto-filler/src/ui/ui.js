@@ -36,7 +36,13 @@ async function initializeStats() {
     
     const statusLineEl = document.getElementById('orch-status-line');
     const groupInfo = KEYS.groupId(); // Récupérer le groupId actuel
-    const groupDisplay = groupInfo !== 'default' ? ` [Groupe: ${groupInfo}]` : '';
+    const providerId = KEYS.provider();
+    let providerLabel = providerId;
+    try {
+      const reg = await import(chrome.runtime.getURL('src/providers/registry.js'));
+      providerLabel = reg.Providers?.[providerId]?.label || providerId;
+    } catch (_) {}
+    const groupDisplay = `${providerLabel ? ` [${providerLabel}]` : ''}${groupInfo !== 'default' ? ` [Groupe: ${groupInfo}]` : ''}`;
     
     if (leads.length > 0) {
       if (queueState && queueState.currentIndex < leads.length) {

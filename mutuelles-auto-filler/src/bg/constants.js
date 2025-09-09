@@ -2,8 +2,8 @@
 self.BG = self.BG || {};
 
 // Patterns par défaut (peuvent être étendus via config)
-self.BG.SWISSLIFE_URL_PATTERN = /swisslifeone\.fr.*\/tarification-et-simulation\/slsis/;
-self.BG.SWISSLIFE_URL_PATTERN_LOOSE = /swisslifeone\.fr/; // Pattern plus permissif pour debug
+// Note: URL patterns are provider-specific now; use provider registry helpers.
+// Note: URL patterns are provider-specific now; use provider registry helpers.
 
 // Configuration par défaut (service worker ne peut pas utiliser import())
 self.BG.DEFAULT_DEPLOYMENT_CONFIG = {
@@ -16,5 +16,6 @@ self.BG.DEFAULT_DEPLOYMENT_CONFIG = {
 };
 
 // Clé de stockage pour le pool multi-onglets réutilisable
-self.BG.POOL_KEY = 'swisslife_processing_pool';
+self.BG.POOL_KEY = 'processing_pool';
 
+self.BG.RUN_STATE_KEY = 'processing_run_state';

@@ -20,10 +20,10 @@ export class IframeInitializer {
     try {
       // Charger les dépendances nécessaires
       const { listenForCommands } = await import(chrome.runtime.getURL('src/core/iframe-bridge.js'));
-      const { executeSwissLifeAction } = await import(chrome.runtime.getURL('services/swisslife/orchestrator-bridge.js'));
-      
+      const { getExecuteActionForCurrentProvider } = await import(chrome.runtime.getURL('src/providers/runtime-executor.js'));
+      const exec = await getExecuteActionForCurrentProvider();
       // Écouter les commandes du frame principal
-      listenForCommands(executeSwissLifeAction);
+      listenForCommands(exec);
       
       this.initialized = true;
       console.log('✅ Listener iframe prêt');

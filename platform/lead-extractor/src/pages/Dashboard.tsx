@@ -180,23 +180,16 @@ export function Dashboard() {
         return;
       }
 
-      // 2. Vérifier/ouvrir onglet SwissLife
-      const tabResult = await ExtensionBridge.openSwissLifeTab();
-      if (!tabResult.success) {
-        toast.error('Impossible d\'accéder à SwissLife');
-        return;
-      }
-
-      // 3. Envoyer le lead unique
+      // 2. Lancer le run pour ce lead
       toast.info(`Réessai en cours pour ${lead.contact.prenom} ${lead.contact.nom}...`);
       
-      const sendResult = await ExtensionBridge.sendLeadsToExtension([lead]);
+      const result = await ExtensionBridge.startRun({ providers: ['swisslife'], leads: [lead], parallelTabs: 1, options: { minimizeWindow: true, closeOnFinish: false } });
       
-      if (sendResult.success) {
+      if (result.success) {
         toast.success(`Lead "${lead.contact.prenom} ${lead.contact.nom}" renvoyé avec succès`);
       } else {
         toast.error('Erreur lors du réessai', {
-          description: sendResult.error || 'Erreur inconnue'
+          description: result.error || 'Erreur inconnue'
         });
       }
       
@@ -230,46 +223,14 @@ export function Dashboard() {
 
       console.log('✅ Extension détectée');
 
-      // 2. Vérifier/ouvrir onglet SwissLife
-      toast.info('Vérification des onglets SwissLife...');
-      
-      const tabResult = await ExtensionBridge.openSwissLifeTab();
-      
-      if (!tabResult.success) {
-        toast.error('Impossible d\'accéder à SwissLife', {
-          description: 'Erreur lors de l\'ouverture/activation de l\'onglet SwissLife.'
-        });
-        return;
-      }
-
-      if (tabResult.wasExisting) {
-        console.log('Onglet SwissLife déjà ouvert - Activé');
-        toast.success('Onglet SwissLife activé');
-      } else {
-        console.log('Nouvel onglet SwissLife créé');
-        toast.success('Onglet SwissLife ouvert en arrière-plan');
-      }
-
-      // 3. Envoyer les leads à l'extension
-      toast.info('Envoi des leads vers l\'extension...');
-      
-      const sendResult = await ExtensionBridge.sendLeadsToExtension(selectedLeads);
-      
-      if (sendResult.success) {
-        toast.success(`${selectedLeads.length} leads envoyés avec succès`, {
-          description: 'Les leads sont maintenant disponibles dans l\'extension SwissLife.'
-        });
-        
-        // Vider la sélection après un envoi réussi
+      // 2. Démarrer le run (fenêtre unique + pool d'onglets)
+      toast.info('Lancement du traitement dans l\'extension...');
+      const result = await ExtensionBridge.startRun({ providers: ['swisslife'], leads: selectedLeads, parallelTabs: 1, options: { minimizeWindow: true, closeOnFinish: true } });
+      if (result.success) {
+        toast.success(`${selectedLeads.length} leads envoyés`, { description: 'Traitement en cours dans l\'extension.' });
         handleClearSelection();
-        
-        console.log('✅ Envoi terminé avec succès');
       } else {
-        toast.error('Erreur lors de l\'envoi des leads', {
-          description: sendResult.error || 'Erreur inconnue'
-        });
-        
-        console.error('❌ Erreur envoi:', sendResult.error);
+        toast.error('Erreur lors de l\'envoi des leads', { description: result.error || 'Erreur inconnue' });
       }
       
     } catch (error) {
@@ -289,11 +250,13 @@ export function Dashboard() {
   const handleDeleteSelected = () => {
     const count = selectedLeadIds.size;
     if (count === 0) return;
-    const confirmed = window.confirm(`Supprimer ${count} lead${count>1?'s':''} sélectionné${count>1?'s':''} ? Cette action est irréversible.`);
+    const confirmed = window.confirm(
+      `Supprimer ${count} lead${count > 1 ? 's' : ''} sélectionné${count > 1 ? 's' : ''} ? Cette action est irréversible.`
+    );
     if (!confirmed) return;
     const removed = removeLeadsByIds(Array.from(selectedLeadIds));
     if (removed > 0) {
-      toast.success(`${removed} lead${removed>1?'s':''} supprimé${removed>1?'s':''}`);
+      toast.success(`${removed} lead${removed > 1 ? 's' : ''} supprimé${removed > 1 ? 's' : ''}`);
       handleClearSelection();
     } else {
       toast.info('Aucun lead supprimé');
@@ -318,27 +281,26 @@ export function Dashboard() {
           <h1 className="text-2xl font-bold text-slate-800">
             Tableau de bord - Extraction de leads
           </h1>
-        <div className="flex items-center gap-3">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setConfigModalOpen(true)}
-            className="flex items-center gap-2"
-          >
-            <Settings className="h-4 w-4" />
-            Configuration
-          </Button>
-          <AuthStatus 
-            isAuthenticated={isAuthenticated}
-            hasTokens={hasTokens}
-            email={email}
-            onRedirectToLogin={redirectToLogin}
-            onLogout={logout}
-            loading={authLoading}
-          />
+          <div className="flex items-center gap-3">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setConfigModalOpen(true)}
+              className="flex items-center gap-2"
+            >
+              <Settings className="h-4 w-4" />
+              Configuration
+            </Button>
+            <AuthStatus
+              isAuthenticated={isAuthenticated}
+              hasTokens={hasTokens}
+              email={email}
+              onRedirectToLogin={redirectToLogin}
+              onLogout={logout}
+              loading={authLoading}
+            />
+          </div>
         </div>
-        </div>
-
 
         {/* Contrôles */}
         <ControlsPanel
@@ -352,7 +314,6 @@ export function Dashboard() {
           onExtractNew={handleExtractNew}
           busy={busy}
         />
-
 
         {/* Recherche */}
         <div className="mb-4 mt-6">
@@ -412,7 +373,6 @@ export function Dashboard() {
           open={configModalOpen}
           onOpenChange={setConfigModalOpen}
         />
-
       </div>
     </div>
   );

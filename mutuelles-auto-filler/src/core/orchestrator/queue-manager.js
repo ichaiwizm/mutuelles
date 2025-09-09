@@ -201,9 +201,10 @@ async function handleLeadSuccess(lead, progress, onProgress) {
     // Notifier le background que la queue de ce groupe est terminée
     try {
       const groupId = KEYS.groupId();
+      const provider = KEYS.provider();
       await chrome.runtime.sendMessage({
-        action: 'GROUP_QUEUE_COMPLETED',
-        data: { groupId }
+        action: 'QUEUE_DONE',
+        data: { provider, groupId }
       });
     } catch (e) {
       // ignore
@@ -277,10 +278,11 @@ async function handleLeadError(lead, progress, error, onProgress) {
       // Dernier lead terminé avec erreur → notifier la fin de queue
       try {
         const groupId = KEYS.groupId();
+        const provider = KEYS.provider();
         await updateQueueState({ status: 'completed', completedAt: new Date().toISOString() });
         await chrome.runtime.sendMessage({
-          action: 'GROUP_QUEUE_COMPLETED',
-          data: { groupId }
+          action: 'QUEUE_DONE',
+          data: { provider, groupId }
         });
       } catch (e) {
         // ignore
@@ -308,9 +310,10 @@ export async function processLeadsQueue(leadProcessor, onProgress = null) {
       // Notifier le background que la queue de ce groupe est terminée
       try {
         const groupId = KEYS.groupId();
+        const provider = KEYS.provider();
         await chrome.runtime.sendMessage({
-          action: 'GROUP_QUEUE_COMPLETED',
-          data: { groupId }
+          action: 'QUEUE_DONE',
+          data: { provider, groupId }
         });
       } catch (e) {
         // ignore

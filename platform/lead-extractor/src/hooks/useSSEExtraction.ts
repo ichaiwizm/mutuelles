@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { StorageManager } from '@/lib/storage';
-import { ExtensionBridge } from '@/services/extension-bridge';
 import { toast } from 'sonner';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';

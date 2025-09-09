@@ -1,10 +1,9 @@
 // Service de communication avec l'extension Chrome SwissLife
 import type { Lead } from '@/types/lead';
 import { formatLeadsForExtension } from '@/utils/lead-formatter';
-import { StorageManager } from '@/lib/storage';
 
 export interface ExtensionMessage {
-  action: 'CHECK_SWISSLIFE_TAB' | 'OPEN_SWISSLIFE_TAB' | 'SEND_LEADS';
+  action: 'PING' | 'SET_CONFIG' | 'START_RUN';
   data?: any;
 }
 
@@ -67,113 +66,36 @@ export class ExtensionBridge {
     }
   }
 
-  // Construire l'URL SwissLife complète
-  static buildSwissLifeUrl(): string {
-    const baseUrl = import.meta.env.VITE_SWISSLIFE_BASE_URL || 'https://www.swisslifeone.fr';
-    const path = import.meta.env.VITE_SWISSLIFE_TARIF_PATH || '/index-swisslifeOne.html#/tarification-et-simulation/slsis';
-    const refreshTime = Date.now();
-    
-    // Si le path contient un fragment (#), ajouter refreshTime après le fragment
-    if (path.includes('#')) {
-      const [basePath, fragment] = path.split('#');
-      return `${baseUrl}${basePath}#${fragment}?refreshTime=${refreshTime}`;
-    } else {
-      return `${baseUrl}${path}?refreshTime=${refreshTime}`;
+  // Ping simple du SW
+  static async ping(): Promise<boolean> {
+    try {
+      const res = await this.sendMessageToExtension({ action: 'PING' } as any);
+      return !!(res && (res as any).success);
+    } catch (_) {
+      return false;
     }
   }
 
-  // Vérifier si un onglet SwissLife est ouvert
-  static async checkSwissLifeTab(): Promise<{ exists: boolean; tabId?: number }> {
+  // Démarrer un run (fenêtre unique + pool d'onglets)
+  static async startRun(params: { providers: string[]; leads: Lead[]; parallelTabs: number; options?: { minimizeWindow?: boolean; closeOnFinish?: boolean } }): Promise<{ success: boolean; error?: string }> {
     try {
-      const message: ExtensionMessage = {
-        action: 'CHECK_SWISSLIFE_TAB'
-      };
-
-      const response = await this.sendMessageToExtension(message);
-      
-      if (response && response.success) {
-        return response.data || { exists: false };
-      } else {
-        return { exists: false };
-      }
-    } catch (error) {
-      console.error('❌ Error checking SwissLife tab:', error);
-      return { exists: false };
-    }
-  }
-
-  // Ouvrir ou activer un onglet SwissLife
-  static async openSwissLifeTab(): Promise<{ success: boolean; tabId?: number; wasExisting?: boolean }> {
-    try {
-      // D'abord vérifier si un onglet existe
-      const tabCheck = await this.checkSwissLifeTab();
-      
-      if (tabCheck.exists && tabCheck.tabId) {
-        // Ne pas activer l'onglet existant - rester en arrière-plan
-        return {
-          success: true,
-          tabId: tabCheck.tabId,
-          wasExisting: true
-        };
-      } else {
-        // Créer un nouvel onglet
-        const createMessage: ExtensionMessage = {
-          action: 'OPEN_SWISSLIFE_TAB',
-          data: { 
-            url: this.buildSwissLifeUrl(),
-            active: false // Ne pas donner le focus au nouvel onglet
-          }
-        };
-        
-        const response = await this.sendMessageToExtension(createMessage);
-        
-        return {
-          success: response.success,
-          tabId: response.data?.tabId,
-          wasExisting: false
-        };
-      }
-    } catch (error) {
-      console.error('Error opening SwissLife tab:', error);
-      return { success: false };
-    }
-  }
-
-  // Envoyer des leads à l'extension
-  static async sendLeadsToExtension(leads: Lead[]): Promise<{ success: boolean; error?: string }> {
-    try {
-      if (leads.length === 0) {
-        return { success: false, error: 'Aucun lead à envoyer' };
-      }
-
-      // Formater les leads pour l'extension
+      const { providers, leads, parallelTabs, options } = params || ({} as any);
+      if (!providers || providers.length === 0) return { success: false, error: 'providers requis' };
+      if (!leads || leads.length === 0) return { success: false, error: 'leads requis' };
       const formattedLeads = formatLeadsForExtension(leads);
-      
+
       const message: ExtensionMessage = {
-        action: 'SEND_LEADS',
-        data: {
-          leads: formattedLeads,
-          timestamp: new Date().toISOString(),
-          count: formattedLeads.length
-        }
+        action: 'START_RUN',
+        data: { providers, leads: formattedLeads, parallelTabs, options }
       };
 
-      console.log(`📊 [EXTENSION BRIDGE] Envoi de ${formattedLeads.length} leads`);
-
       const response = await this.sendMessageToExtension(message);
-      
-      if (response.success) {
-        console.log('✅ [EXTENSION BRIDGE] Leads envoyés avec succès:', response.data);
-        return { success: true };
-      } else {
-        return { success: false, error: response.error || 'Erreur inconnue' };
-      }
+      return response.success ? { success: true } : { success: false, error: response.error || 'Erreur inconnue' };
     } catch (error) {
-      console.error('Error sending leads to extension:', error);
+      console.error('Error starting run:', error);
       return { success: false, error: error instanceof Error ? error.message : 'Erreur inconnue' };
     }
   }
-
   // Envoyer un message à l'extension
   private static async sendMessageToExtension(message: ExtensionMessage): Promise<ExtensionResponse> {
     // Stratégie: essayer chrome.runtime.sendMessage si un ID d'extension est disponible;

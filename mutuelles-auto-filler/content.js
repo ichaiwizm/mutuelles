@@ -1,50 +1,52 @@
-// Point d'entrée principal refactorisé - gère frame principal ET iframe
+// Point d'entrée principal (provider-aware, fenêtre unique + pool d'onglets)
 (() => {
   'use strict';
-  
-  // Initialisation selon l'environnement
+
   async function initialize() {
     try {
-      // Import dynamique des modules
-      const { detectEnvironment } = await import(chrome.runtime.getURL('src/content/environment-detector.js'));
-      
-      // Détection de l'environnement
-      const env = detectEnvironment();
-      
-      if (!env.isValid) {
-        console.log('❌ Pas sur SwissLife ni plateforme autorisée, exit');
+      const hostname = window.location.hostname;
+      const port = window.location.port;
+      const href = window.location.href;
+      const pathname = window.location.pathname;
+      const isMainFrame = (window === window.top);
+
+      // Plateforme ?
+      const isPlatform = (hostname === 'localhost' && port === '5174') || hostname === 'mutuelles-lead-extractor.vercel.app';
+      if (isMainFrame && isPlatform) {
+        const { LocalhostBridge } = await import(chrome.runtime.getURL('src/content/localhost-bridge.js'));
+        const { MessageHandler } = await import(chrome.runtime.getURL('src/content/message-handler.js'));
+        const messageHandler = new MessageHandler(null, null);
+        const bridge = new LocalhostBridge(messageHandler);
+        bridge.initialize();
         return;
       }
-      
-      if (env.isMainFrame) {
-        if (env.isSwissLife) {
-          const { SwissLifeInitializer } = await import(chrome.runtime.getURL('src/content/swisslife-initializer.js'));
-          const initializer = new SwissLifeInitializer();
-          await initializer.initialize();
-        } else if (env.isPlatform) {
-          const { LocalhostBridge } = await import(chrome.runtime.getURL('src/content/localhost-bridge.js'));
-          const { MessageHandler } = await import(chrome.runtime.getURL('src/content/message-handler.js'));
-          const messageHandler = new MessageHandler(null, null);
-          const bridge = new LocalhostBridge(messageHandler);
-          bridge.initialize();
-        }
-      } else if (env.isTarificateurIframe) {
-        const { IframeInitializer } = await import(chrome.runtime.getURL('src/content/iframe-initializer.js'));
-        const initializer = new IframeInitializer();
-        await initializer.initialize();
+
+      // Provider ?
+      const { Providers, detectProviderFromLocation } = await import(chrome.runtime.getURL('src/providers/registry.js'));
+      const detected = detectProviderFromLocation();
+      const provider = detected.provider;
+
+      if (!provider) {
+        // Not on a supported provider, ignore silently
+        return;
       }
-      // Autres frames silencieusement ignorés
-      
+
+      if (isMainFrame) {
+        await provider.initMainFrame();
+      } else {
+        const isTarif = provider.isTarificateurIframe(href, pathname, window.name, isMainFrame);
+        if (isTarif) {
+          await provider.initIframe();
+        }
+      }
     } catch (error) {
-      console.error('❌ Erreur lors de l\'initialisation:', error);
+      console.error('❌ Erreur initialisation content:', error);
     }
   }
-  
-  // Lancer l'initialisation
+
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initialize);
   } else {
     initialize();
   }
-
 })();
