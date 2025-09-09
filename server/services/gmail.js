@@ -63,9 +63,29 @@ export class GmailService {
     const messages = await this.getMessages(days);
     const leads = [];
     
-    for (const message of messages) {
-      const messageLeads = await this.processMessage(message.id);
-      leads.push(...messageLeads);
+    const BATCH_SIZE = 10;
+    logger.info(`Processing ${messages.length} messages in batches of ${BATCH_SIZE}`);
+    
+    // Traitement par batch parallèle
+    for (let i = 0; i < messages.length; i += BATCH_SIZE) {
+      const batch = messages.slice(i, i + BATCH_SIZE);
+      
+      try {
+        const batchPromises = batch.map(message => 
+          this.processMessage(message.id).catch(error => {
+            logger.error(`Error processing message ${message.id}:`, error);
+            return [];
+          })
+        );
+        
+        const batchResults = await Promise.all(batchPromises);
+        leads.push(...batchResults.flat());
+        
+        logger.info(`Processed batch ${Math.floor(i/BATCH_SIZE) + 1}/${Math.ceil(messages.length/BATCH_SIZE)} (${i + batch.length}/${messages.length} messages)`);
+        
+      } catch (error) {
+        logger.error(`Error processing batch starting at ${i}:`, error);
+      }
     }
     
     logger.info(`Extracted ${leads.length} leads from Gmail (before deduplication)`);
@@ -92,16 +112,46 @@ export class GmailService {
         message: `${total} messages à traiter`
       });
       
-      for (let i = 0; i < messages.length; i++) {
+      const BATCH_SIZE = 10; // Traiter 10 messages en parallèle
+      let processedCount = 0;
+
+      for (let i = 0; i < messages.length; i += BATCH_SIZE) {
+        const batch = messages.slice(i, i + BATCH_SIZE);
+        const batchEnd = Math.min(processedCount + batch.length, total);
+        
         sendEvent({ 
           phase: 'processing', 
           total, 
-          current: i + 1,
-          message: `Traitement message ${i + 1}/${total}`
+          current: processedCount,
+          message: `Traitement messages ${processedCount + 1}-${batchEnd}/${total} (batch parallèle)`
         });
         
-        const messageLeads = await this.processMessage(messages[i].id);
-        leads.push(...messageLeads);
+        try {
+          // Traiter tous les messages du batch en parallèle
+          const batchPromises = batch.map(message => 
+            this.processMessage(message.id).catch(error => {
+              logger.error(`Error processing message ${message.id}:`, error);
+              return []; // Retourner un tableau vide en cas d'erreur sur un message
+            })
+          );
+          
+          const batchResults = await Promise.all(batchPromises);
+          leads.push(...batchResults.flat());
+          
+          processedCount += batch.length;
+          
+          // Envoyer une mise à jour après chaque batch
+          sendEvent({ 
+            phase: 'processing', 
+            total, 
+            current: processedCount,
+            message: `${processedCount}/${total} messages traités`
+          });
+          
+        } catch (error) {
+          logger.error(`Error processing batch starting at ${i}:`, error);
+          processedCount += batch.length; // Continue même en cas d'erreur du batch
+        }
       }
       
       // Déduplication côté serveur
