@@ -35,13 +35,17 @@ export function Dashboard() {
   const [sendingToExtension, setSendingToExtension] = useState(false);
   const [runActive, setRunActive] = useState(false);
   const [stoppingRun, setStoppingRun] = useState(false);
+  const [isolatedCount, setIsolatedCount] = useState(0);
+  const [stoppingIsolated, setStoppingIsolated] = useState(false);
 
-  // Obtenir l'état du run au montage
+  // Obtenir l'état du run/retry au montage
   useEffect(() => {
     (async () => {
       try {
         const s = await ExtensionBridge.getRunState();
         setRunActive(!!s?.active);
+        const iso = await ExtensionBridge.getIsolatedState();
+        setIsolatedCount(iso?.isolatedCount || 0);
       } catch { /* ignore */ }
     })();
   }, []);
@@ -225,6 +229,10 @@ export function Dashboard() {
       
       if (result.success) {
         toast.success(`Lead "${lead.contact.prenom} ${lead.contact.nom}" renvoyé avec succès`);
+        try {
+          const iso = await ExtensionBridge.getIsolatedState();
+          setIsolatedCount(iso?.isolatedCount || 1);
+        } catch { setIsolatedCount(1); }
       } else {
         toast.error('Erreur lors du réessai', {
           description: result.error || 'Erreur inconnue'
@@ -301,21 +309,23 @@ export function Dashboard() {
     }
   };
 
-  // Poll léger de l'état du run quand on pense qu'il est actif
+  // Poll périodique de l'état run + retries isolés
   useEffect(() => {
-    let timer: any;
     let cancelled = false;
-    const tick = async () => {
+    const interval = setInterval(async () => {
       try {
-        const s = await ExtensionBridge.getRunState();
-        if (!cancelled) setRunActive(!!s?.active);
-      } finally {
-        if (!cancelled && runActive) timer = setTimeout(tick, 3000);
-      }
-    };
-    if (runActive) tick();
-    return () => { cancelled = true; if (timer) clearTimeout(timer); };
-  }, [runActive]);
+        const [s, iso] = await Promise.all([
+          ExtensionBridge.getRunState(),
+          ExtensionBridge.getIsolatedState()
+        ]);
+        if (!cancelled) {
+          setRunActive(!!s?.active);
+          setIsolatedCount(iso?.isolatedCount || 0);
+        }
+      } catch { /* ignore */ }
+    }, 3000);
+    return () => { cancelled = true; clearInterval(interval); };
+  }, []);
 
   // Handlers pour la sélection
   const handleSelectAll = selectAll;
@@ -394,6 +404,10 @@ export function Dashboard() {
           runActive={runActive}
           onStopRun={handleStopRun}
           stopping={stoppingRun}
+          isolatedActive={isolatedCount > 0}
+          isolatedCount={isolatedCount}
+          onStopIsolated={handleStopIsolated}
+          stoppingIsolated={stoppingIsolated}
         />
 
         {/* Recherche */}

@@ -33,6 +33,14 @@ self.BG.handleMessage = async function handleMessage(message, sender) {
       const result = await self.BG.cancelRun();
       return { success: true, data: result };
     }
+    case 'GET_ISOLATED_STATE': {
+      const summary = await self.BG.getIsolatedSummary();
+      return { success: true, data: summary };
+    }
+    case 'CANCEL_ISOLATED': {
+      const result = await self.BG.cancelIsolated(data || {});
+      return { success: true, data: result };
+    }
     case 'UPDATE_LEAD_STATUS': {
       // Reçu depuis le content script côté provider (SwissLife)
       // On relaie vers les onglets plateforme via le content script localhost

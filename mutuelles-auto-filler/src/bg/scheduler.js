@@ -344,6 +344,48 @@ self.BG.getIsolatedGroup = async function getIsolatedGroup(groupId) {
   } catch (_) { return null; }
 }
 
+// Summary for isolated groups
+self.BG.getIsolatedSummary = async function getIsolatedSummary() {
+  try {
+    const res = await chrome.storage.local.get([self.BG.ISOLATED_GROUPS_KEY]);
+    const map = res[self.BG.ISOLATED_GROUPS_KEY] || {};
+    const groups = Object.keys(map).map(groupId => ({ groupId, ...(map[groupId] || {}) }));
+    return { isolatedCount: groups.length, groups };
+  } catch (_) {
+    return { isolatedCount: 0, groups: [] };
+  }
+}
+
+// Cancel isolated groups; if groupId provided, only that one
+self.BG.cancelIsolated = async function cancelIsolated({ groupId } = {}) {
+  try {
+    const res = await chrome.storage.local.get([self.BG.ISOLATED_GROUPS_KEY]);
+    const map = res[self.BG.ISOLATED_GROUPS_KEY] || {};
+    const keys = groupId ? [groupId] : Object.keys(map);
+    let closed = 0;
+    for (const key of keys) {
+      const entry = map[key];
+      if (!entry) continue;
+      if (entry.tabId) {
+        try { await chrome.tabs.remove(entry.tabId); } catch (_) {}
+      }
+      if (entry.windowId) {
+        try {
+          const tabs = await chrome.tabs.query({ windowId: entry.windowId });
+          if ((tabs || []).length === 0) {
+            try { await chrome.windows.remove(entry.windowId); } catch (_) {}
+          }
+        } catch (_) {}
+      }
+      delete map[key];
+      closed++;
+    }
+    await chrome.storage.local.set({ [self.BG.ISOLATED_GROUPS_KEY]: map });
+    return { cancelled: true, closed };
+  } catch (_) {
+    return { cancelled: false, closed: 0 };
+  }
+}
 // Open a dedicated tab for a single-lead retry without altering the pool
 self.BG.startIsolatedRun = async function startIsolatedRun({ provider, lead, options }) {
   const batchId = Date.now().toString();
