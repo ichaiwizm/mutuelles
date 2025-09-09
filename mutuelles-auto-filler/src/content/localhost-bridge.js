@@ -10,12 +10,12 @@ export class LocalhostBridge {
   }
 
   initialize() {
-    console.log('✅ Extension active sur la plateforme - Initialisation pont de communication...');
+    
     // Charger la config dynamiquement
     import(chrome.runtime.getURL('src/config/config.js'))
       .then((mod) => {
         this._config = mod;
-        console.log('✅ Origines autorisées:', mod.getDefaultPlatformOrigins());
+        
       })
       .catch(() => {
         // ignore
@@ -27,7 +27,7 @@ export class LocalhostBridge {
     // Initialiser le gestionnaire de messages pour localhost
     this.messageHandler.initializeForLocalhost();
     
-    console.log('✅ Pont de communication plateforme prêt');
+    
   }
 
   injectExtensionId() {
@@ -63,7 +63,9 @@ export class LocalhostBridge {
       const responsePromise = chrome.runtime.sendMessage(event.data.message);
       
       const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Timeout background script')), 4000);
+        // Le démarrage (START_RUN) peut prendre du temps (création fenêtre/onglets)
+        // Augmenter le timeout pour éviter les faux négatifs côté plateforme
+        setTimeout(() => reject(new Error('Timeout background script')), 15000);
       });
       
       const response = await Promise.race([responsePromise, timeoutPromise]);

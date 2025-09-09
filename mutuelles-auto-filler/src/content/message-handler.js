@@ -10,7 +10,7 @@ export class MessageHandler {
   }
 
   initializeForSwissLife() {
-    console.log('📬 Initialisation gestionnaire de messages SwissLife');
+    
     
     // Écouter les messages du background script pour les mises à jour de leads
     chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
@@ -24,7 +24,7 @@ export class MessageHandler {
   }
 
   initializeForLocalhost() {
-    console.log('📬 Initialisation gestionnaire de messages localhost');
+    
     
     // Écouter les messages du background script pour les notifications de statut
     chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
@@ -74,7 +74,7 @@ export class MessageHandler {
     
     // Relayer les notifications de statut vers la plateforme
     else if (message.action === 'FORWARD_STATUS_TO_PLATFORM' && message.source === 'background') {
-      console.log('📡 [CONTENT localhost] Notification:', message.data.status, 'pour', message.data.leadName);
+      
       
       // Envoyer vers la plateforme via postMessage
       window.postMessage({
@@ -88,7 +88,7 @@ export class MessageHandler {
 
   async handleWindowMessage(event) {
     if (event.data?.type === 'ORCHESTRATOR_STATUS_UPDATE') {
-      console.log('📡 [CONTENT SwissLife] Status update:', event.data.data.status, 'pour', event.data.data.leadName);
+      
       
       // Relayer au background
       try {
@@ -110,7 +110,7 @@ export class MessageHandler {
     
     // Écouter les messages de l'orchestrator (depuis l'iframe) - flux legacy
     if (event.data.type === 'ORCHESTRATOR_STATUS_UPDATE') {
-      console.log('📡 [CONTENT localhost] Legacy status update:', event.data.data.status, 'pour', event.data.data.leadName);
+      
       
       // Relayer au background
       try {

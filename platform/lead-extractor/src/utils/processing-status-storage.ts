@@ -133,7 +133,6 @@ export class ProcessingStatusStorage {
 
     if (removedCount > 0) {
       this.saveStatuses(cleanedStatuses);
-      console.log(`[PROCESSING STATUS STORAGE] ${removedCount} statuts anciens supprimés`);
     }
 
     return removedCount;
@@ -195,7 +194,6 @@ export class ProcessingStatusStorage {
 
     if (removedCount > 0) {
       this.saveStatuses(cleanedStatuses);
-      console.log(`[PROCESSING STATUS STORAGE] ${removedCount} statuts orphelins supprimés`);
     }
 
     return removedCount;

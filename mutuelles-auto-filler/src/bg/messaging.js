@@ -25,6 +25,25 @@ self.BG.handleMessage = async function handleMessage(message, sender) {
       const result = await self.BG.startRun(data || {});
       return { success: true, data: result };
     }
+    case 'UPDATE_LEAD_STATUS': {
+      // Reçu depuis le content script côté provider (SwissLife)
+      // On relaie vers les onglets plateforme via le content script localhost
+      try {
+        const { leadId, status, leadName, details } = data || {};
+        const statusUpdate = {
+          type: 'LEAD_STATUS_UPDATE',
+          leadId: String(leadId || ''),
+          status: status || 'pending',
+          leadName: String(leadName || ''),
+          timestamp: new Date().toISOString(),
+          details: details || {}
+        };
+        await self.BG.notifyPlatformTabs(statusUpdate);
+        return { success: true };
+      } catch (e) {
+        return { success: false, error: e?.message || 'Erreur relais statut' };
+      }
+    }
     case 'QUEUE_DONE': {
       const result = await self.BG.onQueueDone(data || {}, sender);
       return { success: true, data: result };

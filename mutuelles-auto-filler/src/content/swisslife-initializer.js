@@ -17,12 +17,12 @@ export class SwissLifeInitializer {
 
   async initialize() {
     if (window.orchestratorInitialized) {
-      console.log('🔄 Orchestrateur déjà initialisé');
+    
       return;
     }
     window.orchestratorInitialized = true;
 
-    console.log('🎼 Initialisation orchestrateur SwissLife (frame principal)...');
+    
     
     try {
       // Charger les dépendances
@@ -46,7 +46,7 @@ export class SwissLifeInitializer {
       // Vérifier auto-exécution au démarrage
       await this.autoExecutionManager.checkAndExecuteOnStartup();
       
-      console.log('✅ Orchestrateur SwissLife prêt');
+      
     } catch (error) {
       console.error('❌ Erreur initialisation SwissLife:', error);
     }

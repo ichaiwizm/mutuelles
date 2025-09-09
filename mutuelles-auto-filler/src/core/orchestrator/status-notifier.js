@@ -6,7 +6,6 @@
  * Notifie la plateforme du statut d'un lead
  */
 export async function notifyPlatformStatus(leadId, status, leadName, details = {}) {
-  console.log(`📡 [STATUS-NOTIFIER] ${status} pour "${leadName}" (ID: ${leadId})`);
   
   try {
     // Envoyer vers le content.js principal via postMessage

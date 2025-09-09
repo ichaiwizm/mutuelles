@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import type { Lead } from '@/types/lead';
 import type { LeadStatusUpdate } from '@/services/extension-bridge';
 import { ProcessingStatusStorage, type ProcessingStatus, type ProcessingStatusMap } from '@/utils/processing-status-storage';
@@ -16,7 +16,7 @@ export function useProcessingStatus() {
     // Nettoyer les statuts anciens (optionnel, 30 jours par défaut)
     ProcessingStatusStorage.cleanupOldStatuses(30);
     
-    console.log('[PROCESSING STATUS] Statuts chargés depuis localStorage:', Object.keys(loadedStatuses).length);
+    
   }, []);
 
   // Sauvegarder automatiquement quand statusMap change (mais seulement après le chargement initial)
@@ -24,7 +24,6 @@ export function useProcessingStatus() {
     if (!isLoaded) return;
     
     ProcessingStatusStorage.saveStatuses(statusMap);
-    console.log('[PROCESSING STATUS] Statuts sauvegardés:', Object.keys(statusMap).length);
   }, [statusMap, isLoaded]);
 
   // Mappe les statuts externes vers nos statuts internes
@@ -40,12 +39,12 @@ export function useProcessingStatus() {
   };
 
   // Met à jour le statut d'un lead
-  const setLeadStatus = (leadId: string, next: ProcessingStatus) => {
+  const setLeadStatus = useCallback((leadId: string, next: ProcessingStatus) => {
     setStatusMap(prev => ({ ...prev, [leadId]: { ...prev[leadId], ...next } }));
-  };
+  }, []);
 
   // Applique un update envoyé par l'extension
-  const applyStatusUpdate = (update: LeadStatusUpdate) => {
+  const applyStatusUpdate = useCallback((update: LeadStatusUpdate) => {
     const next: ProcessingStatus = {
       status: mapExternalStatus(update.status),
       timestamp: update.timestamp || new Date().toISOString(),
@@ -57,7 +56,7 @@ export function useProcessingStatus() {
       leadName: update.leadName,
     };
     setLeadStatus(update.leadId, next);
-  };
+  }, [setLeadStatus]);
 
   // Fonction pour enrichir un lead avec son statut de traitement
   const enrichLeadWithStatus = (lead: Lead): Lead => {

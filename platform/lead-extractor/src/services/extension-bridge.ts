@@ -172,11 +172,7 @@ export class ExtensionBridge {
   // Ajouter un callback pour les mises à jour de statut
   static onLeadStatusUpdate(callback: (update: LeadStatusUpdate) => void): () => void {
     this.statusUpdateCallbacks.add(callback);
-    
-    // Initialiser l'écoute si ce n'est pas déjà fait
     this.initializeStatusListener();
-    
-    // Retourner une fonction de nettoyage
     return () => {
       this.statusUpdateCallbacks.delete(callback);
     };
@@ -185,37 +181,22 @@ export class ExtensionBridge {
   // Initialiser l'écoute des messages de statut (une seule fois)
   private static statusListenerInitialized = false;
   private static initializeStatusListener(): void {
-    if (this.statusListenerInitialized) {
-      return;
-    }
-    
+    if (this.statusListenerInitialized) return;
     this.statusListenerInitialized = true;
-    
-    // Écouter les messages de statut depuis l'extension
     window.addEventListener('message', (event) => {
-      // Vérifier l'origine pour la sécurité
-      if (event.origin !== window.location.origin) {
-        return;
-      }
-      
-      // Vérifier le type de message
+      if (event.origin !== window.location.origin) return;
       if (event.data?.type === 'FROM_EXTENSION_STATUS' && event.data?.statusUpdate) {
         const update = event.data.statusUpdate as LeadStatusUpdate;
-        
-        console.log('[EXTENSION BRIDGE] 📡 Notification reçue:', update);
-        
-        // Notifier tous les callbacks enregistrés
         this.statusUpdateCallbacks.forEach(callback => {
-          try {
-            callback(update);
-          } catch (error) {
-            console.error('[EXTENSION BRIDGE] ❌ Erreur callback:', error);
-          }
+          try { callback(update); } catch (error) { console.error('[EXTENSION BRIDGE] Callback error:', error); }
+        });
+      } else if (event.data?.type === 'FROM_EXTENSION' && event.data?.statusUpdate) {
+        const update = event.data.statusUpdate as LeadStatusUpdate;
+        this.statusUpdateCallbacks.forEach(callback => {
+          try { callback(update); } catch (error) { console.error('[EXTENSION BRIDGE] Callback error:', error); }
         });
       }
     });
-    
-    console.log('[EXTENSION BRIDGE] ✅ Écoute des statuts initialisée');
   }
 
 }

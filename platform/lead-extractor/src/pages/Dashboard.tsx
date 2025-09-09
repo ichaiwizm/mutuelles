@@ -121,35 +121,50 @@ export function Dashboard() {
   
   // Écouter les notifications de statut depuis l'extension
   useEffect(() => {
+    
+    
     const handleStatusUpdate = (update: LeadStatusUpdate) => {
+      
+      
       // Appliquer l'update au store local pour mettre à jour le tableau
-      applyStatusUpdate(update);
+      try {
+        applyStatusUpdate(update);
+        
+      } catch (error) {
+        console.error('[DASHBOARD] Erreur applyStatusUpdate:', error);
+      }
       
       const { status, leadName, details } = update;
       
       switch (status) {
         case 'processing':
-          console.log(`[EXTENSION] 🚀 Lead "${leadName}" - ${details.message || 'Début du traitement'}`);
+          
           break;
         
         case 'success':
-          console.log(`[EXTENSION] ✅ Lead "${leadName}" - ${details.message || 'Traitement terminé avec succès'}${details.completedSteps ? ` (${details.completedSteps} étapes)` : ''}`);
+          
           break;
         
         case 'error':
-          console.log(`[EXTENSION] ❌ Lead "${leadName}" - ${details.message || 'Erreur lors du traitement'}${details.errorMessage ? `: ${details.errorMessage}` : ''}`);
+          
           break;
         
         default:
-          console.log(`[EXTENSION] 📋 Lead "${leadName}" - Statut: ${status}`);
+          
       }
     };
+    
+    
     
     // S'abonner aux notifications
     const unsubscribe = ExtensionBridge.onLeadStatusUpdate(handleStatusUpdate);
     
+    
     // Nettoyer l'abonnement au démontage
-    return unsubscribe;
+    return () => {
+      
+      unsubscribe();
+    };
   }, [applyStatusUpdate]);
 
   // Nettoyer les statuts orphelins quand les leads changent
@@ -160,7 +175,7 @@ export function Dashboard() {
     const removedCount = cleanupOrphanedStatuses(existingLeadIds);
     
     if (removedCount > 0) {
-      console.log(`[DASHBOARD] ${removedCount} statuts orphelins nettoyés`);
+      // nettoyage silencieux
     }
   }, [leads, isLoaded, cleanupOrphanedStatuses]);
 
@@ -178,7 +193,6 @@ export function Dashboard() {
   
   // Handler pour l'envoi d'un seul lead (retry)
   const handleRetrySingleLead = async (lead: Lead) => {
-    console.log('Retry lead:', lead.contact.nom, lead.contact.prenom);
     
     try {
       // 1. Vérifier si l'extension est installée
@@ -205,7 +219,7 @@ export function Dashboard() {
       }
       
     } catch (error) {
-      console.error('❌ Erreur retry:', error);
+      console.error('Erreur retry:', error);
       toast.error('Erreur lors du réessai', {
         description: error instanceof Error ? error.message : 'Erreur inconnue'
       });
@@ -214,7 +228,6 @@ export function Dashboard() {
 
   // Handler pour l'envoi à l'extension
   const handleSendToExtension = async () => {
-    console.log('Début envoi vers extension - Leads sélectionnés:', selectedLeads.length);
     
     if (selectedLeads.length === 0) {
       toast.error('Aucun lead sélectionné');
@@ -232,7 +245,7 @@ export function Dashboard() {
         return;
       }
 
-      console.log('✅ Extension détectée');
+      // Extension détectée
 
       // 2. Démarrer le run (fenêtre unique + pool d'onglets)
       toast.info('Lancement du traitement dans l\'extension...');
@@ -245,7 +258,7 @@ export function Dashboard() {
       }
       
     } catch (error) {
-      console.error('❌ Erreur générale:', error);
+      console.error('Erreur générale:', error);
       toast.error('Erreur inattendue', {
         description: error instanceof Error ? error.message : 'Erreur inconnue'
       });
