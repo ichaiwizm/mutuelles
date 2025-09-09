@@ -30,28 +30,31 @@ export async function notifyPlatformStatus(leadId, status, leadName, details = {
 /**
  * Notifie le début du traitement d'un lead
  */
-export async function notifyProcessingStart(leadId, leadName) {
+export async function notifyProcessingStart(leadId, leadName, attempt) {
   return await notifyPlatformStatus(leadId, 'processing', leadName, {
-    message: 'Début du traitement'
+    message: attempt ? `Début du traitement (tentative ${attempt})` : 'Début du traitement',
+    attempt
   });
 }
 
 /**
  * Notifie le succès du traitement d'un lead
  */
-export async function notifyProcessingSuccess(leadId, leadName, completedSteps) {
+export async function notifyProcessingSuccess(leadId, leadName, completedSteps, attempt) {
   return await notifyPlatformStatus(leadId, 'success', leadName, {
-    message: 'Traitement terminé avec succès',
-    completedSteps
+    message: attempt ? `Traitement terminé avec succès (tentative ${attempt})` : 'Traitement terminé avec succès',
+    completedSteps,
+    attempt
   });
 }
 
 /**
  * Notifie l'erreur du traitement d'un lead
  */
-export async function notifyProcessingError(leadId, leadName, errorMessage) {
+export async function notifyProcessingError(leadId, leadName, errorMessage, attempt) {
   return await notifyPlatformStatus(leadId, 'error', leadName, {
-    message: 'Erreur lors du traitement',
-    errorMessage
+    message: attempt ? `Erreur lors du traitement (tentative ${attempt})` : 'Erreur lors du traitement',
+    errorMessage,
+    attempt
   });
 }

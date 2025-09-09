@@ -3,7 +3,7 @@
  */
 
 import { getLeadByIndex, isValidLeadIndex } from './lead-manager.js';
-import { saveProcessingStatus } from './storage-manager.js';
+import { saveProcessingStatus, getLeadRetryCount } from './storage-manager.js';
 import { notifyProcessingStart, notifyProcessingSuccess, notifyProcessingError } from './status-notifier.js';
 import { executeWorkflow } from './workflow-executor.js';
 
@@ -56,13 +56,18 @@ export async function runTestWithLead(leadIndex, onProgress = null) {
   
   console.log('🚀 Démarrage traitement lead:', `${leadName} (ID: ${leadId})`);
   
+  // Déterminer la tentative (retryCount + 1)
+  const retryCount = await getLeadRetryCount(leadId);
+  const attempt = (retryCount || 0) + 1;
+
   // Marquer le lead comme en cours de traitement
   await saveProcessingStatus(leadId, 'processing', {
-    leadName: leadName
+    leadName: leadName,
+    attempt
   });
   
-  // Notifier la plateforme du début du traitement
-  await notifyProcessingStart(leadId, leadName);
+  // Notifier la plateforme du début du traitement (avec tentative)
+  await notifyProcessingStart(leadId, leadName, attempt);
   
   try {
     // Exécuter le workflow
@@ -82,11 +87,12 @@ export async function runTestWithLead(leadIndex, onProgress = null) {
     await saveProcessingStatus(leadId, 'success', {
       leadName: leadName,
       completedSteps: result.completedSteps,
-      processedAt: new Date().toISOString()
+      processedAt: new Date().toISOString(),
+      attempt
     });
     
-    // Notifier la plateforme du succès
-    await notifyProcessingSuccess(leadId, leadName, result.completedSteps);
+    // Notifier la plateforme du succès (avec tentative)
+    await notifyProcessingSuccess(leadId, leadName, result.completedSteps, attempt);
     
     return result;
     
@@ -107,11 +113,12 @@ export async function runTestWithLead(leadIndex, onProgress = null) {
     await saveProcessingStatus(leadId, 'error', {
       leadName: leadName,
       errorMessage: error.message,
-      failedAt: new Date().toISOString()
+      failedAt: new Date().toISOString(),
+      attempt
     });
     
-    // Notifier la plateforme de l'erreur
-    await notifyProcessingError(leadId, leadName, error.message);
+    // Notifier la plateforme de l'erreur (avec tentative)
+    await notifyProcessingError(leadId, leadName, error.message, attempt);
     
     throw error; // Re-lancer l'erreur pour l'UI
   }

@@ -181,6 +181,11 @@ self.BG.startRun = async function startRun({ providers, leads, parallelTabs, opt
   const orderedProviders = self.BG.defaultProviderOrder(providers);
   if (orderedProviders.length === 0) throw new Error('Aucun provider valide');
 
+  // Isolated single-lead run: do not touch the shared pool or run state
+  if (options?.isolated === true && leads.length === 1) {
+    return await self.BG.startIsolatedRun({ provider: orderedProviders[0], lead: leads[0], options });
+  }
+
   // Build groups per provider (same leads for each provider)
   const batchId = Date.now().toString();
   const perProvider = {};
@@ -261,6 +266,66 @@ self.BG.startRun = async function startRun({ providers, leads, parallelTabs, opt
   return { started: true, providers: orderedProviders, capacity: cap };
 }
 
+// Keep a small registry of isolated groups (groupId -> { tabId, windowId })
+self.BG.addIsolatedGroup = async function addIsolatedGroup(groupId, tabId, windowId) {
+  try {
+    const res = await chrome.storage.local.get([self.BG.ISOLATED_GROUPS_KEY]);
+    const map = res[self.BG.ISOLATED_GROUPS_KEY] || {};
+    map[groupId] = { tabId, windowId };
+    await chrome.storage.local.set({ [self.BG.ISOLATED_GROUPS_KEY]: map });
+  } catch (_) {}
+}
+
+self.BG.removeIsolatedGroup = async function removeIsolatedGroup(groupId) {
+  try {
+    const res = await chrome.storage.local.get([self.BG.ISOLATED_GROUPS_KEY]);
+    const map = res[self.BG.ISOLATED_GROUPS_KEY] || {};
+    if (map[groupId]) {
+      delete map[groupId];
+      await chrome.storage.local.set({ [self.BG.ISOLATED_GROUPS_KEY]: map });
+    }
+  } catch (_) {}
+}
+
+self.BG.getIsolatedGroup = async function getIsolatedGroup(groupId) {
+  try {
+    const res = await chrome.storage.local.get([self.BG.ISOLATED_GROUPS_KEY]);
+    const map = res[self.BG.ISOLATED_GROUPS_KEY] || {};
+    return map[groupId] || null;
+  } catch (_) { return null; }
+}
+
+// Open a dedicated tab for a single-lead retry without altering the pool
+self.BG.startIsolatedRun = async function startIsolatedRun({ provider, lead, options }) {
+  const batchId = Date.now().toString();
+  const groupId = `${batchId}-${provider}-isolated-0`;
+  // Store group data so content can pick it up
+  await self.BG.storeGroupData(provider, groupId, [lead], batchId, 0, 1);
+
+  // Choose a window: prefer the pool window if it exists, else create a new window
+  let pool = await self.BG.getPool();
+  pool = await self.BG.validatePool(pool);
+  let windowId = pool?.windowId || null;
+  const url = await self.BG.getProvider(provider).buildUrlWithGroupId(groupId);
+  let tab;
+  if (windowId) {
+    tab = await chrome.tabs.create({ windowId, url, active: false });
+  } else {
+    const win = await chrome.windows.create({ type: 'normal', focused: false, url });
+    windowId = win.id;
+    try {
+      const minimize = options?.minimizeWindow !== false;
+      if (minimize) await chrome.windows.update(windowId, { state: 'minimized' });
+    } catch (_) {}
+    // Use the active tab from the new window
+    const tabs = await chrome.tabs.query({ windowId });
+    tab = tabs.find(t => t.active) || tabs[0];
+  }
+  await self.BG.addIsolatedGroup(groupId, tab.id, windowId);
+  await self.BG.notifyTabLeadsUpdated(tab.id, provider, groupId, 1, 0, 1);
+  return { started: true, isolated: true };
+}
+
 self.BG.onQueueDone = async function onQueueDone({ provider, groupId }, sender) {
   // Mark tab free and assign next work
   let pool = await self.BG.getPool();
@@ -269,6 +334,22 @@ self.BG.onQueueDone = async function onQueueDone({ provider, groupId }, sender) 
   const tabId = sender?.tab?.id;
   const slot = pool.tabs.find(t => t.tabId === tabId);
   const state = await self.BG.getRunState();
+  // Handle isolated groups first (not part of run state)
+  const isolated = await self.BG.getIsolatedGroup(groupId);
+  if (isolated) {
+    // Close the isolated tab; if window is separate and now empty, close it too
+    try { await chrome.tabs.remove(isolated.tabId || tabId); } catch (_) {}
+    try {
+      if (isolated.windowId && (!pool || isolated.windowId !== pool.windowId)) {
+        const tabs = await chrome.tabs.query({ windowId: isolated.windowId });
+        if ((tabs || []).length === 0) {
+          try { await chrome.windows.remove(isolated.windowId); } catch (_) {}
+        }
+      }
+    } catch (_) {}
+    await self.BG.removeIsolatedGroup(groupId);
+    return { ok: true, isolated: true };
+  }
   if (!state) return { ok: true };
 
   // Remove groupId from backlog

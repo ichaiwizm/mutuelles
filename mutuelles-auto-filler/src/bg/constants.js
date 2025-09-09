@@ -19,3 +19,5 @@ self.BG.DEFAULT_DEPLOYMENT_CONFIG = {
 self.BG.POOL_KEY = 'processing_pool';
 
 self.BG.RUN_STATE_KEY = 'processing_run_state';
+// Isolated groups mapping storage key
+self.BG.ISOLATED_GROUPS_KEY = 'processing_isolated_groups';

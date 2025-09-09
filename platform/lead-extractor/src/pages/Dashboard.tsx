@@ -208,7 +208,7 @@ export function Dashboard() {
       // 2. Lancer le run pour ce lead
       toast.info(`Réessai en cours pour ${lead.contact.prenom} ${lead.contact.nom}...`);
       
-      const result = await ExtensionBridge.startRun({ providers: ['swisslife'], leads: [lead], parallelTabs: Math.max(1, parallelTabs || 3), options: { minimizeWindow: true, closeOnFinish: false } });
+      const result = await ExtensionBridge.startRun({ providers: ['swisslife'], leads: [lead], parallelTabs: 1, options: { minimizeWindow: true, closeOnFinish: false, isolated: true } });
       
       if (result.success) {
         toast.success(`Lead "${lead.contact.prenom} ${lead.contact.nom}" renvoyé avec succès`);
