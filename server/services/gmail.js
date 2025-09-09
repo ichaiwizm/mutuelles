@@ -20,7 +20,7 @@ export class GmailService {
       const messagesResponse = await this.gmail.users.messages.list({
         userId: 'me',
         q: query,
-        maxResults: 100
+        maxResults: 500
       });
       
       const messages = messagesResponse.data.messages || [];
