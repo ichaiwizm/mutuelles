@@ -12,6 +12,7 @@ export interface Settings {
   sources: {
     gmail: boolean;
   };
+  parallelTabs?: number;
   ui: {
     pageSize: number;
     currentPage: number;
@@ -40,11 +41,12 @@ export class StorageManager {
 
   static getSettings(): Settings {
     const data = localStorage.getItem(STORAGE_KEYS.SETTINGS);
-    return data ? JSON.parse(data) : {
+    const defaults: Settings = {
       days: 7,
       sources: {
         gmail: true
       },
+      parallelTabs: 3,
       ui: {
         pageSize: 10,
         currentPage: 0,
@@ -53,6 +55,14 @@ export class StorageManager {
       },
       dateRange: null
     };
+    if (!data) return defaults;
+    try {
+      const parsed = JSON.parse(data);
+      if (typeof parsed.parallelTabs !== 'number') parsed.parallelTabs = 3;
+      return parsed;
+    } catch (_) {
+      return defaults;
+    }
   }
 
   static saveSettings(settings: Settings): void {

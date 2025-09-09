@@ -76,6 +76,21 @@ export class ExtensionBridge {
     }
   }
 
+  // Mettre à jour la configuration d'automatisation côté extension
+  static async setAutomationConfig(config: { parallelTabs?: number; minimizeWindow?: boolean; closeWindowOnFinish?: boolean; retryDelay?: number; maxRetryAttempts?: number; timeoutRetryDelay?: number }): Promise<boolean> {
+    try {
+      const message: ExtensionMessage = {
+        action: 'SET_CONFIG',
+        data: { automation: config }
+      };
+      const res = await this.sendMessageToExtension(message);
+      return !!res?.success;
+    } catch (error) {
+      console.error('Error setting automation config:', error);
+      return false;
+    }
+  }
+
   // Démarrer un run (fenêtre unique + pool d'onglets)
   static async startRun(params: { providers: string[]; leads: Lead[]; parallelTabs: number; options?: { minimizeWindow?: boolean; closeOnFinish?: boolean } }): Promise<{ success: boolean; error?: string }> {
     try {

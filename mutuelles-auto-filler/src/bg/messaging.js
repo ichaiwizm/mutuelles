@@ -14,7 +14,8 @@ self.BG.handleMessage = async function handleMessage(message, sender) {
           retryDelay: Math.min(30000, Math.max(500, Number(automation.retryDelay ?? 2000))),
           timeoutRetryDelay: Math.min(60000, Math.max(1000, Number(automation.timeoutRetryDelay ?? 3000))),
           minimizeWindow: automation.minimizeWindow !== false,
-          closeWindowOnFinish: automation.closeWindowOnFinish === true
+          closeWindowOnFinish: automation.closeWindowOnFinish === true,
+          parallelTabs: Math.min(10, Math.max(1, Number(automation.parallelTabs ?? 1)))
         };
         await chrome.storage.local.set({ automation_config: cfg });
       }

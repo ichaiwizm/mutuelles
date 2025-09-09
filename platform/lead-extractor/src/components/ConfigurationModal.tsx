@@ -2,8 +2,10 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Settings } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { useSettings } from '@/hooks/useSettings';
 import { ExtensionBridge } from '@/services/extension-bridge';
-import { toast } from 'sonner';
 
 interface ConfigurationModalProps {
   open: boolean;
@@ -11,21 +13,16 @@ interface ConfigurationModalProps {
 }
 
 export function ConfigurationModal({ open, onOpenChange }: ConfigurationModalProps) {
-  const handleTestExtension = async () => {
+  const { parallelTabs, setParallelTabs } = useSettings();
+
+  const handleParallelTabsChange = async (value: number) => {
+    const sanitized = Math.max(1, Math.min(10, Math.floor(Number(value) || 1)));
+    setParallelTabs(sanitized);
     try {
-      const installed = await ExtensionBridge.checkExtensionInstalled();
-      if (!installed) {
-        toast.error('Extension non détectée', { description: "Installez et activez l'extension." });
-        return;
-      }
-      const ok = await ExtensionBridge.ping();
-      if (ok) {
-        toast.success('Extension connectée', { description: 'Communication OK avec le service worker.' });
-      } else {
-        toast.error('Extension présente mais ne répond pas');
-      }
-    } catch (e) {
-      toast.error('Test extension échoué', { description: e instanceof Error ? e.message : String(e) });
+      // Mettre à jour la config côté extension (best-effort)
+      await ExtensionBridge.setAutomationConfig({ parallelTabs: sanitized });
+    } catch (_) {
+      // silencieux si l'extension n'est pas dispo
     }
   };
 
@@ -38,26 +35,31 @@ export function ConfigurationModal({ open, onOpenChange }: ConfigurationModalPro
             Configuration de l'extension
           </DialogTitle>
           <DialogDescription>
-            Testez la connexion avec l'extension SwissLife.
+            Définissez le nombre d'onglets parallèles utilisés par l'extension.
           </DialogDescription>
         </DialogHeader>
 
         {/* Zone scrollable pour le contenu afin d'éviter les débordements */}
         <div className="space-y-6 flex-1 overflow-y-auto pr-1">
-          {/* Extension */}
+          {/* Parallélisation */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Extension</CardTitle>
-              <CardDescription>Vérifiez la connexion de l'extension et son état.</CardDescription>
+              <CardTitle className="text-base">Parallélisation</CardTitle>
+              <CardDescription>Nombre d'onglets parallèles ouverts pour traiter les leads.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <Button 
-                onClick={handleTestExtension}
-                className="w-full"
-                variant="outline"
-              >
-                Tester l'extension
-              </Button>
+              <div className="flex items-center gap-3">
+                <Label htmlFor="parallelTabs" className="whitespace-nowrap">Onglets parallèles</Label>
+                <Input
+                  id="parallelTabs"
+                  type="number"
+                  min={1}
+                  max={10}
+                  value={parallelTabs ?? 3}
+                  onChange={(e) => handleParallelTabsChange(Number(e.target.value))}
+                  className="w-24"
+                />
+              </div>
             </CardContent>
           </Card>
         </div>

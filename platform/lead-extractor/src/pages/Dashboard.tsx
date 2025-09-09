@@ -31,7 +31,7 @@ export function Dashboard() {
   // Hooks personnalisés
   const { isAuthenticated, hasTokens, email, loading: authLoading, checkAuthStatus, redirectToLogin, logout } = useAuth();
   const {
-    days, setDays, dateRange, setDateRange, filterMode
+    days, setDays, dateRange, setDateRange, filterMode, parallelTabs
   } = useSettings();
   const { leads, qualifiedLeads, addLeads, clearAllLeads, removeLeadsByIds, stats } = useLeads();
   const { enrichLeadsWithStatus, applyStatusUpdate, cleanupOrphanedStatuses, isLoaded, setLeadStatus } = useProcessingStatus();
@@ -183,7 +183,7 @@ export function Dashboard() {
       // 2. Lancer le run pour ce lead
       toast.info(`Réessai en cours pour ${lead.contact.prenom} ${lead.contact.nom}...`);
       
-      const result = await ExtensionBridge.startRun({ providers: ['swisslife'], leads: [lead], parallelTabs: 1, options: { minimizeWindow: true, closeOnFinish: false } });
+      const result = await ExtensionBridge.startRun({ providers: ['swisslife'], leads: [lead], parallelTabs: Math.max(1, parallelTabs || 3), options: { minimizeWindow: true, closeOnFinish: false } });
       
       if (result.success) {
         toast.success(`Lead "${lead.contact.prenom} ${lead.contact.nom}" renvoyé avec succès`);
@@ -225,7 +225,7 @@ export function Dashboard() {
 
       // 2. Démarrer le run (fenêtre unique + pool d'onglets)
       toast.info('Lancement du traitement dans l\'extension...');
-      const result = await ExtensionBridge.startRun({ providers: ['swisslife'], leads: selectedLeads, parallelTabs: 1, options: { minimizeWindow: true, closeOnFinish: true } });
+      const result = await ExtensionBridge.startRun({ providers: ['swisslife'], leads: selectedLeads, parallelTabs: Math.max(1, parallelTabs || 3), options: { minimizeWindow: true, closeOnFinish: true } });
       if (result.success) {
         toast.success(`${selectedLeads.length} leads envoyés`, { description: 'Traitement en cours dans l\'extension.' });
         handleClearSelection();

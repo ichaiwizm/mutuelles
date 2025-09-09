@@ -20,12 +20,14 @@ export const useSettings = () => {
   const [days, setDays] = useState(DEFAULT_SETTINGS.days);
   const [dateRange, setDateRange] = useState<DateRange | null>(DEFAULT_SETTINGS.dateRange);
   const [filterMode, setFilterMode] = useState<'predefined' | 'custom'>('predefined');
+  const [parallelTabs, setParallelTabs] = useState<number>(3);
   const [isLoaded, setIsLoaded] = useState(false);
 
   // Charger les paramètres au démarrage
   useEffect(() => {
     const settings = StorageManager.getSettings();
     setDays(settings.days);
+    setParallelTabs(typeof settings.parallelTabs === 'number' ? settings.parallelTabs : 3);
     if (settings.dateRange) {
       setDateRange({
         from: settings.dateRange.from ? new Date(settings.dateRange.from) : undefined,
@@ -44,6 +46,7 @@ export const useSettings = () => {
     const settings = {
       ...currentSettings,
       days,
+      parallelTabs,
       sources: {
         gmail: true // Toujours activé maintenant
       },
@@ -53,7 +56,7 @@ export const useSettings = () => {
       } : null
     };
     StorageManager.saveSettings(settings);
-  }, [days, dateRange, isLoaded]);
+  }, [days, dateRange, parallelTabs, isLoaded]);
 
   const updateDays = (newDays: number) => {
     setDays(newDays);
@@ -75,6 +78,8 @@ export const useSettings = () => {
     setDays: updateDays,
     dateRange,
     setDateRange: updateDateRange,
-    filterMode
+    filterMode,
+    parallelTabs,
+    setParallelTabs
   };
 };
