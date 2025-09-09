@@ -1,13 +1,12 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Mail, Plus, ChevronDown, Trash2 } from 'lucide-react';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Mail, Plus, Trash2 } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { PeriodSelector } from '@/components/PeriodSelector';
 import type { DateRange } from 'react-day-picker';
 
 interface ControlsPanelProps {
-  onOpenManual: (tab: 'form' | 'csv') => void;
+  onOpenManual: () => void;
   onExtractNow: () => void;
   days: number;
   setDays: (days: number) => void;
@@ -50,23 +49,10 @@ export function ControlsPanel({
     <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200/60 mb-6">
       <div className="flex flex-wrap items-center gap-4">
         {/* Ajouter */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button className="flex items-center gap-2">
-              <Plus className="h-4 w-4" />
-              Ajouter
-              <ChevronDown className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" className="w-56">
-            <DropdownMenuItem onSelect={() => onOpenManual('form')} title="UI seulement">
-              Formulaire (UI)
-            </DropdownMenuItem>
-            <DropdownMenuItem onSelect={() => onOpenManual('csv')} title="UI seulement">
-              Import CSV (UI)
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <Button onClick={onOpenManual} className="flex items-center gap-2">
+          <Plus className="h-4 w-4" />
+          Ajouter
+        </Button>
 
         {/* Gmail + résumé période + dernière synchro */}
         <div className="flex items-center gap-3 flex-wrap">

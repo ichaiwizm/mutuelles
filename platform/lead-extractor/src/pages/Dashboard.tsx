@@ -29,7 +29,6 @@ export function Dashboard() {
   const [modalOpen, setModalOpen] = useState(false);
   const [configModalOpen, setConfigModalOpen] = useState(false);
   const [manualDialogOpen, setManualDialogOpen] = useState(false);
-  const [manualInitialTab, setManualInitialTab] = useState<'form' | 'csv'>('form');
   const [lastSyncGmail, setLastSyncGmail] = useState<string | null>(null);
   const [sendingToExtension, setSendingToExtension] = useState(false);
   const [runActive, setRunActive] = useState(false);
@@ -402,7 +401,7 @@ export function Dashboard() {
 
         {/* Contrôles (bouton Gmail + période inline, ajout à gauche) */}
         <ControlsPanel
-          onOpenManual={(tab) => { setManualInitialTab(tab); setManualDialogOpen(true); }}
+          onOpenManual={() => setManualDialogOpen(true)}
           onExtractNow={handleExtractNew}
           days={days}
           setDays={setDays}
@@ -472,7 +471,7 @@ export function Dashboard() {
         <ConfigurationModal open={configModalOpen} onOpenChange={setConfigModalOpen} />
 
         {/* Dialog Manuel (UI seulement) */}
-        <ManualLeadDialog open={manualDialogOpen} onOpenChange={setManualDialogOpen} initialTab={manualInitialTab} />
+        <ManualLeadDialog open={manualDialogOpen} onOpenChange={setManualDialogOpen} />
 
         {/* Pas de modal Gmail: extraction directe via la barre */}
       </div>
