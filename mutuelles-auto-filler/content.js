@@ -32,7 +32,13 @@
       }
 
       if (isMainFrame) {
-        await provider.initMainFrame();
+        try {
+          const { KEYS } = await import(chrome.runtime.getURL('src/core/orchestrator/storage-keys.js'));
+          const groupId = KEYS.groupId();
+          if (groupId && groupId !== 'default') {
+            await provider.initMainFrame();
+          }
+        } catch (_) { /* ignore */ }
       } else {
         const isTarif = provider.isTarificateurIframe(href, pathname, window.name, isMainFrame);
         if (isTarif) {

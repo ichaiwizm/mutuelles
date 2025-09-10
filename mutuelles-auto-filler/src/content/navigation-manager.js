@@ -40,7 +40,9 @@ export class NavigationManager {
       
       this.redirectTimeout = setTimeout(() => {
         const currentUrl = window.location.href;
-        const newHash = '#/tarification-et-simulation/slsis';
+        const oldHash = window.location.hash || '';
+        const queryPart = oldHash.split('?')[1] || '';
+        const newHash = '#/tarification-et-simulation/slsis' + (queryPart ? `?${queryPart}` : '');
         const targetUrl = currentUrl.replace(window.location.hash, newHash);
         
         console.log('🎯 Redirection vers:', targetUrl);

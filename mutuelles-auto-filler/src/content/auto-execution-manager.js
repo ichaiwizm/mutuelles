@@ -23,7 +23,7 @@ export class AutoExecutionManager {
     const isCorrectPage = hashWithoutParams === '#/tarification-et-simulation/slsis';
     
     // Vérifier que l'iframe du tarificateur est présent et chargé
-    const iframe = document.querySelector('iframe[name="iFrameTarificateur"]');
+    const iframe = document.querySelector('iframe[name="iFrameTarificateur"], iframe[id^="iFrameResizer"]');
     const isIframeReady = iframe && iframe.contentWindow;
     
     console.log('🔍 Vérification page prête:', {
@@ -80,6 +80,14 @@ export class AutoExecutionManager {
   }
 
   async checkAndExecuteOnStartup() {
+    // Ne pas auto-exécuter si le contexte plateforme (groupId) est absent
+    try {
+      const { KEYS } = await import(chrome.runtime.getURL('src/core/orchestrator/storage-keys.js'));
+      const groupId = KEYS.groupId();
+      if (!groupId || groupId === 'default') {
+        return;
+      }
+    } catch (_) { /* ignore */ }
     // Vérifier si on doit lancer l'auto-exécution au démarrage
     // (cas où l'onglet SwissLife est créé après l'envoi des leads)
     try {

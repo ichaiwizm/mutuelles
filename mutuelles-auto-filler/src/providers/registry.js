@@ -10,7 +10,11 @@ export const Providers = {
       return typeof hostname === 'string' && hostname.includes('swisslifeone.fr');
     },
     isTarificateurIframe(href, pathname, name, isMainFrame) {
-      return !isMainFrame && href.includes('oav-pool') && pathname.includes('SLSISWeb') && !pathname.includes('PDFViewer') && name === 'iFrameTarificateur';
+      // Moins strict: ne dépend pas du name (peut être renommé par iFrameResizer)
+      return !isMainFrame
+        && href.includes('oav-pool')
+        && pathname.includes('SLSISWeb')
+        && !pathname.includes('PDFViewer');
     },
     async initMainFrame() {
       const { SwissLifeInitializer } = await import(chrome.runtime.getURL('src/content/swisslife-initializer.js'));

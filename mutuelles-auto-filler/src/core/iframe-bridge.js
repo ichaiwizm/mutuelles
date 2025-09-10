@@ -4,16 +4,16 @@
 
 // Détecte si on est dans l'iframe tarificateur
 export function isInTarificateurIframe() {
-  return window !== window.top && 
-         window.location.href.includes('oav-pool') && 
+  return window !== window.top &&
+         window.location.href.includes('oav-pool') &&
          window.location.pathname.includes('SLSISWeb') &&
-         !window.location.pathname.includes('PDFViewer') &&
-         window.name === 'iFrameTarificateur';
+         !window.location.pathname.includes('PDFViewer');
 }
 
 // Envoie une commande à l'iframe
 export async function sendToIframe(action, data) {
-  const iframe = document.querySelector('iframe#iFrameResizer0, iframe[name="iFrameTarificateur"]');
+  // Priorité au nom "iFrameTarificateur", fallback sur les iframes gérées par iFrameResizer (id dynamique)
+  const iframe = document.querySelector('iframe[name="iFrameTarificateur"], iframe[id^="iFrameResizer"]');
   
   if (!iframe) {
     throw new Error('Iframe tarificateur non trouvé');

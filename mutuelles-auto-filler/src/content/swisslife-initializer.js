@@ -13,17 +13,29 @@ export class SwissLifeInitializer {
     this.autoExecutionManager = new AutoExecutionManager();
     this.navigationManager = null;
     this.messageHandler = null;
+    this._isPlatformContext = false;
   }
 
   async initialize() {
+    // Activer uniquement quand l'onglet est ouvert via la plateforme (groupId non "default")
+    try {
+      const groupId = KEYS.groupId();
+      this._isPlatformContext = !!groupId && groupId !== 'default';
+    } catch (_) {
+      this._isPlatformContext = false;
+    }
+
+    if (!this._isPlatformContext) {
+      // Pas d'UI/auto-exécution sans groupId plateforme
+      console.log('🛑 SwissLife: contexte plateforme absent → UI/auto‑exécution désactivées');
+      return;
+    }
+
     if (window.orchestratorInitialized) {
-    
       return;
     }
     window.orchestratorInitialized = true;
 
-    
-    
     try {
       // Charger les dépendances
       const { createUI, createQueueProgressHandler } = await import(chrome.runtime.getURL('src/ui/ui.js'));
@@ -34,7 +46,7 @@ export class SwissLifeInitializer {
       this.messageHandler = new MessageHandler(this.autoExecutionManager, loadLeads);
       this.navigationManager = new NavigationManager(this.autoExecutionManager);
       
-      // Initialiser les composants
+      // Initialiser les composants (contexte plateforme uniquement)
       await this.initializeQueueState(loadLeads);
       this.initializeUI(createUI, createQueueProgressHandler);
       this.initializeNavigation();
@@ -43,16 +55,15 @@ export class SwissLifeInitializer {
       // Fonction globale pour compatibilité
       window.startProcessing = () => this.autoExecutionManager.startProcessing();
       
-      // Vérifier auto-exécution au démarrage
+      // Vérifier auto-exécution au démarrage (plateforme)
       await this.autoExecutionManager.checkAndExecuteOnStartup();
-      
-      
     } catch (error) {
       console.error('❌ Erreur initialisation SwissLife:', error);
     }
   }
 
   async initializeQueueState(loadLeads) {
+    if (!this._isPlatformContext) return;
     const leads = await loadLeads();
     
     // Nettoyer le flag de traitement au démarrage
@@ -95,6 +106,7 @@ export class SwissLifeInitializer {
   }
 
   initializeUI(createUI, createQueueProgressHandler) {
+    if (!this._isPlatformContext) return;
     // Ne créer l'UI que si des leads/une queue existent
     (async () => {
       try {
@@ -127,10 +139,13 @@ export class SwissLifeInitializer {
   }
 
   initializeNavigation() {
+    if (!this._isPlatformContext) return;
     this.navigationManager.initialize();
   }
 
   initializeMessages() {
+    if (!this._isPlatformContext) return;
     this.messageHandler.initializeForSwissLife();
   }
 }
+

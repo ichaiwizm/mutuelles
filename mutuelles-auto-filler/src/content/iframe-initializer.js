@@ -9,8 +9,11 @@ export class IframeInitializer {
   }
 
   async initialize() {
+    // Important: Ne pas tenter de lire window.top (cross-origin). L'iframe doit
+    // toujours attacher son listener et laisser le main frame gérer le gating.
+
     if (window.iframeListenerInitialized) {
-      console.log('🔄 Listener iframe déjà initialisé');
+      // Déjà prêt dans ce contexte
       return;
     }
     window.iframeListenerInitialized = true;
