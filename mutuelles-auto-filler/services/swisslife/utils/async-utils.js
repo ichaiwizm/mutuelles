@@ -6,7 +6,7 @@
 import { q } from './dom-utils.js';
 
 // Attente simple
-export const wait = (ms) => new Promise(r => setTimeout(r, ms));
+export const wait = (ms) => (self.BG && self.BG.wait ? self.BG.wait(ms) : new Promise(r => setTimeout(r, ms)));
 
 // Détection d'overlay
 export const overlayPresent = () => {

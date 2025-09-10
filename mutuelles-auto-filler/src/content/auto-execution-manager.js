@@ -47,7 +47,8 @@ export class AutoExecutionManager {
     try {
       // Attendre que l'iframe soit vraiment prête
       console.log('⏳ Attente stabilisation iframe (3s)...');
-      await new Promise(resolve => setTimeout(resolve, 3000));
+      try { if (!self.BG || !self.BG.wait) await import(chrome.runtime.getURL('src/shared/async.js')); } catch (_) {}
+      await (self.BG && self.BG.wait ? self.BG.wait(3000) : new Promise(r => setTimeout(r, 3000)));
       
       console.log('🎯 Lancement du traitement automatique');
       await this.processLeadsQueue(this.progressHandler);
@@ -90,7 +91,9 @@ export class AutoExecutionManager {
         console.log('🔍 Leads présents au démarrage - Vérification auto-exécution...');
         
         // Attendre un peu que la page soit complètement chargée
-        setTimeout(async () => {
+        (async () => {
+          try { if (!self.BG || !self.BG.wait) await import(chrome.runtime.getURL('src/shared/async.js')); } catch (_) {}
+          await (self.BG && self.BG.wait ? self.BG.wait(5000) : new Promise(r => setTimeout(r, 5000)));
           try {
             // Vérifier si on est déjà sur la bonne page
             if (this.isPageReadyForAutoExecution()) {
@@ -104,7 +107,7 @@ export class AutoExecutionManager {
           } catch (error) {
             console.error('❌ Erreur auto-exécution démarrage:', error);
           }
-        }, 5000); // Attendre 5s pour laisser le temps aux redirections
+        })();
       }
     } catch (error) {
       console.error('❌ Erreur vérification leads au démarrage:', error);
@@ -121,14 +124,14 @@ export class AutoExecutionManager {
       await this.waitForPageReady();
       
       // Petite pause supplémentaire pour laisser l'iframe se stabiliser
-      setTimeout(async () => {
-        try {
-          console.log('🚀 Lancement auto-exécution du lead...');
-          await this.startProcessing();
-        } catch (error) {
-          console.error('❌ Erreur lors de l\'auto-exécution:', error);
-        }
-      }, 2000); // Attendre 2s supplémentaires pour la stabilité
+      try { if (!self.BG || !self.BG.wait) await import(chrome.runtime.getURL('src/shared/async.js')); } catch (_) {}
+      await (self.BG && self.BG.wait ? self.BG.wait(2000) : new Promise(r => setTimeout(r, 2000)));
+      try {
+        console.log('🚀 Lancement auto-exécution du lead...');
+        await this.startProcessing();
+      } catch (error) {
+        console.error('❌ Erreur lors de l\'auto-exécution:', error);
+      }
       
     } catch (error) {
       console.error('❌ Page non prête pour auto-exécution:', error.message);

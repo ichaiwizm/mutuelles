@@ -4,7 +4,10 @@
  * - Possibilité de surcharger via chrome.storage.local.deployment_config
  */
 
-const DEFAULT_CONFIG = {
+// Load shared defaults into global (module executes and sets self.BG.SHARED_DEFAULTS)
+await import(chrome.runtime.getURL('src/shared/shared-config.js'));
+
+const DEFAULTS = (self.BG && self.BG.SHARED_DEFAULTS) || {
   platformOrigins: [
     'http://localhost:5174',
     'https://mutuelles-lead-extractor.vercel.app'
@@ -20,29 +23,29 @@ export async function getDeploymentConfig() {
     return {
       platformOrigins: Array.isArray(cfg.platformOrigins) && cfg.platformOrigins.length > 0
         ? cfg.platformOrigins
-        : DEFAULT_CONFIG.platformOrigins,
-      swisslifeBaseUrl: cfg.swisslifeBaseUrl || DEFAULT_CONFIG.swisslifeBaseUrl,
-      swisslifeTarifPath: cfg.swisslifeTarifPath || DEFAULT_CONFIG.swisslifeTarifPath
+        : DEFAULTS.platformOrigins,
+      swisslifeBaseUrl: cfg.swisslifeBaseUrl || DEFAULTS.swisslifeBaseUrl,
+      swisslifeTarifPath: cfg.swisslifeTarifPath || DEFAULTS.swisslifeTarifPath
     };
   } catch (_) {
-    return { ...DEFAULT_CONFIG };
+    return { ...DEFAULTS };
   }
 }
 
 export function getDefaultConfig() {
-  return { ...DEFAULT_CONFIG };
+  return { ...DEFAULTS };
 }
 
 export function getDefaultPlatformOrigins() {
-  return [...DEFAULT_CONFIG.platformOrigins];
+  return [...DEFAULTS.platformOrigins];
 }
 
 export function getDefaultSwisslifeBaseUrl() {
-  return DEFAULT_CONFIG.swisslifeBaseUrl;
+  return DEFAULTS.swisslifeBaseUrl;
 }
 
 export function getDefaultSwisslifeTarifPath() {
-  return DEFAULT_CONFIG.swisslifeTarifPath;
+  return DEFAULTS.swisslifeTarifPath;
 }
 
 export async function isAllowedPlatformOrigin(origin) {
@@ -70,12 +73,4 @@ export function escapeRegex(str) {
   return str.replace(/[.*+?^${}()|\[\]\\]/g, '\\$&');
 }
 
-export async function buildSwissLifeUrlWithGroupId(groupId) {
-  const cfg = await getDeploymentConfig();
-  const refreshTime = Date.now();
-  const base = cfg.swisslifeBaseUrl.replace(/\/$/, '');
-  const path = cfg.swisslifeTarifPath.startsWith('/') ? cfg.swisslifeTarifPath : '/' + cfg.swisslifeTarifPath;
-  const sep = path.includes('#') ? (path.includes('?') ? '&' : '?') : (path.includes('?') ? '&' : '?');
-  return `${base}${path}${sep}refreshTime=${refreshTime}&groupId=${groupId}`;
-}
-
+// Note: URL builder is centralized in background providers-registry.

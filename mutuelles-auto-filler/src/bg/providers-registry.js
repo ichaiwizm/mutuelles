@@ -22,7 +22,4 @@ self.BG.getProvider = function getProvider(id) {
   return self.BG.providersRegistry[id] || null;
 }
 
-self.BG.defaultProviderOrder = function defaultProviderOrder(providers) {
-  // keep incoming order; filter out unknown
-  return (providers || []).filter(p => !!self.BG.providersRegistry[p]);
-}
+// Note: defaultProviderOrder deprecated; consumers should validate providers explicitly.

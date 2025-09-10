@@ -7,7 +7,7 @@ self.BG = self.BG || {};
 
 self.BG.TabPoolManager = class TabPoolManager {
   constructor() {
-    this.storageKey = self.BG.SCHEDULER_CONSTANTS.STORAGE_KEYS.POOL;
+    this.storageKey = self.BG.STORAGE_KEYS.POOL;
     this.config = self.BG.SCHEDULER_CONSTANTS.CONFIG;
     this.tabStatus = self.BG.SCHEDULER_CONSTANTS.TAB_STATUS;
   }
@@ -56,7 +56,7 @@ self.BG.TabPoolManager = class TabPoolManager {
     
     if (pool) return pool;
 
-    const window = await chrome.windows.create({
+    const window = await self.BG.chromeHelpers.safeWindowsCreate({
       type: 'normal',
       focused: false,
       width: this.config.WINDOW_WIDTH,
@@ -73,7 +73,7 @@ self.BG.TabPoolManager = class TabPoolManager {
         minimize = automation_config?.minimizeWindow !== false;
       }
       if (minimize) {
-        await chrome.windows.update(window.id, { state: 'minimized' });
+        await self.BG.chromeHelpers.safeWindowsUpdate(window.id, { state: 'minimized' });
       }
     } catch (error) {
       // Ignore si impossible de minimiser
@@ -101,7 +101,7 @@ self.BG.TabPoolManager = class TabPoolManager {
     pool = await this.validatePool(pool);
 
     while (pool.tabs.length < capacity) {
-      const tab = await chrome.tabs.create({
+      const tab = await self.BG.chromeHelpers.safeTabsCreate({
         windowId: pool.windowId,
         url: 'about:blank',
         active: false
@@ -117,11 +117,7 @@ self.BG.TabPoolManager = class TabPoolManager {
 
     while (pool.tabs.length > capacity && pool.tabs.length > 1) {
       const tabToRemove = pool.tabs.pop();
-      try {
-        await chrome.tabs.remove(tabToRemove.tabId);
-      } catch (error) {
-        // Ignore si impossible de fermer
-      }
+      await self.BG.chromeHelpers.safeTabsRemove(tabToRemove.tabId);
     }
 
     pool.capacity = capacity;
@@ -173,7 +169,7 @@ self.BG.TabPoolManager = class TabPoolManager {
     if (!pool) return;
 
     try {
-      await chrome.windows.remove(pool.windowId);
+      await self.BG.chromeHelpers.safeWindowsRemove(pool.windowId);
     } catch (error) {
       // Ignore si fenêtre déjà fermée
     }

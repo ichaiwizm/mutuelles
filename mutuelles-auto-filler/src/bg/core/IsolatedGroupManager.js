@@ -7,7 +7,7 @@ self.BG = self.BG || {};
 
 self.BG.IsolatedGroupManager = class IsolatedGroupManager {
   constructor() {
-    this.storageKey = self.BG.SCHEDULER_CONSTANTS.STORAGE_KEYS.ISOLATED_GROUPS;
+    this.storageKey = self.BG.STORAGE_KEYS.ISOLATED_GROUPS;
     this.runStatus = self.BG.SCHEDULER_CONSTANTS.RUN_STATUS;
   }
 
@@ -185,7 +185,10 @@ self.BG.IsolatedGroupManager = class IsolatedGroupManager {
 
     // Nettoyer les clés de storage liées au groupe
     try {
-      await this._cleanupGroupStorage(group.provider, groupId);
+      if (!self.BG.cleanupGroupStorage) {
+        // Best effort: shared module should be loaded by background
+      }
+      await self.BG.cleanupGroupStorage(group.provider, groupId);
     } catch (_) { /* ignore */ }
 
     // Supprimer du registre
@@ -281,25 +284,10 @@ self.BG.IsolatedGroupManager = class IsolatedGroupManager {
           console.warn(`[IsolatedGroupManager] Impossible de notifier l'onglet ${tabId}:`, error);
           return false;
         }
-        await new Promise(resolve => setTimeout(resolve, baseDelay * attempt));
+        await self.BG.wait(baseDelay * attempt);
       }
     }
     return false;
   }
   
-  /**
-   * Nettoie les clés de storage relatives à un groupId donné
-   */
-  async _cleanupGroupStorage(provider, groupId) {
-    try {
-      const all = await chrome.storage.local.get(null);
-      const keys = Object.keys(all).filter(key => key.startsWith(`${provider}_`) && key.endsWith(`__${groupId}`));
-      if (keys.length > 0) {
-        await chrome.storage.local.remove(keys);
-      }
-      return keys.length;
-    } catch (_) {
-      return 0;
-    }
-  }
 };

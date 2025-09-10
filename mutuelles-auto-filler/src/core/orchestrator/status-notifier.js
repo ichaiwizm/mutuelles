@@ -6,11 +6,11 @@
  * Notifie la plateforme du statut d'un lead
  */
 export async function notifyPlatformStatus(leadId, status, leadName, details = {}) {
-  
+  const TYPE = (self.BG && self.BG.WINDOW_MSG && self.BG.WINDOW_MSG.ORCHESTRATOR_STATUS_UPDATE) || 'ORCHESTRATOR_STATUS_UPDATE';
   try {
     // Envoyer vers le content.js principal via postMessage
     window.top.postMessage({
-      type: 'ORCHESTRATOR_STATUS_UPDATE',
+      type: TYPE,
       action: 'UPDATE_LEAD_STATUS',
       data: {
         leadId,
@@ -18,7 +18,7 @@ export async function notifyPlatformStatus(leadId, status, leadName, details = {
         leadName,
         details
       }
-    }, '*');
+    }, window.location.origin);
     
     return true;
   } catch (error) {

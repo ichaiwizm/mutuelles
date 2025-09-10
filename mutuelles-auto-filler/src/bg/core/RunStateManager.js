@@ -6,7 +6,7 @@ self.BG = self.BG || {};
 
 self.BG.RunStateManager = class RunStateManager {
   constructor() {
-    this.storageKey = self.BG.SCHEDULER_CONSTANTS.STORAGE_KEYS.RUN_STATE;
+    this.storageKey = self.BG.STORAGE_KEYS.RUN_STATE;
     this.runStatus = self.BG.SCHEDULER_CONSTANTS.RUN_STATUS;
   }
 

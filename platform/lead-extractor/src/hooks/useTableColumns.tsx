@@ -44,6 +44,8 @@ export function useTableColumns({
         checked={checked}
         onChange={onChange}
         className="mx-auto h-4 w-4 accent-indigo-600"
+        data-slot="checkbox"
+        onClick={(e) => e.stopPropagation()}
       />
     );
   };
@@ -87,6 +89,8 @@ export function useTableColumns({
           checked={selectedLeadIds.has(row.original.id)}
           onChange={() => stableToggleSelect(row.original.id)}
           className="mx-auto h-4 w-4 accent-indigo-600"
+          data-slot="checkbox"
+          onClick={(e) => e.stopPropagation()}
         />
       ),
       size: 40,

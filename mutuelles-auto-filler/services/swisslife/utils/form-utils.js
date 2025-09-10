@@ -164,7 +164,8 @@ export const typeMasked = async (el, text) => {
   for (const char of text) {
     el.value += char;
     fire(el, 'input');
-    await new Promise(r => setTimeout(r, 30));
+    try { if (!self.BG || !self.BG.wait) await import(chrome.runtime.getURL('src/shared/async.js')); } catch (_) {}
+    await (self.BG && self.BG.wait ? self.BG.wait(30) : new Promise(r => setTimeout(r, 30)));
   }
   
   fireMultiple(el);

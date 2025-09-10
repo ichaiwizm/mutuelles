@@ -6,16 +6,11 @@ import { processTemplate } from '../template-processor.js';
 import { getResolver } from '../dependency-resolver.js';
 import { KEYS } from './storage-keys.js';
 
-const DEFAULT_CONFIG = {
-  MAX_RETRY_ATTEMPTS: 2,
-  RETRY_DELAY: 2000,
-  TIMEOUT_RETRY_DELAY: 3000,
-  SUPPORTED_STEPS: [
+const DEFAULT_STEPS = [
     'projectName', 'hospitalComfort', 'simulationType', 'subscriberInfo', 
     'spouseInfo', 'childrenInfo', 'gammes', 'options', 'dateEffet', 
     'navigation', 'nomProjet', 'bouton-suivant'
-  ]
-};
+];
 
 async function getWorkflowConfig() {
   try {
@@ -23,15 +18,25 @@ async function getWorkflowConfig() {
     const config = result.automation_config;
     if (config) {
       return {
-        MAX_RETRY_ATTEMPTS: config.maxRetryAttempts || DEFAULT_CONFIG.MAX_RETRY_ATTEMPTS,
-        RETRY_DELAY: config.retryDelay || DEFAULT_CONFIG.RETRY_DELAY,
-        TIMEOUT_RETRY_DELAY: config.timeoutRetryDelay || DEFAULT_CONFIG.TIMEOUT_RETRY_DELAY,
-        SUPPORTED_STEPS: DEFAULT_CONFIG.SUPPORTED_STEPS
+        MAX_RETRY_ATTEMPTS: typeof config.maxRetryAttempts === 'number' ? config.maxRetryAttempts : ((self.BG && self.BG.SHARED_DEFAULTS && self.BG.SHARED_DEFAULTS.retries?.attempts) || 2),
+        RETRY_DELAY: typeof config.retryDelay === 'number' ? config.retryDelay : ((self.BG && self.BG.SHARED_DEFAULTS && self.BG.SHARED_DEFAULTS.retries?.delayMs) || 2000),
+        TIMEOUT_RETRY_DELAY: typeof config.timeoutRetryDelay === 'number' ? config.timeoutRetryDelay : 3000,
+        SUPPORTED_STEPS: DEFAULT_STEPS
       };
     }
-    return DEFAULT_CONFIG;
+    return {
+      MAX_RETRY_ATTEMPTS: (self.BG && self.BG.SHARED_DEFAULTS && self.BG.SHARED_DEFAULTS.retries?.attempts) || 2,
+      RETRY_DELAY: (self.BG && self.BG.SHARED_DEFAULTS && self.BG.SHARED_DEFAULTS.retries?.delayMs) || 2000,
+      TIMEOUT_RETRY_DELAY: 3000,
+      SUPPORTED_STEPS: DEFAULT_STEPS
+    };
   } catch (_) {
-    return DEFAULT_CONFIG;
+    return {
+      MAX_RETRY_ATTEMPTS: (self.BG && self.BG.SHARED_DEFAULTS && self.BG.SHARED_DEFAULTS.retries?.attempts) || 2,
+      RETRY_DELAY: (self.BG && self.BG.SHARED_DEFAULTS && self.BG.SHARED_DEFAULTS.retries?.delayMs) || 2000,
+      TIMEOUT_RETRY_DELAY: 3000,
+      SUPPORTED_STEPS: DEFAULT_STEPS
+    };
   }
 }
 

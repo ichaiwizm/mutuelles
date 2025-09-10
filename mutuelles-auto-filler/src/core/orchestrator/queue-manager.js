@@ -199,16 +199,7 @@ async function handleLeadSuccess(lead, progress, onProgress) {
     }
 
     // Notifier le background que la queue de ce groupe est terminée
-    try {
-      const groupId = KEYS.groupId();
-      const provider = KEYS.provider();
-      await chrome.runtime.sendMessage({
-        action: 'QUEUE_DONE',
-        data: { provider, groupId }
-      });
-    } catch (e) {
-      // ignore
-    }
+    await notifyQueueDone();
   }
 }
 
@@ -276,17 +267,8 @@ async function handleLeadError(lead, progress, error, onProgress) {
       scheduleReload(CONFIG.RELOAD_DELAY_ERROR, 'prochain lead après erreur définitive');
     } else {
       // Dernier lead terminé avec erreur → notifier la fin de queue
-      try {
-        const groupId = KEYS.groupId();
-        const provider = KEYS.provider();
-        await updateQueueState({ status: 'completed', completedAt: new Date().toISOString() });
-        await chrome.runtime.sendMessage({
-          action: 'QUEUE_DONE',
-          data: { provider, groupId }
-        });
-      } catch (e) {
-        // ignore
-      }
+      try { await updateQueueState({ status: 'completed', completedAt: new Date().toISOString() }); } catch (_) {}
+      await notifyQueueDone();
     }
   }
 }
@@ -308,16 +290,7 @@ export async function processLeadsQueue(leadProcessor, onProgress = null) {
         });
       }
       // Notifier le background que la queue de ce groupe est terminée
-      try {
-        const groupId = KEYS.groupId();
-        const provider = KEYS.provider();
-        await chrome.runtime.sendMessage({
-          action: 'QUEUE_DONE',
-          data: { provider, groupId }
-        });
-      } catch (e) {
-        // ignore
-      }
+      await notifyQueueDone();
       return { completed: true };
     }
     
@@ -355,4 +328,15 @@ export async function processLeadsQueue(leadProcessor, onProgress = null) {
     console.error('❌ Erreur traitement queue:', error);
     throw error;
   }
+}
+
+async function notifyQueueDone() {
+  try {
+    const groupId = KEYS.groupId();
+    const provider = KEYS.provider();
+    await chrome.runtime.sendMessage({
+      action: 'QUEUE_DONE',
+      data: { provider, groupId }
+    });
+  } catch (_) { /* ignore */ }
 }

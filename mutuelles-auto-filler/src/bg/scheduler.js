@@ -17,10 +17,7 @@ function getOrchestrator() {
 self.BG = self.BG || {};
 
 
-/**
- * Utilitaire sleep
- */
-self.BG.sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+// Async helpers available from shared (self.BG.wait)
 
 /**
  * === API PRINCIPALE ===

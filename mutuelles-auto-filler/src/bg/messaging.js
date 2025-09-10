@@ -3,10 +3,15 @@ self.BG = self.BG || {};
 
 self.BG.handleMessage = async function handleMessage(message, sender) {
   const { action, data } = message || {};
+  const A = self.BG.ACTIONS || {};
+  const validation = self.BG.validateMessage ? self.BG.validateMessage(action, data) : { ok: true };
+  if (!validation.ok) {
+    return { success: false, error: validation.error || 'Invalid payload' };
+  }
   switch (action) {
-    case 'PING':
+    case A.PING:
       return { success: true, data: { alive: true } };
-    case 'SET_CONFIG': {
+    case A.SET_CONFIG: {
       const { automation } = data || {};
       if (automation) {
         const cfg = {
@@ -18,33 +23,37 @@ self.BG.handleMessage = async function handleMessage(message, sender) {
           parallelTabs: Math.min(10, Math.max(1, Number(automation.parallelTabs ?? 1)))
         };
         await chrome.storage.local.set({ automation_config: cfg });
+        // Update logger debug toggle if provided
+        if (typeof automation.debug === 'boolean' && self.BG.logger) {
+          self.BG.logger.setDebug(automation.debug);
+        }
       }
       return { success: true, data: { updated: true } };
     }
-    case 'START_RUN': {
+    case A.START_RUN: {
       const result = await self.BG.startRun(data || {});
       return { success: true, data: result };
     }
-    case 'GET_RUN_STATE': {
+    case A.GET_RUN_STATE: {
       const summary = await self.BG.getRunStateSummary();
       return { success: true, data: summary };
     }
-    case 'CANCEL_RUN': {
+    case A.CANCEL_RUN: {
       const result = await self.BG.cancelRun();
       const ok = !!result && result.cancelled === true;
       return { success: ok, data: result };
     }
-    case 'GET_ISOLATED_STATE': {
+    case A.GET_ISOLATED_STATE: {
       const summary = await self.BG.getIsolatedState();
       return { success: true, data: summary };
     }
-    case 'CANCEL_ISOLATED': {
+    case A.CANCEL_ISOLATED: {
       // Support annulation ciblée (groupId) ou totale
       const result = await (self.BG.cancelIsolatedAny ? self.BG.cancelIsolatedAny(data || {}) : self.BG.cancelIsolated(data || {}));
       const ok = !!result && ((typeof result.cancelled === 'boolean' && result.cancelled) || (typeof result.count === 'number' && result.count > 0));
       return { success: ok, data: result };
     }
-    case 'UPDATE_LEAD_STATUS': {
+    case A.UPDATE_LEAD_STATUS: {
       // Reçu depuis le content script côté provider (SwissLife)
       // On relaie vers les onglets plateforme via le content script localhost
       try {
@@ -63,7 +72,7 @@ self.BG.handleMessage = async function handleMessage(message, sender) {
         return { success: false, error: e?.message || 'Erreur relais statut' };
       }
     }
-    case 'QUEUE_DONE': {
+    case A.QUEUE_DONE: {
       const result = await self.BG.onQueueDone(data || {}, sender);
       return { success: true, data: result };
     }

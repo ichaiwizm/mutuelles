@@ -10,31 +10,29 @@ export class MessageHandler {
   }
 
   initializeForSwissLife() {
-    
-    
-    // Écouter les messages du background script pour les mises à jour de leads
-    chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
-      await this.handleRuntimeMessage(message, sender, sendResponse);
-    });
-
-    // Écouter les messages de l'orchestrator (depuis l'iframe)
-    window.addEventListener('message', async (event) => {
-      await this.handleWindowMessage(event);
-    });
+    this._initializeCommon('provider');
   }
 
   initializeForLocalhost() {
-    
-    
-    // Écouter les messages du background script pour les notifications de statut
+    this._initializeCommon('platform');
+  }
+
+  _initializeCommon(mode) {
+    // Écouter les messages du background script (leads/notifications)
+    import(chrome.runtime.getURL('src/shared/messages.js')).catch(() => {});
     chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
       await this.handleRuntimeMessage(message, sender, sendResponse);
     });
-    
-    // Écouter les messages de l'orchestrator (depuis l'iframe)
-    window.addEventListener('message', async (event) => {
-      await this.handleLocalhostWindowMessage(event);
-    });
+    // Écouter les messages de l'orchestrator
+    if (mode === 'provider') {
+      window.addEventListener('message', async (event) => {
+        await this.handleWindowMessage(event);
+      });
+    } else if (mode === 'platform') {
+      window.addEventListener('message', async (event) => {
+        await this.handleLocalhostWindowMessage(event);
+      });
+    }
   }
 
   async handleRuntimeMessage(message, sender, sendResponse) {
@@ -74,11 +72,10 @@ export class MessageHandler {
     
     // Relayer les notifications de statut vers la plateforme
     else if (message.action === 'FORWARD_STATUS_TO_PLATFORM' && message.source === 'background') {
-      
-      
+      const FROM_EXTENSION_STATUS = (self.BG && self.BG.WINDOW_MSG && self.BG.WINDOW_MSG.FROM_EXTENSION_STATUS) || 'FROM_EXTENSION_STATUS';
       // Envoyer vers la plateforme via postMessage
       window.postMessage({
-        type: 'FROM_EXTENSION_STATUS',
+        type: FROM_EXTENSION_STATUS,
         statusUpdate: message.data
       }, window.location.origin);
       
@@ -87,19 +84,7 @@ export class MessageHandler {
   }
 
   async handleWindowMessage(event) {
-    if (event.data?.type === 'ORCHESTRATOR_STATUS_UPDATE') {
-      
-      
-      // Relayer au background
-      try {
-        const response = await chrome.runtime.sendMessage({
-          action: event.data.action,
-          data: event.data.data
-        });
-      } catch (error) {
-        console.error('❌ [CONTENT SwissLife] Erreur relais au background:', error);
-      }
-    }
+    await this._relayOrchestratorStatus(event, '[CONTENT SwissLife]');
   }
 
   async handleLocalhostWindowMessage(event) {
@@ -109,18 +94,22 @@ export class MessageHandler {
     }
     
     // Écouter les messages de l'orchestrator (depuis l'iframe) - flux legacy
-    if (event.data.type === 'ORCHESTRATOR_STATUS_UPDATE') {
-      
-      
-      // Relayer au background
-      try {
-        const response = await chrome.runtime.sendMessage({
-          action: event.data.action,
-          data: event.data.data
-        });
-      } catch (error) {
-        console.error('❌ [CONTENT localhost] Erreur relais au background:', error);
-      }
+    const ORCH = (self.BG && self.BG.WINDOW_MSG && self.BG.WINDOW_MSG.ORCHESTRATOR_STATUS_UPDATE) || 'ORCHESTRATOR_STATUS_UPDATE';
+    if (event.data.type === ORCH) {
+      await this._relayOrchestratorStatus(event, '[CONTENT localhost]');
+    }
+  }
+
+  async _relayOrchestratorStatus(event, tag = '[CONTENT]') {
+    const ORCH = (self.BG && self.BG.WINDOW_MSG && self.BG.WINDOW_MSG.ORCHESTRATOR_STATUS_UPDATE) || 'ORCHESTRATOR_STATUS_UPDATE';
+    if (event.data?.type !== ORCH) return;
+    try {
+      await chrome.runtime.sendMessage({
+        action: event.data.action,
+        data: event.data.data
+      });
+    } catch (error) {
+      console.error(`❌ ${tag} Erreur relais au background:`, error);
     }
   }
 }

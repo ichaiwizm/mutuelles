@@ -33,6 +33,7 @@
   "web_accessible_resources": [
     {
       "resources": [
+        "src/shared/*.js",
         "data/swisslife-rules.json",
         "data/swisslife-mappings.json",
         "src/config/*.js",

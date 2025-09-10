@@ -17,14 +17,4 @@ self.BG.getDeploymentConfigSW = async function getDeploymentConfigSW() {
   }
 }
 
-self.BG.hostsFromOrigins = function hostsFromOrigins(origins) {
-  const out = [];
-  (origins || []).forEach(o => {
-    try {
-      const u = new URL(o);
-      out.push(u.host);
-    } catch (_) {}
-  });
-  return out;
-}
-
+// hostsFromOrigins deprecated (filter by exact origin elsewhere)

@@ -88,6 +88,21 @@ export async function cleanupGroupKeys(groupId) {
   }
   try {
     const provider = getProviderFromLocation();
+    // Try to use shared cleaner first
+    try {
+      if (!self.BG || !self.BG.cleanupGroupStorage) {
+        await import(chrome.runtime.getURL('src/shared/storage-cleaner.js'));
+      }
+      if (self.BG && self.BG.cleanupGroupStorage) {
+        const count = await self.BG.cleanupGroupStorage(provider, groupId);
+        if (count > 0) {
+          console.log(`🧹 [STORAGE-KEYS] Nettoyage ${count} clés pour groupId: ${groupId}`);
+        }
+        return count;
+      }
+    } catch (_) { /* fallback below */ }
+
+    // Fallback local (should rarely be used)
     const allKeys = await chrome.storage.local.get(null);
     const keysToRemove = Object.keys(allKeys).filter(key => key.startsWith(`${provider}_`) && key.endsWith(`__${groupId}`));
     if (keysToRemove.length > 0) {

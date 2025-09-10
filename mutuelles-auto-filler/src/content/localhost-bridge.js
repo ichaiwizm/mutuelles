@@ -10,7 +10,9 @@ export class LocalhostBridge {
   }
 
   initialize() {
-    
+    // Charger les constantes de messages (shared)
+    import(chrome.runtime.getURL('src/shared/messages.js')).catch(() => {});
+
     // Charger la config dynamiquement
     import(chrome.runtime.getURL('src/config/config.js'))
       .then((mod) => {
@@ -49,7 +51,8 @@ export class LocalhostBridge {
           }
           allowed = await this._config.isAllowedPlatformOrigin(event.origin);
         } catch (_) {}
-        if (event.data?.type === 'TO_EXTENSION' && allowed) {
+        const TO_EXTENSION = (self.BG && self.BG.WINDOW_MSG && self.BG.WINDOW_MSG.TO_EXTENSION) || 'TO_EXTENSION';
+        if (event.data?.type === TO_EXTENSION && allowed) {
           await this.handlePlatformMessage(event);
         }
       } catch (_) {
@@ -60,18 +63,26 @@ export class LocalhostBridge {
 
   async handlePlatformMessage(event) {
     try {
-      const responsePromise = chrome.runtime.sendMessage(event.data.message);
+      const timeoutMs = (self.BG && self.BG.SCHEDULER_CONSTANTS && self.BG.SCHEDULER_CONSTANTS.CONFIG && self.BG.SCHEDULER_CONSTANTS.CONFIG.MESSAGE_TIMEOUT_MS)
+        || (self.BG && self.BG.SHARED_DEFAULTS && self.BG.SHARED_DEFAULTS.timeouts && self.BG.SHARED_DEFAULTS.timeouts.extMessageMs)
+        || 15000;
+      // Assurer la disponibilité des helpers côté content
+      try { if (!self.BG || !self.BG.chromeHelpers) await import(chrome.runtime.getURL('src/shared/chrome-helpers.js')); } catch (_) {}
+      let response;
+      if (self.BG && self.BG.chromeHelpers && typeof self.BG.chromeHelpers.sendMessageWithTimeout === 'function') {
+        response = await self.BG.chromeHelpers.sendMessageWithTimeout(event.data.message, timeoutMs);
+      } else {
+        // Fallback local: Promise.race entre sendMessage et timeout
+        const responsePromise = new Promise((resolve) => {
+          try { chrome.runtime.sendMessage(event.data.message, (resp) => resolve(resp)); } catch (_) { resolve({ success: false, error: 'sendMessage error' }); }
+        });
+        const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout background script')), timeoutMs));
+        response = await Promise.race([responsePromise, timeoutPromise]);
+      }
       
-      const timeoutPromise = new Promise((_, reject) => {
-        // Le démarrage (START_RUN) peut prendre du temps (création fenêtre/onglets)
-        // Augmenter le timeout pour éviter les faux négatifs côté plateforme
-        setTimeout(() => reject(new Error('Timeout background script')), 15000);
-      });
-      
-      const response = await Promise.race([responsePromise, timeoutPromise]);
-      
+      const FROM_EXTENSION = (self.BG && self.BG.WINDOW_MSG && self.BG.WINDOW_MSG.FROM_EXTENSION) || 'FROM_EXTENSION';
       window.postMessage({
-        type: 'FROM_EXTENSION',
+        type: FROM_EXTENSION,
         messageId: event.data.messageId,
         response: response || { success: false, error: 'Empty response' }
       }, event.origin);
@@ -82,8 +93,9 @@ export class LocalhostBridge {
         ? 'Extension rechargée. Rafraîchis la page localhost:5174 pour rétablir le pont.'
         : (error.message || 'Erreur de communication');
       
+      const FROM_EXTENSION = (self.BG && self.BG.WINDOW_MSG && self.BG.WINDOW_MSG.FROM_EXTENSION) || 'FROM_EXTENSION';
       window.postMessage({
-        type: 'FROM_EXTENSION',
+        type: FROM_EXTENSION,
         messageId: event.data.messageId,
         response: {
           success: false,

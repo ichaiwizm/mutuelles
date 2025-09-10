@@ -18,6 +18,22 @@ self.BG.SchedulerOrchestrator = class SchedulerOrchestrator {
    * Démarre un nouveau run
    */
   async startRun({ providers, leads, parallelTabs, options = {} }) {
+    // Verrou: empêcher les runs concurrents (hors isolés) avec auto-récupération d'état périmé
+    if (!options?.isolated) {
+      const current = await this.runStateManager.getRunState();
+      if (current && current.status === this.runStatus.RUNNING) {
+        // Valider l'existence du pool/fenêtre
+        const pool = await this.poolManager.validatePool(await this.poolManager.getPool());
+        if (pool && pool.windowId) {
+          // Il y a bien une fenêtre active pour ce run
+          throw new Error('Run déjà en cours');
+        } else {
+          // État périmé (plus de fenêtre) → annuler l'état et continuer
+          self.BG.logger.warn('[SchedulerOrchestrator] État RUNNING périmé détecté sans fenêtre; nettoyage...');
+          try { await this.runStateManager.cancelRun(); } catch (_) {}
+        }
+      }
+    }
     // Validation des paramètres
     if (!Array.isArray(providers) || providers.length === 0) {
       throw new Error('providers requis');
@@ -99,7 +115,7 @@ self.BG.SchedulerOrchestrator = class SchedulerOrchestrator {
 
       return { cancelled: true };
     } catch (error) {
-      console.error('[SchedulerOrchestrator] Erreur lors de l\'annulation:', error);
+      self.BG.logger.error('[SchedulerOrchestrator] Erreur lors de l\'annulation:', error);
       return { cancelled: false, error: error.message };
     }
   }
@@ -112,7 +128,7 @@ self.BG.SchedulerOrchestrator = class SchedulerOrchestrator {
       const result = await this.isolatedManager.cancelAllIsolatedGroups();
       return { cancelled: true, count: result.cancelled };
     } catch (error) {
-      console.error('[SchedulerOrchestrator] Erreur lors de l\'annulation isolée:', error);
+      self.BG.logger.error('[SchedulerOrchestrator] Erreur lors de l\'annulation isolée:', error);
       return { cancelled: false, error: error.message };
     }
   }
@@ -174,17 +190,15 @@ self.BG.SchedulerOrchestrator = class SchedulerOrchestrator {
       if (index === 0 && pool.tabs.length > 0) {
         // Réutiliser le premier onglet
         tabId = pool.tabs[0].tabId;
-        try {
-          await chrome.tabs.update(tabId, { url, active: false });
-        } catch (error) {
-          // Si échec, créer nouvel onglet
-          const tab = await chrome.tabs.create({ windowId: pool.windowId, url, active: false });
-          tabId = tab.id;
+        const upd = await self.BG.chromeHelpers.safeTabsUpdate(tabId, { url, active: false });
+        if (!upd) {
+          const tab = await self.BG.chromeHelpers.safeTabsCreate({ windowId: pool.windowId, url, active: false });
+          tabId = tab && tab.id;
         }
       } else {
         // Créer nouvel onglet
-        const tab = await chrome.tabs.create({ windowId: pool.windowId, url, active: false });
-        tabId = tab.id;
+        const tab = await self.BG.chromeHelpers.safeTabsCreate({ windowId: pool.windowId, url, active: false });
+        tabId = tab && tab.id;
       }
 
       // Assigner l'onglet
@@ -261,14 +275,12 @@ self.BG.SchedulerOrchestrator = class SchedulerOrchestrator {
   async _assignGroupToTab(tabId, provider, group) {
     const url = await self.BG.getProvider(provider).buildUrlWithGroupId(group.groupId);
     
-    try {
-      await chrome.tabs.update(tabId, { url, active: false });
-    } catch (error) {
-      // Si l'onglet n'existe plus, en créer un nouveau
-      const pool = await this.poolManager.getPool();
-      const tab = await chrome.tabs.create({ windowId: pool.windowId, url, active: false });
-      tabId = tab.id;
-    }
+      const upd = await self.BG.chromeHelpers.safeTabsUpdate(tabId, { url, active: false });
+      if (!upd) {
+        const pool = await this.poolManager.getPool();
+        const tab = await self.BG.chromeHelpers.safeTabsCreate({ windowId: pool.windowId, url, active: false });
+        tabId = tab && tab.id;
+      }
 
     await this.poolManager.assignTab(tabId, provider, group.groupId);
     
@@ -287,14 +299,10 @@ self.BG.SchedulerOrchestrator = class SchedulerOrchestrator {
     const url = await self.BG.getProvider(newProvider).buildUrlWithGroupId(group.groupId);
     
     // Créer nouvel onglet pour éviter de fermer le dernier
-    const newTab = await chrome.tabs.create({ windowId: pool.windowId, url, active: false });
+    const newTab = await self.BG.chromeHelpers.safeTabsCreate({ windowId: pool.windowId, url, active: false });
     
     // Fermer l'ancien onglet
-    try {
-      await chrome.tabs.remove(tabId);
-    } catch (error) {
-      // Ignore si déjà fermé
-    }
+    await self.BG.chromeHelpers.safeTabsRemove(tabId);
 
     await this.poolManager.assignTab(newTab.id, newProvider, group.groupId);
     
@@ -380,7 +388,7 @@ self.BG.SchedulerOrchestrator = class SchedulerOrchestrator {
           console.warn(`[SchedulerOrchestrator] Impossible de notifier l'onglet ${tabId}:`, error);
           return false;
         }
-        await new Promise(resolve => setTimeout(resolve, this.config.RETRY_DELAY * attempt));
+        await self.BG.wait(this.config.RETRY_DELAY * attempt);
       }
     }
     return false;

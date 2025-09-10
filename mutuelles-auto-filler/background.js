@@ -1,12 +1,19 @@
 // MV3 Service Worker - Orchestrator (minimal)
 // Loads modular background logic and wires message listeners.
 
-// Load background modules (classic service worker, no dynamic import())
+// Load shared and background modules (classic service worker, no dynamic import())
 importScripts(
+  'src/shared/shared-config.js',
+  'src/shared/messages.js',
+  'src/shared/logger.js',
+  'src/shared/async.js',
+  'src/shared/storage-cleaner.js',
+  'src/shared/chrome-helpers.js',
   'src/bg/constants.js',
   'src/bg/config-sw.js',
   'src/bg/providers-registry.js',
   'src/bg/core/constants.js',
+  'src/bg/core/storage-keys.js',
   'src/bg/core/TabPoolManager.js',
   'src/bg/core/RunStateManager.js', 
   'src/bg/core/IsolatedGroupManager.js',
