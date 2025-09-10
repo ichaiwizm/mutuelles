@@ -114,7 +114,7 @@ export class ExtensionBridge {
   }
 
   // État des retries isolés
-  static async getIsolatedState(): Promise<{ isolatedCount: number; groups: Array<{ groupId: string; tabId?: number; windowId?: number }> }> {
+  static async getIsolatedState(): Promise<{ isolatedCount: number; groups: Array<{ groupId: string; provider: string; leadName: string; createdAt: string }> }> {
     try {
       const message: ExtensionMessage = { action: 'GET_ISOLATED_STATE' } as any;
       const res = await this.sendMessageToExtension(message);
@@ -186,7 +186,7 @@ export class ExtensionBridge {
         setTimeout(() => {
           window.removeEventListener('message', handleResponse);
           resolve({ success: false, error: 'Timeout - Extension ne répond pas' });
-        }, 5000);
+        }, 15000);
       };
 
       if (chromeApi?.runtime && extId) {
@@ -230,11 +230,6 @@ export class ExtensionBridge {
     window.addEventListener('message', (event) => {
       if (event.origin !== window.location.origin) return;
       if (event.data?.type === 'FROM_EXTENSION_STATUS' && event.data?.statusUpdate) {
-        const update = event.data.statusUpdate as LeadStatusUpdate;
-        this.statusUpdateCallbacks.forEach(callback => {
-          try { callback(update); } catch (error) { console.error('[EXTENSION BRIDGE] Callback error:', error); }
-        });
-      } else if (event.data?.type === 'FROM_EXTENSION' && event.data?.statusUpdate) {
         const update = event.data.statusUpdate as LeadStatusUpdate;
         this.statusUpdateCallbacks.forEach(callback => {
           try { callback(update); } catch (error) { console.error('[EXTENSION BRIDGE] Callback error:', error); }

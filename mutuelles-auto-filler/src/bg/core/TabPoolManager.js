@@ -50,7 +50,7 @@ self.BG.TabPoolManager = class TabPoolManager {
     return pool;
   }
 
-  async ensureWindow(initialUrl = 'about:blank') {
+  async ensureWindow(initialUrl = 'about:blank', options = {}) {
     let pool = await this.getPool();
     pool = await this.validatePool(pool);
     
@@ -65,8 +65,13 @@ self.BG.TabPoolManager = class TabPoolManager {
     });
 
     try {
-      const { automation_config } = await chrome.storage.local.get(['automation_config']);
-      const minimize = automation_config?.minimizeWindow !== false;
+      let minimize;
+      if (typeof options.minimizeWindow === 'boolean') {
+        minimize = options.minimizeWindow;
+      } else {
+        const { automation_config } = await chrome.storage.local.get(['automation_config']);
+        minimize = automation_config?.minimizeWindow !== false;
+      }
       if (minimize) {
         await chrome.windows.update(window.id, { state: 'minimized' });
       }
@@ -86,13 +91,13 @@ self.BG.TabPoolManager = class TabPoolManager {
     return newPool;
   }
 
-  async ensureCapacity(targetCapacity) {
+  async ensureCapacity(targetCapacity, options = {}) {
     const capacity = Math.max(
       this.config.MIN_PARALLEL_TABS,
       Math.min(this.config.MAX_PARALLEL_TABS, targetCapacity || this.config.DEFAULT_PARALLEL_TABS)
     );
 
-    let pool = await this.ensureWindow();
+    let pool = await this.ensureWindow(undefined, options);
     pool = await this.validatePool(pool);
 
     while (pool.tabs.length < capacity) {

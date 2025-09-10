@@ -16,12 +16,6 @@ function getOrchestrator() {
 // API publique
 self.BG = self.BG || {};
 
-/**
- * Clés de stockage
- */
-self.BG.POOL_KEY = 'pool_state';
-self.BG.RUN_STATE_KEY = 'run_state';
-self.BG.ISOLATED_GROUPS_KEY = 'isolated_groups';
 
 /**
  * Utilitaire sleep
@@ -61,6 +55,13 @@ self.BG.cancelRun = async function cancelRun() {
  */
 self.BG.cancelIsolated = async function cancelIsolated() {
   return await getOrchestrator().cancelIsolated();
+};
+
+/**
+ * Annule un groupe isolé spécifique (ou tous si aucun groupId)
+ */
+self.BG.cancelIsolatedAny = async function cancelIsolatedAny(params = {}) {
+  return await getOrchestrator().cancelIsolatedAny(params);
 };
 
 /**
@@ -118,12 +119,7 @@ self.BG.setRunState = async function setRunState(state) {
  * === API UTILITAIRES ===
  */
 
-/**
- * Ordre par défaut des providers
- */
-self.BG.defaultProviderOrder = function defaultProviderOrder(providers) {
-  return (providers || []).filter(p => !!self.BG.getProvider?.(p));
-};
+// Les clés de stockage et l'ordre provider sont définis via les constants et providers-registry
 
 /**
  * Valide un pool d'onglets

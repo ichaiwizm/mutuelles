@@ -21,20 +21,21 @@ self.BG.RunStateManager = class RunStateManager {
 
   createRunState(providers, leads, options = {}) {
     const batchId = Date.now().toString();
-    
+    const groupCapacity = Math.max(1, Number(options.parallelTabs || 3));
+
     return {
       id: batchId,
       status: this.runStatus.PENDING,
       providers: [...providers],
       activeProviderIndex: 0,
-      backlog: this._buildBacklog(providers, leads, batchId),
-      groups: this._buildGroups(providers, leads, batchId),
+      backlog: this._buildBacklog(providers, leads, batchId, groupCapacity),
+      groups: this._buildGroups(providers, leads, batchId, groupCapacity),
       totalLeads: leads.length,
       processedLeads: 0,
       options: {
         minimizeWindow: options.minimizeWindow !== false,
         closeOnFinish: options.closeOnFinish === true,
-        parallelTabs: options.parallelTabs || 3
+        parallelTabs: groupCapacity
       },
       createdAt: new Date().toISOString(),
       startedAt: null,
@@ -42,19 +43,19 @@ self.BG.RunStateManager = class RunStateManager {
     };
   }
 
-  _buildBacklog(providers, leads, batchId) {
+  _buildBacklog(providers, leads, batchId, capacity) {
     const backlog = {};
     for (const provider of providers) {
-      const groups = this._splitIntoGroups(leads, 3);
+      const groups = this._splitIntoGroups(leads, capacity);
       backlog[provider] = groups.map((chunk, idx) => `${batchId}-${provider}-${idx}`);
     }
     return backlog;
   }
 
-  _buildGroups(providers, leads, batchId) {
+  _buildGroups(providers, leads, batchId, capacity) {
     const groups = {};
     for (const provider of providers) {
-      const chunks = this._splitIntoGroups(leads, 3);
+      const chunks = this._splitIntoGroups(leads, capacity);
       groups[provider] = chunks.map((chunk, idx) => ({
         groupId: `${batchId}-${provider}-${idx}`,
         leads: chunk,
@@ -189,7 +190,7 @@ self.BG.RunStateManager = class RunStateManager {
       progress: {
         total: state.totalLeads,
         processed: state.processedLeads,
-        percentage: Math.round((state.processedLeads / state.totalLeads) * 100)
+        percentage: state.totalLeads > 0 ? Math.round((state.processedLeads / state.totalLeads) * 100) : 0
       }
     };
   }

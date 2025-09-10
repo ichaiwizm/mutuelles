@@ -31,15 +31,18 @@ self.BG.handleMessage = async function handleMessage(message, sender) {
     }
     case 'CANCEL_RUN': {
       const result = await self.BG.cancelRun();
-      return { success: true, data: result };
+      const ok = !!result && result.cancelled === true;
+      return { success: ok, data: result };
     }
     case 'GET_ISOLATED_STATE': {
-      const summary = await self.BG.getIsolatedSummary();
+      const summary = await self.BG.getIsolatedState();
       return { success: true, data: summary };
     }
     case 'CANCEL_ISOLATED': {
-      const result = await self.BG.cancelIsolated(data || {});
-      return { success: true, data: result };
+      // Support annulation ciblée (groupId) ou totale
+      const result = await (self.BG.cancelIsolatedAny ? self.BG.cancelIsolatedAny(data || {}) : self.BG.cancelIsolated(data || {}));
+      const ok = !!result && ((typeof result.cancelled === 'boolean' && result.cancelled) || (typeof result.count === 'number' && result.count > 0));
+      return { success: ok, data: result };
     }
     case 'UPDATE_LEAD_STATUS': {
       // Reçu depuis le content script côté provider (SwissLife)
@@ -74,10 +77,22 @@ self.BG.notifyPlatformTabs = async function notifyPlatformTabs(statusUpdate) {
   try {
     const tabs = await chrome.tabs.query({});
     const cfg = await self.BG.getDeploymentConfigSW();
-    const hostSubstrings = self.BG.hostsFromOrigins(cfg.platformOrigins);
-    const platformTabs = tabs.filter(tab => tab.url && hostSubstrings.some(h => tab.url.includes(h)));
+    const allowedOrigins = (cfg.platformOrigins || []).filter(Boolean);
+    const platformTabs = tabs.filter(tab => {
+      try {
+        if (!tab.url) return false;
+        const origin = new URL(tab.url).origin;
+        return allowedOrigins.includes(origin);
+      } catch (_) { return false; }
+    });
     for (const tab of platformTabs) {
-      try { await chrome.tabs.sendMessage(tab.id, { action: 'FORWARD_STATUS_TO_PLATFORM', data: statusUpdate, source: 'background' }); } catch (_) {}
+      try {
+        await chrome.tabs.sendMessage(tab.id, {
+          action: 'FORWARD_STATUS_TO_PLATFORM',
+          data: statusUpdate,
+          source: 'background'
+        });
+      } catch (_) { /* ignore */ }
     }
-  } catch (_) {}
+  } catch (_) { /* ignore */ }
 }

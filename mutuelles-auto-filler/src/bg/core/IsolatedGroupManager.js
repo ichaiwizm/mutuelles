@@ -183,6 +183,11 @@ self.BG.IsolatedGroupManager = class IsolatedGroupManager {
       // Ignore si fenêtre déjà fermée
     }
 
+    // Nettoyer les clés de storage liées au groupe
+    try {
+      await this._cleanupGroupStorage(group.provider, groupId);
+    } catch (_) { /* ignore */ }
+
     // Supprimer du registre
     await this.removeIsolatedGroup(groupId);
 
@@ -264,19 +269,37 @@ self.BG.IsolatedGroupManager = class IsolatedGroupManager {
       source: 'background'
     };
 
-    // Retry avec backoff
-    for (let attempt = 1; attempt <= 3; attempt++) {
+    // Retry avec backoff (config globale)
+    const attempts = self.BG.SCHEDULER_CONSTANTS.CONFIG.RETRY_ATTEMPTS;
+    const baseDelay = self.BG.SCHEDULER_CONSTANTS.CONFIG.RETRY_DELAY;
+    for (let attempt = 1; attempt <= attempts; attempt++) {
       try {
         await chrome.tabs.sendMessage(tabId, message);
         return true;
       } catch (error) {
-        if (attempt === 3) {
+        if (attempt === attempts) {
           console.warn(`[IsolatedGroupManager] Impossible de notifier l'onglet ${tabId}:`, error);
           return false;
         }
-        await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+        await new Promise(resolve => setTimeout(resolve, baseDelay * attempt));
       }
     }
     return false;
+  }
+  
+  /**
+   * Nettoie les clés de storage relatives à un groupId donné
+   */
+  async _cleanupGroupStorage(provider, groupId) {
+    try {
+      const all = await chrome.storage.local.get(null);
+      const keys = Object.keys(all).filter(key => key.startsWith(`${provider}_`) && key.endsWith(`__${groupId}`));
+      if (keys.length > 0) {
+        await chrome.storage.local.remove(keys);
+      }
+      return keys.length;
+    } catch (_) {
+      return 0;
+    }
   }
 };

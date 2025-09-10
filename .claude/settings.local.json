@@ -1,15 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "Bash(for file in \"DashboardHeader\" \"DashboardModals\" \"DashboardSearch\" \"iframe-bridge\" \"status-notifier\")",
-      "Bash(do )",
-      "Bash(then )",
-      "Bash(else )",
-      "Bash(for file in \"constants/mappings\" \"constants/AssurleadConstants\" \"vite-env.d.ts\" \"constants.js\" \"AssurProspectParser\")",
-      "Bash(for file in \"processing-status-storage\" \"service-config\" \"table-utils\" \"deduplication\" \"secure-cookie\" \"message-extractor\")",
-      "Bash(for file in \"madelin-option\" \"reprise-option\" \"resiliation-option\")",
-      "Bash(for file in \"vite-env.d.ts\" \"constants/AssurleadConstants\" \"PeriodSelector.css\" \"code-postal-formatter\" \"date-formatter\")",
-      "Bash(if grep -r \"$file\" . --include=\"*.js\" --include=\"*.ts\" --include=\"*.tsx\" --include=\"*.jsx\" --include=\"*.css\" --exclude-dir=node_modules --exclude-dir=.git --exclude-dir=dist)"
+      "Read(//mnt/c/Users/**)",
+      "Bash(tree:*)"
     ],
     "deny": [],
     "ask": [],

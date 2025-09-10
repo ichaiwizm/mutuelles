@@ -52,8 +52,8 @@ self.BG.SchedulerOrchestrator = class SchedulerOrchestrator {
       parallelTabs: capacity
     });
 
-    // Assurer la capacité du pool
-    const pool = await this.poolManager.ensureCapacity(capacity);
+    // Assurer la capacité du pool en respectant l'option de minimisation si fournie
+    const pool = await this.poolManager.ensureCapacity(capacity, { minimizeWindow: options.minimizeWindow });
 
     // Démarrer le run
     await this.runStateManager.startRun(runState);
@@ -113,6 +113,24 @@ self.BG.SchedulerOrchestrator = class SchedulerOrchestrator {
       return { cancelled: true, count: result.cancelled };
     } catch (error) {
       console.error('[SchedulerOrchestrator] Erreur lors de l\'annulation isolée:', error);
+      return { cancelled: false, error: error.message };
+    }
+  }
+
+  /**
+   * Annule un groupe isolé spécifique (si groupId fourni) ou tous
+   */
+  async cancelIsolatedAny({ groupId } = {}) {
+    try {
+      if (groupId) {
+        const res = await this.isolatedManager.completeIsolatedGroup(groupId);
+        const ok = !!res?.ok;
+        return { cancelled: ok, count: ok ? 1 : 0 };
+      }
+      const resultAll = await this.isolatedManager.cancelAllIsolatedGroups();
+      return { cancelled: resultAll.cancelled > 0, count: resultAll.cancelled };
+    } catch (error) {
+      console.error('[SchedulerOrchestrator] Erreur annulation isolée (ciblée/total):', error);
       return { cancelled: false, error: error.message };
     }
   }
