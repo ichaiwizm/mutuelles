@@ -68,8 +68,13 @@ self.BG.SchedulerOrchestrator = class SchedulerOrchestrator {
       parallelTabs: capacity
     });
 
-    // Assurer la capacité du pool en respectant l'option de minimisation si fournie
-    const pool = await this.poolManager.ensureCapacity(capacity, { minimizeWindow: options.minimizeWindow });
+    // Dimensionner la capacité initiale au besoin réel (évite les about:blank inutiles)
+    const firstProvider = runState.providers[0];
+    const initialGroups = (runState.groups && runState.groups[firstProvider]) ? runState.groups[firstProvider].length : 1;
+    const initialNeeded = Math.max(1, Math.min(capacity, initialGroups));
+
+    // Assurer la capacité du pool (fenêtre + onglets) selon le besoin réel initial
+    const pool = await this.poolManager.ensureCapacity(initialNeeded, { minimizeWindow: options.minimizeWindow });
 
     // Démarrer le run
     await this.runStateManager.startRun(runState);
@@ -181,25 +186,48 @@ self.BG.SchedulerOrchestrator = class SchedulerOrchestrator {
     // Limiter au nombre d'onglets disponibles
     const groupsToStart = pendingGroups.slice(0, pool.capacity);
     
-    // Créer et assigner les onglets en parallèle
+    // Créer et assigner les onglets en parallèle, en réutilisant les onglets du pool
     const assignments = groupsToStart.map(async (group, index) => {
       const url = await self.BG.getProvider(activeProvider).buildUrlWithGroupId(group.groupId);
-      
-      // Créer ou réutiliser un onglet
-      let tabId;
-      if (index === 0 && pool.tabs.length > 0) {
-        // Réutiliser le premier onglet
-        tabId = pool.tabs[0].tabId;
-        const upd = await self.BG.chromeHelpers.safeTabsUpdate(tabId, { url, active: false });
-        if (!upd) {
-          const tab = await self.BG.chromeHelpers.safeTabsCreate({ windowId: pool.windowId, url, active: false });
-          tabId = tab && tab.id;
+
+      let tabId = null;
+
+      if (index < (pool.tabs?.length || 0)) {
+        // Réutiliser l'onglet existant du pool pour ce slot
+        const target = pool.tabs[index];
+        if (target && typeof target.tabId === 'number') {
+          tabId = target.tabId;
+          const upd = await self.BG.chromeHelpers.safeTabsUpdate(tabId, { url, active: false });
+          if (!upd) {
+            // Si l'onglet n'existe plus, en créer un nouveau et mettre à jour le pool
+            const tab = await self.BG.chromeHelpers.safeTabsCreate({ windowId: pool.windowId, url, active: false });
+            tabId = tab && tab.id;
+            if (tabId) {
+              pool.tabs[index].tabId = tabId;
+              await this.poolManager.setPool(pool);
+            }
+          }
         }
-      } else {
-        // Créer nouvel onglet
+      }
+
+      if (!tabId) {
+        // Créer un nouvel onglet si le pool n'a pas assez de slots
         const tab = await self.BG.chromeHelpers.safeTabsCreate({ windowId: pool.windowId, url, active: false });
         tabId = tab && tab.id;
+        if (tabId) {
+          // Ajouter ce nouvel onglet au pool pour conserver la cohérence
+          pool.tabs = pool.tabs || [];
+          pool.tabs.push({
+            tabId,
+            status: this.poolManager.tabStatus.IDLE,
+            assigned: null,
+            createdAt: new Date().toISOString()
+          });
+          await this.poolManager.setPool(pool);
+        }
       }
+
+      if (!tabId) return; // sécurité: si création impossible, ignorer ce slot
 
       // Assigner l'onglet
       await this.poolManager.assignTab(tabId, activeProvider, group.groupId);

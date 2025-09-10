@@ -79,10 +79,27 @@ self.BG.TabPoolManager = class TabPoolManager {
       // Ignore si impossible de minimiser
     }
 
+    // Enregistrer l'onglet initial de la fenêtre comme premier slot du pool
+    let initialTabEntry = null;
+    try {
+      const tabsInWindow = await chrome.tabs.query({ windowId: window.id });
+      const initialTab = tabsInWindow.find(t => t.active) || tabsInWindow[0];
+      if (initialTab && typeof initialTab.id === 'number') {
+        initialTabEntry = {
+          tabId: initialTab.id,
+          status: this.tabStatus.IDLE,
+          assigned: null,
+          createdAt: new Date().toISOString()
+        };
+      }
+    } catch (e) {
+      // ignore: si on ne peut pas récupérer l'onglet, ensureCapacity créera les suivants
+    }
+
     const newPool = {
       windowId: window.id,
       capacity: 1,
-      tabs: [],
+      tabs: initialTabEntry ? [initialTabEntry] : [],
       createdAt: new Date().toISOString(),
       lastUsedAt: new Date().toISOString()
     };
@@ -100,20 +117,9 @@ self.BG.TabPoolManager = class TabPoolManager {
     let pool = await this.ensureWindow(undefined, options);
     pool = await this.validatePool(pool);
 
-    while (pool.tabs.length < capacity) {
-      const tab = await self.BG.chromeHelpers.safeTabsCreate({
-        windowId: pool.windowId,
-        url: 'about:blank',
-        active: false
-      });
-
-      pool.tabs.push({
-        tabId: tab.id,
-        status: this.tabStatus.IDLE,
-        assigned: null,
-        createdAt: new Date().toISOString()
-      });
-    }
+    // Ne plus pré-créer d'onglets about:blank ici.
+    // Les onglets nécessaires seront créés à la demande par l'orchestrateur
+    // (_startFirstProvider, _assignGroupToTab, etc.) afin d'éviter des about:blank inutiles
 
     while (pool.tabs.length > capacity && pool.tabs.length > 1) {
       const tabToRemove = pool.tabs.pop();
@@ -138,8 +144,17 @@ self.BG.TabPoolManager = class TabPoolManager {
     const pool = await this.getPool();
     if (!pool) return false;
 
-    const tab = pool.tabs.find(t => t.tabId === tabId);
-    if (!tab) return false;
+    let tab = pool.tabs.find(t => t.tabId === tabId);
+    if (!tab) {
+      // Tolérance: si l'onglet n'est pas encore dans le pool, l'ajouter automatiquement
+      tab = {
+        tabId,
+        status: this.tabStatus.IDLE,
+        assigned: null,
+        createdAt: new Date().toISOString()
+      };
+      pool.tabs.push(tab);
+    }
 
     tab.status = this.tabStatus.ASSIGNED;
     tab.assigned = { provider, groupId };
