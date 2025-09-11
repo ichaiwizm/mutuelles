@@ -2,7 +2,9 @@
   "permissions": {
     "allow": [
       "Read(//mnt/c/Users/**)",
-      "Bash(tree:*)"
+      "Bash(tree:*)",
+      "WebFetch(domain:ui.shadcn.com)",
+      "Bash(npm install:*)"
     ],
     "deny": [],
     "ask": [],

@@ -118,6 +118,10 @@ export function Dashboard() {
     }
   };
 
+  const handleAddLead = (lead: Lead) => {
+    addLeads([lead]);
+  };
+
   // Écouter les notifications de statut depuis l'extension
   useEffect(() => {
     const handleStatusUpdate = (update: LeadStatusUpdate) => {
@@ -238,6 +242,7 @@ export function Dashboard() {
           onConfigModalOpenChange={modalActions.setConfigModalOpen}
           manualDialogOpen={modalState.manualDialogOpen}
           onManualDialogOpenChange={modalActions.setManualDialogOpen}
+          onAddLead={handleAddLead}
         />
       </div>
     </div>

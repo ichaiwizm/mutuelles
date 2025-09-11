@@ -19,6 +19,7 @@ interface DashboardModalsProps {
   // Manual Lead Dialog
   manualDialogOpen: boolean;
   onManualDialogOpenChange: (open: boolean) => void;
+  onAddLead?: (lead: Lead) => void;
 }
 
 export function DashboardModals({
@@ -31,7 +32,8 @@ export function DashboardModals({
   configModalOpen,
   onConfigModalOpenChange,
   manualDialogOpen,
-  onManualDialogOpenChange
+  onManualDialogOpenChange,
+  onAddLead
 }: DashboardModalsProps) {
   return (
     <>
@@ -55,6 +57,7 @@ export function DashboardModals({
       <ManualLeadDialog 
         open={manualDialogOpen} 
         onOpenChange={onManualDialogOpenChange} 
+        onAddLead={onAddLead}
       />
     </>
   );
