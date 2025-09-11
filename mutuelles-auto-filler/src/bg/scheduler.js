@@ -28,6 +28,17 @@ self.BG = self.BG || {};
  * @param {Object} params - { providers, leads, parallelTabs, options }
  */
 self.BG.startRun = async function startRun(params) {
+  // Si des overrides SwissLife sont fournis, les stocker pour ce run
+  if (params.options?.swissLifeOverrides) {
+    try {
+      await chrome.storage.local.set({
+        swisslife_temp_overrides: params.options.swissLifeOverrides,
+        swisslife_temp_overrides_timestamp: Date.now()
+      });
+    } catch (error) {
+      self.BG.logger.warn('[Scheduler] Erreur lors du stockage des overrides SwissLife:', error);
+    }
+  }
   return await getOrchestrator().startRun(params);
 };
 
@@ -40,44 +51,7 @@ self.BG.onQueueDone = async function onQueueDone(data, sender) {
   return await getOrchestrator().onQueueDone(data, sender?.tab);
 };
 
-/**
- * Annule le run actuel
- */
-self.BG.cancelRun = async function cancelRun() {
-  return await getOrchestrator().cancelRun();
-};
-
-/**
- * Annule les groupes isolés seulement
- */
-self.BG.cancelIsolated = async function cancelIsolated() {
-  return await getOrchestrator().cancelIsolated();
-};
-
-/**
- * Annule un groupe isolé spécifique (ou tous si aucun groupId)
- */
-self.BG.cancelIsolatedAny = async function cancelIsolatedAny(params = {}) {
-  return await getOrchestrator().cancelIsolatedAny(params);
-};
-
-/**
- * === API STATUS & ÉTAT ===
- */
-
-/**
- * Obtient l'état du run pour l'UI
- */
-self.BG.getRunStateSummary = async function getRunStateSummary() {
-  return await getOrchestrator().getRunStateSummary();
-};
-
-/**
- * Obtient l'état des groupes isolés
- */
-self.BG.getIsolatedState = async function getIsolatedState() {
-  return await getOrchestrator().getIsolatedState();
-};
+// removed: cancelRun / cancelIsolated / cancelIsolatedAny / getRunStateSummary / getIsolatedState (plus exposés à l'UI)
 
 /**
  * === API ACCÈS DIRECT AUX MANAGERS ===

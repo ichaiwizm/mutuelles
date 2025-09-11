@@ -34,25 +34,7 @@ self.BG.handleMessage = async function handleMessage(message, sender) {
       const result = await self.BG.startRun(data || {});
       return { success: true, data: result };
     }
-    case A.GET_RUN_STATE: {
-      const summary = await self.BG.getRunStateSummary();
-      return { success: true, data: summary };
-    }
-    case A.CANCEL_RUN: {
-      const result = await self.BG.cancelRun();
-      const ok = !!result && result.cancelled === true;
-      return { success: ok, data: result };
-    }
-    case A.GET_ISOLATED_STATE: {
-      const summary = await self.BG.getIsolatedState();
-      return { success: true, data: summary };
-    }
-    case A.CANCEL_ISOLATED: {
-      // Support annulation ciblée (groupId) ou totale
-      const result = await (self.BG.cancelIsolatedAny ? self.BG.cancelIsolatedAny(data || {}) : self.BG.cancelIsolated(data || {}));
-      const ok = !!result && ((typeof result.cancelled === 'boolean' && result.cancelled) || (typeof result.count === 'number' && result.count > 0));
-      return { success: ok, data: result };
-    }
+    // removed: GET_RUN_STATE / CANCEL_RUN / GET_ISOLATED_STATE / CANCEL_ISOLATED
     case A.UPDATE_LEAD_STATUS: {
       // Reçu depuis le content script côté provider (SwissLife)
       // On relaie vers les onglets plateforme via le content script localhost

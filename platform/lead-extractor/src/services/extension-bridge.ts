@@ -91,49 +91,7 @@ export class ExtensionBridge {
     }
   }
 
-  // Demander l'état du run au background
-  static async getRunState(): Promise<{ active: boolean } & Record<string, any>> {
-    try {
-      const message: ExtensionMessage = { action: 'GET_RUN_STATE' } as any;
-      const res = await this.sendMessageToExtension(message);
-      return (res?.data as any) || { active: false };
-    } catch {
-      return { active: false } as any;
-    }
-  }
-
-  // Demander l'annulation du run en cours (fermer fenêtre/onglets)
-  static async cancelRun(): Promise<boolean> {
-    try {
-      const message: ExtensionMessage = { action: 'CANCEL_RUN' } as any;
-      const res = await this.sendMessageToExtension(message);
-      return !!res?.success;
-    } catch {
-      return false;
-    }
-  }
-
-  // État des retries isolés
-  static async getIsolatedState(): Promise<{ isolatedCount: number; groups: Array<{ groupId: string; provider: string; leadName: string; createdAt: string }> }> {
-    try {
-      const message: ExtensionMessage = { action: 'GET_ISOLATED_STATE' } as any;
-      const res = await this.sendMessageToExtension(message);
-      return (res?.data as any) || { isolatedCount: 0, groups: [] };
-    } catch {
-      return { isolatedCount: 0, groups: [] };
-    }
-  }
-
-  // Annuler les retries isolés (tous ou un groupId)
-  static async cancelIsolated(groupId?: string): Promise<boolean> {
-    try {
-      const message: ExtensionMessage = { action: 'CANCEL_ISOLATED', data: groupId ? { groupId } : {} } as any;
-      const res = await this.sendMessageToExtension(message);
-      return !!res?.success;
-    } catch {
-      return false;
-    }
-  }
+  // (méthodes d'arrêt de run / retries isolés supprimées côté UI)
 
   // Démarrer un run (fenêtre unique + pool d'onglets)
   static async startRun(params: { providers: string[]; leads: Lead[]; parallelTabs: number; options?: { minimizeWindow?: boolean; closeOnFinish?: boolean } }): Promise<{ success: boolean; error?: string }> {

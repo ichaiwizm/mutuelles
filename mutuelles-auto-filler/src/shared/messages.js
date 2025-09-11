@@ -9,10 +9,6 @@
     PING: 'PING',
     SET_CONFIG: 'SET_CONFIG',
     START_RUN: 'START_RUN',
-    GET_RUN_STATE: 'GET_RUN_STATE',
-    CANCEL_RUN: 'CANCEL_RUN',
-    GET_ISOLATED_STATE: 'GET_ISOLATED_STATE',
-    CANCEL_ISOLATED: 'CANCEL_ISOLATED',
     UPDATE_LEAD_STATUS: 'UPDATE_LEAD_STATUS',
     QUEUE_DONE: 'QUEUE_DONE'
   };
@@ -29,11 +25,7 @@
         if (data.parallelTabs != null && isNaN(Number(data.parallelTabs))) return { ok: false, error: 'parallelTabs must be number' };
         return { ok: true };
       }
-      case ACTIONS.CANCEL_ISOLATED: {
-        if (!isObject(data)) return { ok: true }; // optional payload
-        if (data.groupId != null && typeof data.groupId !== 'string') return { ok: false, error: 'groupId must be string' };
-        return { ok: true };
-      }
+      // removed: CANCEL_ISOLATED (plus exposé)
       case ACTIONS.UPDATE_LEAD_STATUS: {
         if (!isObject(data)) return { ok: false, error: 'payload must be object' };
         if (typeof data.leadId !== 'string') return { ok: false, error: 'leadId string required' };

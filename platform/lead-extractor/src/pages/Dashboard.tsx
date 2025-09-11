@@ -7,7 +7,7 @@ import { useSSEExtraction } from '@/hooks/useSSEExtraction';
 import { useProcessingStatus } from '@/hooks/useProcessingStatus';
 import { useLeadSelection } from '@/hooks/useLeadSelection';
 import { useDashboardState } from '@/hooks/dashboard/useDashboardState';
-import { useExtensionRunState } from '@/hooks/dashboard/useExtensionRunState';
+import { useSwissLifeConfig } from '@/hooks/useSwissLifeConfig';
 import { ExtensionBridge, type LeadStatusUpdate } from '@/services/extension-bridge';
 import { DashboardHandlers } from '@/services/dashboard/dashboardHandlers';
 import { DashboardHeader } from '@/components/dashboard/DashboardHeader';
@@ -29,7 +29,8 @@ export function Dashboard() {
 
   // Hooks de refactorisation
   const { modalState, modalActions, uiState: dashboardUIState, uiActions } = useDashboardState();
-  const { state: extensionRunState, actions: extensionRunActions } = useExtensionRunState();
+  // État d'exécution/isolated retiré (plus de boutons d'arrêt)
+  const { getActiveOverrides } = useSwissLifeConfig();
 
   const {
     showProgress,
@@ -69,11 +70,8 @@ export function Dashboard() {
     parallelTabs: parallelTabs || 3,
     setLeadStatus,
     setSendingToExtension: uiActions.setSendingToExtension,
-    setRunActive: extensionRunActions.setRunActive,
-    setStoppingRun: extensionRunActions.setStoppingRun,
-    setIsolatedCount: extensionRunActions.setIsolatedCount,
-    setStoppingIsolated: extensionRunActions.setStoppingIsolated,
     clearSelection: deselectAll,
+    getSwissLifeOverrides: getActiveOverrides,
   };
 
   const handlers = new DashboardHandlers(handlersConfig);
@@ -183,13 +181,6 @@ export function Dashboard() {
           onClearAll={clearAllLeads}
           busy={busy}
           lastSyncGmail={dashboardUIState.lastSyncGmail}
-          runActive={extensionRunState.runActive}
-          onStopRun={handlers.handleStopRun}
-          stopping={extensionRunState.stoppingRun}
-          isolatedActive={extensionRunState.isolatedCount > 0}
-          isolatedCount={extensionRunState.isolatedCount}
-          onStopIsolated={handlers.handleStopIsolated}
-          stoppingIsolated={extensionRunState.stoppingIsolated}
         />
 
         {/* Recherche */}

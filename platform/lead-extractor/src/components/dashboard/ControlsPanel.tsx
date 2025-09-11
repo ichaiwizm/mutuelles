@@ -16,13 +16,6 @@ interface ControlsPanelProps {
   onClearAll: () => void;
   busy: boolean;
   lastSyncGmail?: string | null;
-  runActive?: boolean;
-  onStopRun?: () => void;
-  stopping?: boolean;
-  isolatedActive?: boolean;
-  isolatedCount?: number;
-  onStopIsolated?: () => void;
-  stoppingIsolated?: boolean;
 }
 
 export function ControlsPanel({
@@ -35,14 +28,7 @@ export function ControlsPanel({
   filterMode = 'predefined',
   onClearAll,
   busy,
-  lastSyncGmail,
-  runActive = false,
-  onStopRun,
-  stopping = false,
-  isolatedActive = false,
-  isolatedCount = 0,
-  onStopIsolated,
-  stoppingIsolated = false
+  lastSyncGmail
 }: ControlsPanelProps) {
   const [gmailOpen, setGmailOpen] = useState(false);
   return (
@@ -97,27 +83,6 @@ export function ControlsPanel({
 
         {/* Actions à droite */}
         <div className="ml-auto flex items-center gap-3">
-          {isolatedActive && onStopIsolated && (
-            <Button
-              onClick={onStopIsolated}
-              variant="outline"
-              disabled={stoppingIsolated}
-              className={`flex items-center gap-2 ${stoppingIsolated ? 'opacity-60 cursor-not-allowed' : ''}`}
-              title={isolatedCount > 1 ? `${isolatedCount} retries isolés actifs` : '1 retry isolé actif'}
-            >
-              {stoppingIsolated ? 'Arrêt retry...' : `Stop retry${isolatedCount > 1 ? ` (${isolatedCount})` : ''}`}
-            </Button>
-          )}
-          {runActive && onStopRun && (
-            <Button
-              onClick={onStopRun}
-              variant="outline"
-              disabled={stopping}
-              className={`flex items-center gap-2 ${stopping ? 'opacity-60 cursor-not-allowed' : ''}`}
-            >
-              {stopping ? 'Arrêt en cours...' : 'Stop run'}
-            </Button>
-          )}
           <Button 
             onClick={onClearAll} 
             variant="destructive" 
