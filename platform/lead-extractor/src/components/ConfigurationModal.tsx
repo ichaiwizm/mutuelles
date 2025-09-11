@@ -8,7 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { useEffect, useState } from 'react';
 import { useSettings } from '@/hooks/useSettings';
-import { useSwissLifeConfig } from '@/hooks/useSwissLifeConfig';
+import { useSwissLifeConfig, type SwissLifeConfig } from '@/hooks/useSwissLifeConfig';
+import { useGlobalConfig, type GlobalConfig } from '@/hooks/useGlobalConfig';
 import { ExtensionBridge } from '@/services/extension-bridge';
 
 interface ConfigurationModalProps {
@@ -18,24 +19,52 @@ interface ConfigurationModalProps {
 
 export function ConfigurationModal({ open, onOpenChange }: ConfigurationModalProps) {
   const { parallelTabs, setParallelTabs } = useSettings();
-  const { config: swissLifeConfig, setConfig: setSwissLifeConfig, getNextMonthDates, isLoaded } = useSwissLifeConfig();
+  const { config: globalConfig, setConfig: setGlobalConfig, getNextMonthDates, isLoaded: globalLoaded } = useGlobalConfig();
+  const { config: swissLifeConfig, setConfig: setSwissLifeConfig, isLoaded: swissLifeLoaded } = useSwissLifeConfig();
   const [tempParallelTabs, setTempParallelTabs] = useState<number>(parallelTabs ?? 3);
+  const [globalExpanded, setGlobalExpanded] = useState(false);
   const [swissLifeExpanded, setSwissLifeExpanded] = useState(false);
+  const [tempGlobalConfig, setTempGlobalConfig] = useState<GlobalConfig>(globalConfig);
+  const [tempSwissLifeConfig, setTempSwissLifeConfig] = useState<SwissLifeConfig>(swissLifeConfig);
   
   const nextMonthDates = getNextMonthDates();
 
   useEffect(() => {
-    // Sync local temp when modal opens or global value changes
-    if (open) setTempParallelTabs(parallelTabs ?? 3);
-  }, [open, parallelTabs]);
+    // Sync local temp when modal opens or global values change
+    if (open) {
+      setTempParallelTabs(parallelTabs ?? 3);
+      if (globalLoaded) {
+        setTempGlobalConfig(globalConfig);
+      }
+      if (swissLifeLoaded) {
+        setTempSwissLifeConfig(swissLifeConfig);
+      }
+    }
+  }, [open, parallelTabs, globalLoaded, globalConfig, swissLifeLoaded, swissLifeConfig]);
 
-  const hasChanges = (tempParallelTabs ?? 3) !== (parallelTabs ?? 3);
+  const hasGlobalChanges = JSON.stringify(tempGlobalConfig) !== JSON.stringify(globalConfig);
+  const hasSwissChanges = JSON.stringify(tempSwissLifeConfig) !== JSON.stringify(swissLifeConfig);
+  const hasChanges = ((tempParallelTabs ?? 3) !== (parallelTabs ?? 3)) || hasGlobalChanges || hasSwissChanges;
 
   const handleApply = async () => {
     const sanitized = Math.max(1, Math.min(10, Math.floor(Number(tempParallelTabs) || 1)));
     setParallelTabs(sanitized);
     try {
       await ExtensionBridge.setAutomationConfig({ parallelTabs: sanitized });
+    } catch (_) {}
+
+    // Apply Global configuration changes
+    try {
+      if (hasGlobalChanges) {
+        setGlobalConfig(tempGlobalConfig);
+      }
+    } catch (_) {}
+
+    // Apply SwissLife configuration changes
+    try {
+      if (hasSwissChanges) {
+        setSwissLifeConfig(tempSwissLifeConfig);
+      }
     } catch (_) {}
   };
 
@@ -76,40 +105,40 @@ export function ConfigurationModal({ open, onOpenChange }: ConfigurationModalPro
             </CardContent>
           </Card>
 
-          {/* Configuration SwissLife */}
+          {/* Configuration Globale */}
           <Card>
             <CardHeader 
               className="cursor-pointer hover:bg-muted/50 transition-colors" 
-              onClick={() => setSwissLifeExpanded(!swissLifeExpanded)}
+              onClick={() => setGlobalExpanded(!globalExpanded)}
             >
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle className="text-base">Configuration SwissLife</CardTitle>
-                  <CardDescription>Paramètres personnalisés pour l'automatisation SwissLife</CardDescription>
+                  <CardTitle className="text-base">Configuration Globale</CardTitle>
+                  <CardDescription>Paramètres communs à tous les providers d'assurance</CardDescription>
                 </div>
                 <ChevronDown 
-                  className={`h-5 w-5 transition-transform ${swissLifeExpanded ? 'rotate-180' : ''}`} 
+                  className={`h-5 w-5 transition-transform ${globalExpanded ? 'rotate-180' : ''}`} 
                 />
               </div>
             </CardHeader>
-            {swissLifeExpanded && (
+            {globalExpanded && (
               <CardContent className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <Label htmlFor="swisslife-enabled">Activer les surcharges</Label>
+                  <Label htmlFor="global-enabled">Activer les surcharges globales</Label>
                   <Switch
-                    id="swisslife-enabled"
-                    checked={swissLifeConfig.enabled}
-                    onCheckedChange={(checked) => setSwissLifeConfig({ enabled: checked })}
+                    id="global-enabled"
+                    checked={tempGlobalConfig.enabled}
+                    onCheckedChange={(checked) => setTempGlobalConfig(prev => ({ ...prev, enabled: checked }))}
                   />
                 </div>
                 
-                {swissLifeConfig.enabled && (
+                {tempGlobalConfig.enabled && (
                   <div className="space-y-4 pt-2 border-t">
                     <div className="space-y-2">
                       <Label htmlFor="project-name">Nom du projet</Label>
                       <Select
-                        value={swissLifeConfig.projectName || ''}
-                        onValueChange={(value) => setSwissLifeConfig({ projectName: value as 'lead_name' | 'lead_source' })}
+                        value={tempGlobalConfig.projectName || ''}
+                        onValueChange={(value) => setTempGlobalConfig(prev => ({ ...prev, projectName: value as 'lead_name' | 'lead_source' }))}
                       >
                         <SelectTrigger>
                           <SelectValue placeholder="Choisir un format..." />
@@ -124,8 +153,8 @@ export function ConfigurationModal({ open, onOpenChange }: ConfigurationModalPro
                     <div className="space-y-2">
                       <Label htmlFor="date-effet">Date d'effet</Label>
                       <Select
-                        value={swissLifeConfig.dateEffet || ''}
-                        onValueChange={(value) => setSwissLifeConfig({ dateEffet: value as 'end_next_month' | 'start_next_month' | 'middle_next_month' })}
+                        value={tempGlobalConfig.dateEffet || ''}
+                        onValueChange={(value) => setTempGlobalConfig(prev => ({ ...prev, dateEffet: value as 'end_next_month' | 'start_next_month' | 'middle_next_month' }))}
                       >
                         <SelectTrigger>
                           <SelectValue placeholder="Choisir une date..." />
@@ -137,12 +166,46 @@ export function ConfigurationModal({ open, onOpenChange }: ConfigurationModalPro
                         </SelectContent>
                       </Select>
                     </div>
+                  </div>
+                )}
+              </CardContent>
+            )}
+          </Card>
 
+          {/* Configuration SwissLife */}
+          <Card>
+            <CardHeader 
+              className="cursor-pointer hover:bg-muted/50 transition-colors" 
+              onClick={() => setSwissLifeExpanded(!swissLifeExpanded)}
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-base">Configuration SwissLife</CardTitle>
+                  <CardDescription>Paramètres spécifiques à l'automatisation SwissLife</CardDescription>
+                </div>
+                <ChevronDown 
+                  className={`h-5 w-5 transition-transform ${swissLifeExpanded ? 'rotate-180' : ''}`} 
+                />
+              </div>
+            </CardHeader>
+            {swissLifeExpanded && (
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="swisslife-enabled">Activer les surcharges SwissLife</Label>
+                  <Switch
+                    id="swisslife-enabled"
+                    checked={tempSwissLifeConfig.enabled}
+                    onCheckedChange={(checked) => setTempSwissLifeConfig(prev => ({ ...prev, enabled: checked }))}
+                  />
+                </div>
+                
+                {tempSwissLifeConfig.enabled && (
+                  <div className="space-y-4 pt-2 border-t">
                     <div className="space-y-2">
                       <Label htmlFor="hospital-comfort">Confort hospitalisation</Label>
                       <Select
-                        value={swissLifeConfig.hospitalComfort || ''}
-                        onValueChange={(value) => setSwissLifeConfig({ hospitalComfort: value as 'oui' | 'non' })}
+                        value={tempSwissLifeConfig.hospitalComfort || ''}
+                        onValueChange={(value) => setTempSwissLifeConfig(prev => ({ ...prev, hospitalComfort: value as 'oui' | 'non' }))}
                       >
                         <SelectTrigger>
                           <SelectValue placeholder="Choisir une option..." />
@@ -157,8 +220,8 @@ export function ConfigurationModal({ open, onOpenChange }: ConfigurationModalPro
                     <div className="space-y-2">
                       <Label htmlFor="gammes">Gammes</Label>
                       <Select
-                        value={swissLifeConfig.gammes || ''}
-                        onValueChange={(value) => setSwissLifeConfig({ gammes: value as 'SwissLife Santé' })}
+                        value={tempSwissLifeConfig.gammes || ''}
+                        onValueChange={(value) => setTempSwissLifeConfig(prev => ({ ...prev, gammes: value as 'SwissLife Santé' }))}
                       >
                         <SelectTrigger>
                           <SelectValue placeholder="Choisir une gamme..." />

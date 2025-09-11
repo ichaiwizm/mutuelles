@@ -8,6 +8,7 @@ import { useProcessingStatus } from '@/hooks/useProcessingStatus';
 import { useLeadSelection } from '@/hooks/useLeadSelection';
 import { useDashboardState } from '@/hooks/dashboard/useDashboardState';
 import { useSwissLifeConfig } from '@/hooks/useSwissLifeConfig';
+import { useGlobalConfig } from '@/hooks/useGlobalConfig';
 import { ExtensionBridge, type LeadStatusUpdate } from '@/services/extension-bridge';
 import { DashboardHandlers } from '@/services/dashboard/dashboardHandlers';
 import { DashboardHeader } from '@/components/dashboard/DashboardHeader';
@@ -30,7 +31,8 @@ export function Dashboard() {
   // Hooks de refactorisation
   const { modalState, modalActions, uiState: dashboardUIState, uiActions } = useDashboardState();
   // État d'exécution/isolated retiré (plus de boutons d'arrêt)
-  const { getActiveOverrides } = useSwissLifeConfig();
+  const { getActiveOverrides: getGlobalOverrides } = useGlobalConfig();
+  const { getActiveOverrides: getSwissLifeOverrides } = useSwissLifeConfig();
 
   const {
     showProgress,
@@ -64,6 +66,15 @@ export function Dashboard() {
     allFilteredSelected
   } = useLeadSelection(tableData);
 
+  // Combiner les overrides globaux et SwissLife
+  const getCombinedOverrides = () => {
+    const globalOverrides = getGlobalOverrides() || {};
+    const swissLifeOverrides = getSwissLifeOverrides() || {};
+    
+    const combined = { ...globalOverrides, ...swissLifeOverrides };
+    return Object.keys(combined).length > 0 ? combined : null;
+  };
+
   // Configuration des handlers
   const handlersConfig = {
     selectedLeads,
@@ -71,7 +82,7 @@ export function Dashboard() {
     setLeadStatus,
     setSendingToExtension: uiActions.setSendingToExtension,
     clearSelection: deselectAll,
-    getSwissLifeOverrides: getActiveOverrides,
+    getSwissLifeOverrides: getCombinedOverrides,
   };
 
   const handlers = new DashboardHandlers(handlersConfig);

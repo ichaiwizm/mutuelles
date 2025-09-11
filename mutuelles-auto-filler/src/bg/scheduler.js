@@ -28,15 +28,15 @@ self.BG = self.BG || {};
  * @param {Object} params - { providers, leads, parallelTabs, options }
  */
 self.BG.startRun = async function startRun(params) {
-  // Si des overrides SwissLife sont fournis, les stocker pour ce run
+  // Si des overrides sont fournis, les stocker pour ce run
   if (params.options?.swissLifeOverrides) {
     try {
       await chrome.storage.local.set({
-        swisslife_temp_overrides: params.options.swissLifeOverrides,
-        swisslife_temp_overrides_timestamp: Date.now()
+        temp_overrides: params.options.swissLifeOverrides,
+        temp_overrides_timestamp: Date.now()
       });
     } catch (error) {
-      self.BG.logger.warn('[Scheduler] Erreur lors du stockage des overrides SwissLife:', error);
+      self.BG.logger.warn('[Scheduler] Erreur lors du stockage des overrides:', error);
     }
   }
   return await getOrchestrator().startRun(params);

@@ -81,30 +81,30 @@ function getNextMonthDates() {
   };
 }
 
-async function resolveStepData(etape, leadData, resolver, swissLifeOverrides = null) {
+async function resolveStepData(etape, leadData, resolver, overrides = null) {
   const stepName = etape.name || etape.nom;
   let stepData = { ...etape.data };
 
-  // Appliquer les overrides SwissLife si disponibles
-  if (swissLifeOverrides) {
-    if (stepName === 'projectName' && swissLifeOverrides.projectName) {
+  // Appliquer les overrides (globaux et spécifiques) si disponibles
+  if (overrides) {
+    if (stepName === 'projectName' && overrides.projectName) {
       // Générer le nom du projet selon l'option choisie
-      if (swissLifeOverrides.projectName === 'lead_name') {
+      if (overrides.projectName === 'lead_name') {
         stepData = { value: `Simulation ${leadData.lead.nom} ${leadData.lead.prenom}` };
-      } else if (swissLifeOverrides.projectName === 'lead_source') {
+      } else if (overrides.projectName === 'lead_source') {
         stepData = { value: `${leadData.lead.nom} ${leadData.lead.prenom} - Source Extension` };
       }
-    } else if (stepName === 'dateEffet' && swissLifeOverrides.dateEffet) {
+    } else if (stepName === 'dateEffet' && overrides.dateEffet) {
       // Calculer la date selon l'option choisie
       const dates = getNextMonthDates();
-      const selectedDate = dates[swissLifeOverrides.dateEffet];
+      const selectedDate = dates[overrides.dateEffet];
       if (selectedDate) {
         stepData = { value: selectedDate };
       }
-    } else if (stepName === 'hospitalComfort' && swissLifeOverrides.hospitalComfort) {
-      stepData = { value: swissLifeOverrides.hospitalComfort };
-    } else if (stepName === 'gammes' && swissLifeOverrides.gammes) {
-      stepData = { value: swissLifeOverrides.gammes };
+    } else if (stepName === 'hospitalComfort' && overrides.hospitalComfort) {
+      stepData = { value: overrides.hospitalComfort };
+    } else if (stepName === 'gammes' && overrides.gammes) {
+      stepData = { value: overrides.gammes };
     }
   }
 
@@ -181,19 +181,19 @@ export async function executeWorkflow(leadData, onProgress = null) {
   const resolver = await getResolver();
   const executor = await getExecutorForProvider();
 
-  // Récupérer les overrides SwissLife temporaires si disponibles
-  let swissLifeOverrides = null;
+  // Récupérer les overrides temporaires si disponibles
+  let overrides = null;
   try {
-    const storage = await chrome.storage.local.get(['swisslife_temp_overrides', 'swisslife_temp_overrides_timestamp']);
-    if (storage.swisslife_temp_overrides && storage.swisslife_temp_overrides_timestamp) {
+    const storage = await chrome.storage.local.get(['temp_overrides', 'temp_overrides_timestamp']);
+    if (storage.temp_overrides && storage.temp_overrides_timestamp) {
       // Vérifier que les overrides ne sont pas trop anciens (30 minutes)
-      const age = Date.now() - storage.swisslife_temp_overrides_timestamp;
+      const age = Date.now() - storage.temp_overrides_timestamp;
       if (age < 30 * 60 * 1000) {
-        swissLifeOverrides = storage.swisslife_temp_overrides;
+        overrides = storage.temp_overrides;
       }
     }
   } catch (error) {
-    console.warn('[WorkflowExecutor] Erreur lors de la récupération des overrides SwissLife:', error);
+    console.warn('[WorkflowExecutor] Erreur lors de la récupération des overrides:', error);
   }
 
   const etapes = prepareWorkflowSteps(leadData.workflow, config);
@@ -211,7 +211,7 @@ export async function executeWorkflow(leadData, onProgress = null) {
 
     if (etape.condition && !checkStepCondition(etape.condition, leadData)) continue;
 
-    const stepData = await resolveStepData(etape, leadData, resolver, swissLifeOverrides);
+    const stepData = await resolveStepData(etape, leadData, resolver, overrides);
     if (stepData === null) continue;
 
     const serviceData = stepData.value || stepData;
