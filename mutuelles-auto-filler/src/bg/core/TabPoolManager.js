@@ -56,9 +56,10 @@ self.BG.TabPoolManager = class TabPoolManager {
     
     if (pool) return pool;
 
+    const wantFocus = options?.minimizeWindow === false;
     const window = await self.BG.chromeHelpers.safeWindowsCreate({
       type: 'normal',
-      focused: false,
+      focused: !!wantFocus,
       width: this.config.WINDOW_WIDTH,
       height: this.config.WINDOW_HEIGHT,
       url: initialUrl
@@ -74,6 +75,8 @@ self.BG.TabPoolManager = class TabPoolManager {
       }
       if (minimize) {
         await self.BG.chromeHelpers.safeWindowsUpdate(window.id, { state: 'minimized' });
+      } else if (wantFocus) {
+        await self.BG.chromeHelpers.safeWindowsUpdate(window.id, { state: 'normal', focused: true });
       }
     } catch (error) {
       // Ignore si impossible de minimiser

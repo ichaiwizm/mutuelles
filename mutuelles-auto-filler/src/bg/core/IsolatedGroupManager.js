@@ -80,6 +80,10 @@ self.BG.IsolatedGroupManager = class IsolatedGroupManager {
           active: false 
         });
         windowId = pool.windowId;
+        // Si on veut la fenêtre visible, la forcer en avant-plan
+        if (options.minimizeWindow === false) {
+          try { await chrome.windows.update(windowId, { state: 'normal', focused: true }); } catch (_) {}
+        }
       } catch (error) {
         // Fallback sur nouvelle fenêtre
         const window = await chrome.windows.create({ 
@@ -93,9 +97,10 @@ self.BG.IsolatedGroupManager = class IsolatedGroupManager {
       }
     } else {
       // Créer nouvelle fenêtre dédiée
+      const wantFocus = options.minimizeWindow === false;
       const window = await chrome.windows.create({ 
         type: 'normal', 
-        focused: false, 
+        focused: !!wantFocus, 
         url 
       });
       windowId = window.id;
@@ -104,6 +109,8 @@ self.BG.IsolatedGroupManager = class IsolatedGroupManager {
         const minimize = options.minimizeWindow !== false;
         if (minimize) {
           await chrome.windows.update(windowId, { state: 'minimized' });
+        } else if (options.minimizeWindow === false) {
+          await chrome.windows.update(windowId, { state: 'normal', focused: true });
         }
       } catch (error) {
         // Ignore si impossible de minimiser

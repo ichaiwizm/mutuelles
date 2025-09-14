@@ -33,7 +33,7 @@ export class DashboardHandlers {
         leads: [lead],
         parallelTabs: 1,
         options: {
-          minimizeWindow: true,
+          minimizeWindow: false,
           closeOnFinish: false,
           isolated: true,
           swissLifeOverrides: this.config.getSwissLifeOverrides?.() || undefined,
@@ -82,7 +82,7 @@ export class DashboardHandlers {
         leads: this.config.selectedLeads,
         parallelTabs: Math.max(1, this.config.parallelTabs || 3),
         options: {
-          minimizeWindow: true,
+          minimizeWindow: false,
           closeOnFinish: true,
           swissLifeOverrides: this.config.getSwissLifeOverrides?.() || undefined,
         },
