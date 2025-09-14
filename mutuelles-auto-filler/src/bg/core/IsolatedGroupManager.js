@@ -131,6 +131,14 @@ self.BG.IsolatedGroupManager = class IsolatedGroupManager {
     // Notifier le content script
     await this._notifyTabLeadsUpdated(tab.id, provider, groupId, 1, 0, 1);
 
+    // Démarrer le pianotage si fenêtre visible
+    try {
+      if (options.minimizeWindow === false && windowId) {
+        const intervalMs = self.BG.SCHEDULER_CONSTANTS.CONFIG.TAB_CYCLE_INTERVAL_MS || 1000;
+        self.BG.FocusCycler?.start(windowId, intervalMs);
+      }
+    } catch (_) { /* ignore */ }
+
     return {
       started: true,
       isolated: true,
@@ -170,6 +178,9 @@ self.BG.IsolatedGroupManager = class IsolatedGroupManager {
     if (!group) return { ok: true };
 
     try {
+      // Stopper le pianotage pour cette fenêtre
+      try { if (group.windowId) self.BG.FocusCycler?.stop(group.windowId); } catch (_) {}
+
       // Fermer l'onglet
       if (group.tabId) {
         await chrome.tabs.remove(group.tabId);

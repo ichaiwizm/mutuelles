@@ -17,9 +17,29 @@ export class SwissLifeInitializer {
   }
 
   async initialize() {
-    // Activer uniquement quand l'onglet est ouvert via la plateforme (groupId non "default")
+    // Activer uniquement quand l'onglet est ouvert via la plateforme (groupId non "default").
+    // Fallback: interroger le background si le hash manque (post-redirect) et réinjecter groupId dans le hash.
     try {
-      const groupId = KEYS.groupId();
+      let groupId = KEYS.groupId();
+      if (!groupId || groupId === 'default') {
+        try {
+          const resp = await chrome.runtime.sendMessage({ action: 'GET_CONTEXT' });
+          if (resp?.success && resp.data?.groupId && resp.data.groupId !== 'default') {
+            const provider = resp.data.provider || 'swisslife';
+            // Réinjecter provider/groupId dans le hash courant (conserve la route après '#')
+            const hash = window.location.hash || '#/';
+            const [route, query = ''] = hash.split('?');
+            const params = new URLSearchParams(query);
+            params.set('groupId', resp.data.groupId);
+            params.set('provider', provider);
+            const nextHash = `${route}?${params.toString()}`;
+            if (nextHash !== hash) {
+              window.location.hash = nextHash; // met à jour le hash pour les clés de storage
+            }
+          }
+        } catch (_) { /* ignore */ }
+      }
+      groupId = KEYS.groupId();
       this._isPlatformContext = !!groupId && groupId !== 'default';
     } catch (_) {
       this._isPlatformContext = false;

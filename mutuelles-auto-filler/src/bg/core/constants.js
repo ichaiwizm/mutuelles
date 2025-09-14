@@ -19,7 +19,8 @@ self.BG.SCHEDULER_CONSTANTS = {
     RETRY_DELAY: (self.BG.SHARED_DEFAULTS && self.BG.SHARED_DEFAULTS.retries?.delayMs) || 1000,
     WINDOW_WIDTH: (self.BG.SHARED_DEFAULTS && self.BG.SHARED_DEFAULTS.window?.width) || 1000,
     WINDOW_HEIGHT: (self.BG.SHARED_DEFAULTS && self.BG.SHARED_DEFAULTS.window?.height) || 800,
-    MESSAGE_TIMEOUT_MS: (self.BG.SHARED_DEFAULTS && self.BG.SHARED_DEFAULTS.timeouts?.extMessageMs) || 15000
+    MESSAGE_TIMEOUT_MS: (self.BG.SHARED_DEFAULTS && self.BG.SHARED_DEFAULTS.timeouts?.extMessageMs) || 15000,
+    TAB_CYCLE_INTERVAL_MS: 1000
   },
 
   RUN_STATUS: {

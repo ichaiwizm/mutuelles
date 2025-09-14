@@ -85,6 +85,14 @@ self.BG.SchedulerOrchestrator = class SchedulerOrchestrator {
     // Démarrer tous les providers en parallèle (selon plafond par provider)
     await this._startAllProviders(runState, pool);
 
+    // Si fenêtre visible demandée, lancer le pianotage d'onglets
+    try {
+      if (options.minimizeWindow === false && pool?.windowId) {
+        const intervalMs = self.BG.SCHEDULER_CONSTANTS.CONFIG.TAB_CYCLE_INTERVAL_MS || 1000;
+        self.BG.FocusCycler?.start(pool.windowId, intervalMs);
+      }
+    } catch (_) { /* ignore */ }
+
     return {
       started: true,
       providers: validProviders,
@@ -112,6 +120,11 @@ self.BG.SchedulerOrchestrator = class SchedulerOrchestrator {
    */
   async cancelRun() {
     try {
+      // Stopper pianotage si actif
+      try {
+        const pool = await this.poolManager.getPool();
+        if (pool?.windowId) self.BG.FocusCycler?.stop(pool.windowId);
+      } catch (_) { /* ignore */ }
       // Fermer le pool principal
       await this.poolManager.closePool();
       
@@ -250,9 +263,25 @@ self.BG.SchedulerOrchestrator = class SchedulerOrchestrator {
       return { ok: true }; // Pas de run actif
     }
 
-    // Libérer l'onglet
+    // Libérer l'onglet et éventuellement le fermer si on veut éviter le retour au formulaire
+    let closedSender = false;
     if (senderTab?.id) {
       await this.poolManager.releaseTab(senderTab.id);
+
+      try {
+        const state = await this.runStateManager.getRunState();
+        const shouldCloseOnGroupDone = state?.options?.minimizeWindow === false; // visible run → fermer l'onglet terminé
+        if (shouldCloseOnGroupDone) {
+          // Retirer l'entrée du pool et fermer physiquement l'onglet
+          const poolNow = await this.poolManager.getPool();
+          if (poolNow && Array.isArray(poolNow.tabs)) {
+            poolNow.tabs = poolNow.tabs.filter(t => t.tabId !== senderTab.id);
+            await this.poolManager.setPool(poolNow);
+          }
+          await self.BG.chromeHelpers.safeTabsRemove(senderTab.id);
+          closedSender = true;
+        }
+      } catch (_) { /* ignore */ }
     }
 
     // Essayer de réassigner cet onglet à un autre provider avec backlog, sans dépasser le plafond par provider
@@ -269,9 +298,15 @@ self.BG.SchedulerOrchestrator = class SchedulerOrchestrator {
 
     for (const p of providers) {
       const pending = await this.runStateManager.getPendingGroups(p);
-      if (pending.length > 0 && (assignedCounts[p] || 0) < perProviderCap && senderTab?.id) {
+      if (pending.length > 0 && (assignedCounts[p] || 0) < perProviderCap) {
         const nextGroup = pending[0];
-        await this._assignGroupToTab(senderTab.id, p, nextGroup);
+        if (!closedSender && senderTab?.id) {
+          // Comportement historique: réassigne sur le même onglet si non fermé
+          await this._assignGroupToTab(senderTab.id, p, nextGroup);
+        } else {
+          // Onglet fermé (mode visible) → démarrer sur un nouvel onglet du pool
+          await this._startNewTabForGroup(p, nextGroup);
+        }
         return { reassigned: true, provider: p, groupId: nextGroup.groupId };
       }
     }
@@ -280,6 +315,8 @@ self.BG.SchedulerOrchestrator = class SchedulerOrchestrator {
     const anyBacklog = await this._hasAnyBacklog();
     const hasActiveAssignments = pool?.tabs?.some(t => !!t.assigned);
     if (!anyBacklog && !hasActiveAssignments) {
+      // Stopper le pianotage avant de finaliser
+      try { if (pool?.windowId) self.BG.FocusCycler?.stop(pool.windowId); } catch (_) {}
       await this._completeRun();
       return { finished: true };
     }
@@ -363,10 +400,32 @@ self.BG.SchedulerOrchestrator = class SchedulerOrchestrator {
     
     await this.runStateManager.completeRun();
     
+    // Stopper pianotage si actif
+    try {
+      const pool = await this.poolManager.getPool();
+      if (pool?.windowId) self.BG.FocusCycler?.stop(pool.windowId);
+    } catch (_) { /* ignore */ }
+
     // Fermer la fenêtre si demandé
     if (runState?.options?.closeOnFinish) {
       await this.poolManager.closePool();
     }
+  }
+
+  /**
+   * Démarre un nouveau tab pour un group donné
+   */
+  async _startNewTabForGroup(provider, group) {
+    const pool = await this.poolManager.getPool();
+    const url = await self.BG.getProvider(provider).buildUrlWithGroupId(group.groupId);
+    const tabId = await this._getOrCreateTabForUrl(pool, url);
+    if (!tabId) return null;
+    await this.poolManager.assignTab(tabId, provider, group.groupId);
+    const allGroups = (await this.runStateManager.getRunState()).groups[provider];
+    const groupIndex = allGroups.findIndex(g => g.groupId === group.groupId);
+    await this._storeGroupData(provider, group, groupIndex, allGroups.length);
+    await this._notifyTabLeadsUpdated(tabId, provider, group, groupIndex, allGroups.length);
+    return tabId;
   }
 
   /**

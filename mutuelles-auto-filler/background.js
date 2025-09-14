@@ -17,6 +17,7 @@ importScripts(
   'src/bg/core/TabPoolManager.js',
   'src/bg/core/RunStateManager.js', 
   'src/bg/core/IsolatedGroupManager.js',
+  'src/bg/core/FocusCycler.js',
   'src/bg/core/SchedulerOrchestrator.js',
   'src/bg/scheduler.js',
   'src/bg/messaging.js'
