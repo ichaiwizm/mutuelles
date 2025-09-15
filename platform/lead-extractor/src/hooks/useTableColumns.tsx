@@ -103,18 +103,33 @@ export function useTableColumns({
       header: 'Contact',
       accessorFn: (row) => `${row.contact.civilite || ''} ${row.contact.prenom || ''} ${row.contact.nom || ''}`.trim(),
       size: 280,
-      cell: ({ row }) => (
-        <div className="max-w-xs">
-          <div className="font-medium flex items-center gap-1 text-sm">
-            {row.original.contact.civilite} {row.original.contact.prenom} {row.original.contact.nom}
-            {row.original.signature?.numeroOrias && (
-              <Badge variant="secondary" className="text-xs px-1">PRO</Badge>
-            )}
+      cell: ({ row }) => {
+        // Pour les leads manuels, afficher le nom du projet et "Simulation"
+        if (row.original.source === 'manual') {
+          return (
+            <div className="max-w-xs">
+              <div className="font-medium flex items-center gap-1 text-sm">
+                {row.original.projectName || 'Simulation manuelle'}
+              </div>
+              <div className="text-xs text-gray-500">Simulation</div>
+            </div>
+          );
+        }
+        
+        // Pour les autres leads, affichage normal
+        return (
+          <div className="max-w-xs">
+            <div className="font-medium flex items-center gap-1 text-sm">
+              {row.original.contact.civilite} {row.original.contact.prenom} {row.original.contact.nom}
+              {row.original.signature?.numeroOrias && (
+                <Badge variant="secondary" className="text-xs px-1">PRO</Badge>
+              )}
+            </div>
+            <div className="text-xs text-gray-500 truncate">{row.original.contact.email}</div>
+            <div className="text-xs text-gray-500">{row.original.contact.telephone}</div>
           </div>
-          <div className="text-xs text-gray-500 truncate">{row.original.contact.email}</div>
-          <div className="text-xs text-gray-500">{row.original.contact.telephone}</div>
-        </div>
-      ),
+        );
+      },
     },
     {
       id: 'location',

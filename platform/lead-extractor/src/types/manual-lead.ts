@@ -137,7 +137,7 @@ export const REGIME_OPTIONS: RegimeOption[] = [
 export const DEFAULT_MANUAL_LEAD: ManualLeadForm = {
   simulationType: 'individuel',
   projectNameValue: '',
-  loiMadelin: 'non',
+  loiMadelin: 'oui',
   souscripteur: {
     nom: '',
     prenom: '',

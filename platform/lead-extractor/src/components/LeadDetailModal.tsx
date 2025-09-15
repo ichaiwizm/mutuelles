@@ -72,7 +72,10 @@ export function LeadDetailModal({ lead, leads, currentIndex, open, onOpenChange,
         }}
       >
         <DialogDescription className="sr-only">
-          Détails du lead {lead.contact.prenom} {lead.contact.nom}
+          {lead.source === 'manual' 
+            ? `Détails de la simulation ${lead.projectName || 'manuelle'}`
+            : `Détails du lead ${lead.contact.prenom} ${lead.contact.nom}`
+          }
         </DialogDescription>
         {/* Header avec navigation - sticky */}
         <LeadDetailHeader
@@ -106,13 +109,15 @@ export function LeadDetailModal({ lead, leads, currentIndex, open, onOpenChange,
               )}
 
               {/* Sections d'information */}
-              <ContactSection contact={lead.contact} />
+              <ContactSection contact={lead.contact} isManual={lead.source === 'manual'} />
               <SouscripteurSection souscripteur={lead.souscripteur} />
               <ConjointSection conjoint={lead.conjoint} />
               <EnfantsSection enfants={lead.enfants} />
-              <BesoinsSection besoins={lead.besoins} />
+              {/* Masquer la section besoins pour les leads manuels */}
+              {lead.source !== 'manual' && <BesoinsSection besoins={lead.besoins} />}
               <SignatureSection signature={lead.signature} />
-              <EmailContentSection lead={lead} />
+              {/* Masquer le contenu email pour les leads manuels */}
+              {lead.source !== 'manual' && <EmailContentSection lead={lead} />}
             </div>
           </div>
         </div>

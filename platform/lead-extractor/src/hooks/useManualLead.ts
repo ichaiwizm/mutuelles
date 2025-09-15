@@ -240,7 +240,7 @@ export function useManualLead() {
       signature: {},
       source: 'manual' as const,
       extractedAt: new Date().toISOString(),
-      score: 100,
+      score: 5,
       isDuplicate: false
     };
   }, [form, isValid, globalConfig]);

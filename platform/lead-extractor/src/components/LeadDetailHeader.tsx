@@ -34,7 +34,10 @@ export function LeadDetailHeader({
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <DialogTitle className="text-xl">
-            {lead.contact.prenom} {lead.contact.nom}
+            {lead.source === 'manual' 
+              ? (lead.projectName || 'Simulation manuelle')
+              : `${lead.contact.prenom} ${lead.contact.nom}`
+            }
           </DialogTitle>
           <div className="flex items-center gap-2">
             <Badge variant={lead.score >= 4 ? 'default' : lead.score >= 3 ? 'secondary' : 'destructive'}>
