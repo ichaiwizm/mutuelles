@@ -7,9 +7,10 @@ import type { ManualLeadForm } from '@/types/manual-lead';
 interface EnfantsTabProps {
   form: ManualLeadForm;
   updateEnfant: (index: number, updates: Partial<ManualLeadForm['enfants'][0]>) => void;
+  highlightedFields?: Set<string>;
 }
 
-export function EnfantsTab({ form, updateEnfant }: EnfantsTabProps) {
+export function EnfantsTab({ form, updateEnfant, highlightedFields }: EnfantsTabProps) {
   return (
     <Card>
       <CardHeader>
@@ -31,6 +32,7 @@ export function EnfantsTab({ form, updateEnfant }: EnfantsTabProps) {
                     onChange={(e) => updateEnfant(index, { dateNaissance: e.target.value })}
                     max={new Date().toISOString().split('T')[0]}
                     min="1900-01-01"
+                    className={highlightedFields?.has(`enfant.${index}.dateNaissance`) ? 'border-red-500 ring-2 ring-red-200' : ''}
                     required
                   />
                 </div>
@@ -43,7 +45,7 @@ export function EnfantsTab({ form, updateEnfant }: EnfantsTabProps) {
                       updateEnfant(index, { ayantDroit: value })
                     }
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className={highlightedFields?.has(`enfant.${index}.ayantDroit`) ? 'border-red-500 ring-2 ring-red-200' : ''}>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>

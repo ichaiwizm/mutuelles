@@ -12,10 +12,11 @@ interface SouscripteurTabProps {
   getAvailableStatuts: (regime: string) => StatutOption[];
   getAvailableProfessions: (regime: string, statut: string) => ProfessionOption[];
   getDepartmentFromCodePostal: (cp: string) => string;
+  highlightedFields?: Set<string>;
   onNext?: () => void;
 }
 
-export function SouscripteurTab({ form, updateSouscripteur, setNombreEnfants, getAvailableStatuts, getAvailableProfessions, getDepartmentFromCodePostal, onNext }: SouscripteurTabProps) {
+export function SouscripteurTab({ form, updateSouscripteur, setNombreEnfants, getAvailableStatuts, getAvailableProfessions, getDepartmentFromCodePostal, highlightedFields, onNext }: SouscripteurTabProps) {
   const availableStatuts = getAvailableStatuts(form.souscripteur.regimeSocial);
   const availableProfessions = getAvailableProfessions(form.souscripteur.regimeSocial, form.souscripteur.statut);
 
@@ -35,6 +36,7 @@ export function SouscripteurTab({ form, updateSouscripteur, setNombreEnfants, ge
               value={form.souscripteur.dateNaissance}
               onChange={(e) => updateSouscripteur({ dateNaissance: e.target.value })}
               max={new Date().toISOString().split('T')[0]}
+              className={highlightedFields?.has('souscripteur.dateNaissance') ? 'border-red-500 ring-2 ring-red-200' : ''}
               required
             />
           </div>
@@ -50,6 +52,7 @@ export function SouscripteurTab({ form, updateSouscripteur, setNombreEnfants, ge
               }}
               placeholder="12345"
               maxLength={5}
+              className={highlightedFields?.has('souscripteur.codePostal') ? 'border-red-500 ring-2 ring-red-200' : ''}
               required
             />
             {form.souscripteur.codePostal.length === 5 && (
@@ -74,7 +77,7 @@ export function SouscripteurTab({ form, updateSouscripteur, setNombreEnfants, ge
                 });
               }}
             >
-              <SelectTrigger>
+              <SelectTrigger className={highlightedFields?.has('souscripteur.regimeSocial') ? 'border-red-500 ring-2 ring-red-200' : ''}>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -100,7 +103,7 @@ export function SouscripteurTab({ form, updateSouscripteur, setNombreEnfants, ge
                 });
               }}
             >
-              <SelectTrigger>
+              <SelectTrigger className={highlightedFields?.has('souscripteur.statut') ? 'border-red-500 ring-2 ring-red-200' : ''}>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -120,7 +123,7 @@ export function SouscripteurTab({ form, updateSouscripteur, setNombreEnfants, ge
                 value={form.souscripteur.profession || ''}
                 onValueChange={(value) => updateSouscripteur({ profession: value })}
               >
-                <SelectTrigger>
+                <SelectTrigger className={highlightedFields?.has('souscripteur.profession') ? 'border-red-500 ring-2 ring-red-200' : ''}>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>

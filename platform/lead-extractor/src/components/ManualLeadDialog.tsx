@@ -10,6 +10,7 @@ import { ConfigTab } from '@/components/manual-lead/ConfigTab';
 import { SouscripteurTab } from '@/components/manual-lead/SouscripteurTab';
 import { ConjointTab } from '@/components/manual-lead/ConjointTab';
 import { EnfantsTab } from '@/components/manual-lead/EnfantsTab';
+import { REGIME_OPTIONS } from '@/types/manual-lead';
 
 interface ManualLeadDialogProps {
   open: boolean;
@@ -21,6 +22,7 @@ interface ManualLeadDialogProps {
 
 export function ManualLeadDialog({ open, onOpenChange, onAddLead }: ManualLeadDialogProps) {
   const [activeTab, setActiveTab] = useState<'config' | 'souscripteur' | 'conjoint' | 'enfants'>('config');
+  const [highlightedFields, setHighlightedFields] = useState<Set<string>>(new Set());
   const {
     form,
     isValid,
@@ -39,8 +41,98 @@ export function ManualLeadDialog({ open, onOpenChange, onAddLead }: ManualLeadDi
   const { config: globalConfig, getNextMonthDates } = useGlobalConfig();
   const nextMonthDates = getNextMonthDates();
 
+  // Fonction pour identifier les champs manquants et l'onglet correspondant
+  const getMissingFieldsInfo = () => {
+    const missingFields = new Set<string>();
+    let firstMissingTab: 'config' | 'souscripteur' | 'conjoint' | 'enfants' = 'config';
+
+    // Validation config
+    if (!form.projectNameValue?.trim()) {
+      missingFields.add('projectName');
+      firstMissingTab = 'config';
+    } else if (form.simulationType !== 'individuel' && form.simulationType !== 'couple') {
+      missingFields.add('simulationType');
+      firstMissingTab = 'config';
+    } else if (form.loiMadelin !== 'oui' && form.loiMadelin !== 'non') {
+      missingFields.add('loiMadelin');
+      firstMissingTab = 'config';
+    }
+    // Validation souscripteur
+    else if (!form.souscripteur.dateNaissance) {
+      missingFields.add('souscripteur.dateNaissance');
+      firstMissingTab = 'souscripteur';
+    } else if (!form.souscripteur.codePostal || !/^\d{5}$/.test(form.souscripteur.codePostal)) {
+      missingFields.add('souscripteur.codePostal');
+      firstMissingTab = 'souscripteur';
+    } else if (!form.souscripteur.regimeSocial) {
+      missingFields.add('souscripteur.regimeSocial');
+      firstMissingTab = 'souscripteur';
+    } else if (!form.souscripteur.statut) {
+      missingFields.add('souscripteur.statut');
+      firstMissingTab = 'souscripteur';
+    } else {
+      // Vérifier si profession est requise pour le souscripteur
+      const regimeOption = REGIME_OPTIONS.find(r => r.value === form.souscripteur.regimeSocial);
+      const statutOption = regimeOption?.statuts.find(s => s.value === form.souscripteur.statut);
+      const professionRequired = !!(statutOption && Array.isArray(statutOption.professions) && statutOption.professions.length > 0);
+      if (professionRequired && !form.souscripteur.profession) {
+        missingFields.add('souscripteur.profession');
+        firstMissingTab = 'souscripteur';
+      }
+      // Validation conjoint si simulation couple
+      else if (form.simulationType === 'couple') {
+        if (!form.conjoint?.dateNaissance) {
+          missingFields.add('conjoint.dateNaissance');
+          firstMissingTab = 'conjoint';
+        } else if (!form.conjoint?.regimeSocial) {
+          missingFields.add('conjoint.regimeSocial');
+          firstMissingTab = 'conjoint';
+        } else if (!form.conjoint?.statut) {
+          missingFields.add('conjoint.statut');
+          firstMissingTab = 'conjoint';
+        } else {
+          // Vérifier si profession est requise pour le conjoint
+          const regConjoint = REGIME_OPTIONS.find(r => r.value === form.conjoint!.regimeSocial);
+          const statConjoint = regConjoint?.statuts.find(s => s.value === form.conjoint!.statut);
+          const profReqConjoint = !!(statConjoint && Array.isArray(statConjoint.professions) && statConjoint.professions.length > 0);
+          if (profReqConjoint && !form.conjoint!.profession) {
+            missingFields.add('conjoint.profession');
+            firstMissingTab = 'conjoint';
+          }
+          // Validation enfants
+          else if (form.souscripteur.nombreEnfants > 0) {
+            const invalidEnfant = form.enfants.findIndex((enfant, index) => 
+              index < form.souscripteur.nombreEnfants && (!enfant.dateNaissance || !enfant.ayantDroit)
+            );
+            if (invalidEnfant !== -1) {
+              missingFields.add(`enfant.${invalidEnfant}.dateNaissance`);
+              missingFields.add(`enfant.${invalidEnfant}.ayantDroit`);
+              firstMissingTab = 'enfants';
+            }
+          }
+        }
+      }
+      // Validation enfants si pas de conjoint mais des enfants
+      else if (form.souscripteur.nombreEnfants > 0) {
+        const invalidEnfant = form.enfants.findIndex((enfant, index) => 
+          index < form.souscripteur.nombreEnfants && (!enfant.dateNaissance || !enfant.ayantDroit)
+        );
+        if (invalidEnfant !== -1) {
+          missingFields.add(`enfant.${invalidEnfant}.dateNaissance`);
+          missingFields.add(`enfant.${invalidEnfant}.ayantDroit`);
+          firstMissingTab = 'enfants';
+        }
+      }
+    }
+
+    return { missingFields, firstMissingTab };
+  };
+
   const handleSubmit = () => {
     if (!isValid) {
+      const { missingFields, firstMissingTab } = getMissingFieldsInfo();
+      setHighlightedFields(missingFields);
+      setActiveTab(firstMissingTab);
       toast.error('Veuillez remplir tous les champs obligatoires');
       return;
     }
@@ -49,6 +141,7 @@ export function ManualLeadDialog({ open, onOpenChange, onAddLead }: ManualLeadDi
     if (lead && onAddLead) {
       onAddLead(lead);
       resetForm();
+      setHighlightedFields(new Set());
       onOpenChange(false);
       toast.success('Lead ajouté avec succès');
     }
@@ -73,6 +166,13 @@ export function ManualLeadDialog({ open, onOpenChange, onAddLead }: ManualLeadDi
   useEffect(() => {
     if (!orderedTabs.includes(activeTab)) setActiveTab(orderedTabs[0]);
   }, [orderedTabs, activeTab]);
+
+  // Effacer les highlights quand l'utilisateur modifie le formulaire
+  useEffect(() => {
+    if (highlightedFields.size > 0) {
+      setHighlightedFields(new Set());
+    }
+  }, [form]);
 
   const getNextTab = useMemo(() => {
     const nextMap: Record<'config' | 'souscripteur' | 'conjoint' | 'enfants', () => ('config' | 'souscripteur' | 'conjoint' | 'enfants' | null)> = {
@@ -122,6 +222,7 @@ export function ManualLeadDialog({ open, onOpenChange, onAddLead }: ManualLeadDi
                 updateForm={updateForm}
                 globalConfig={globalConfig}
                 dateEffetOptions={dateEffetOptions}
+                highlightedFields={highlightedFields}
                 onNext={getNextTab.config() ? () => setActiveTab(getNextTab.config() as any) : undefined}
               />
             </TabsContent>
@@ -134,6 +235,7 @@ export function ManualLeadDialog({ open, onOpenChange, onAddLead }: ManualLeadDi
                 getAvailableStatuts={getAvailableStatuts}
                 getAvailableProfessions={getAvailableProfessions}
                 getDepartmentFromCodePostal={getDepartmentFromCodePostal}
+                highlightedFields={highlightedFields}
                 onNext={getNextTab.souscripteur() ? () => setActiveTab(getNextTab.souscripteur() as any) : undefined}
               />
             </TabsContent>
@@ -146,6 +248,7 @@ export function ManualLeadDialog({ open, onOpenChange, onAddLead }: ManualLeadDi
                   updateConjoint={updateConjoint}
                   getAvailableStatuts={getAvailableStatuts}
                   getAvailableProfessions={getAvailableProfessions}
+                  highlightedFields={highlightedFields}
                   onNext={getNextTab.conjoint() ? () => setActiveTab(getNextTab.conjoint() as any) : undefined}
                 />
               </TabsContent>
@@ -154,7 +257,7 @@ export function ManualLeadDialog({ open, onOpenChange, onAddLead }: ManualLeadDi
           {/* Enfants */}
             {form.souscripteur.nombreEnfants > 0 && (
               <TabsContent value="enfants" className="mt-3">
-                <EnfantsTab form={form} updateEnfant={updateEnfant} />
+                <EnfantsTab form={form} updateEnfant={updateEnfant} highlightedFields={highlightedFields} />
               </TabsContent>
             )}
           </Tabs>
@@ -168,17 +271,10 @@ export function ManualLeadDialog({ open, onOpenChange, onAddLead }: ManualLeadDi
           </DialogClose>
           <Button 
             onClick={handleSubmit}
-            disabled={!isValid}
             className="min-w-[100px]"
           >
-            {isValid ? (
-              <>
-                <Star className="h-4 w-4 mr-2" />
-                Créer la simulation
-              </>
-            ) : (
-              'Compléter les champs'
-            )}
+            <Star className="h-4 w-4 mr-2" />
+            Créer la simulation
           </Button>
         </DialogFooter>
       </DialogContent>

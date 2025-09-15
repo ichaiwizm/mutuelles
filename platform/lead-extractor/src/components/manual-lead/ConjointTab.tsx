@@ -10,10 +10,11 @@ interface ConjointTabProps {
   updateConjoint: (updates: Partial<ManualLeadForm['conjoint']>) => void;
   getAvailableStatuts: (regime: string) => StatutOption[];
   getAvailableProfessions: (regime: string, statut: string) => ProfessionOption[];
+  highlightedFields?: Set<string>;
   onNext?: () => void;
 }
 
-export function ConjointTab({ form, updateConjoint, getAvailableStatuts, getAvailableProfessions, onNext }: ConjointTabProps) {
+export function ConjointTab({ form, updateConjoint, getAvailableStatuts, getAvailableProfessions, highlightedFields, onNext }: ConjointTabProps) {
   const availableStatuts = form.conjoint?.regimeSocial ? getAvailableStatuts(form.conjoint.regimeSocial) : [];
   const availableProfessions = form.conjoint?.regimeSocial && form.conjoint?.statut
     ? getAvailableProfessions(form.conjoint.regimeSocial, form.conjoint.statut)
@@ -35,6 +36,7 @@ export function ConjointTab({ form, updateConjoint, getAvailableStatuts, getAvai
               value={form.conjoint?.dateNaissance || ''}
               onChange={(e) => updateConjoint({ dateNaissance: e.target.value })}
               max={new Date().toISOString().split('T')[0]}
+              className={highlightedFields?.has('conjoint.dateNaissance') ? 'border-red-500 ring-2 ring-red-200' : ''}
               required
             />
           </div>
@@ -54,7 +56,7 @@ export function ConjointTab({ form, updateConjoint, getAvailableStatuts, getAvai
                 });
               }}
             >
-              <SelectTrigger>
+              <SelectTrigger className={highlightedFields?.has('conjoint.regimeSocial') ? 'border-red-500 ring-2 ring-red-200' : ''}>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -80,7 +82,7 @@ export function ConjointTab({ form, updateConjoint, getAvailableStatuts, getAvai
                 });
               }}
             >
-              <SelectTrigger>
+              <SelectTrigger className={highlightedFields?.has('conjoint.statut') ? 'border-red-500 ring-2 ring-red-200' : ''}>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -100,7 +102,7 @@ export function ConjointTab({ form, updateConjoint, getAvailableStatuts, getAvai
                 value={form.conjoint?.profession || ''}
                 onValueChange={(value) => updateConjoint({ profession: value })}
               >
-                <SelectTrigger>
+                <SelectTrigger className={highlightedFields?.has('conjoint.profession') ? 'border-red-500 ring-2 ring-red-200' : ''}>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>

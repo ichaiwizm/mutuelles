@@ -11,10 +11,11 @@ interface ConfigTabProps {
   updateForm: (updates: Partial<ManualLeadForm>) => void;
   globalConfig: { enabled: boolean; projectName?: 'lead_name' | 'lead_source'; dateEffet?: 'end_next_month' | 'start_next_month' | 'middle_next_month' };
   dateEffetOptions: { value: string; label: string }[];
+  highlightedFields?: Set<string>;
   onNext?: () => void;
 }
 
-export function ConfigTab({ form, updateForm, globalConfig, dateEffetOptions, onNext }: ConfigTabProps) {
+export function ConfigTab({ form, updateForm, globalConfig, dateEffetOptions, highlightedFields, onNext }: ConfigTabProps) {
   return (
     <Card>
       <CardHeader>
@@ -30,6 +31,7 @@ export function ConfigTab({ form, updateForm, globalConfig, dateEffetOptions, on
               placeholder="Ex: Simulation Jean Dupont"
               value={form.projectNameValue || ''}
               onChange={(e) => updateForm({ projectNameValue: e.target.value })}
+              className={highlightedFields?.has('projectName') ? 'border-red-500 ring-2 ring-red-200' : ''}
               required
             />
           </div>
@@ -54,7 +56,7 @@ export function ConfigTab({ form, updateForm, globalConfig, dateEffetOptions, on
                 }
               }}
             >
-              <SelectTrigger>
+              <SelectTrigger className={highlightedFields?.has('simulationType') ? 'border-red-500 ring-2 ring-red-200' : ''}>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -70,7 +72,7 @@ export function ConfigTab({ form, updateForm, globalConfig, dateEffetOptions, on
               value={form.loiMadelin}
               onValueChange={(value: 'oui' | 'non') => updateForm({ loiMadelin: value })}
             >
-              <SelectTrigger>
+              <SelectTrigger className={highlightedFields?.has('loiMadelin') ? 'border-red-500 ring-2 ring-red-200' : ''}>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
