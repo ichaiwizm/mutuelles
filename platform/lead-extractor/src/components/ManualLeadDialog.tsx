@@ -61,7 +61,7 @@ export function ManualLeadDialog({ open, onOpenChange, onAddLead }: ManualLeadDi
     else if (!form.souscripteur.dateNaissance) {
       missingFields.add('souscripteur.dateNaissance');
       firstMissingTab = 'souscripteur';
-    } else if (!form.souscripteur.codePostal || !/^\d{5}$/.test(form.souscripteur.codePostal)) {
+    } else if (!form.souscripteur.codePostal || !/^\d{2,5}$/.test(form.souscripteur.codePostal)) {
       missingFields.add('souscripteur.codePostal');
       firstMissingTab = 'souscripteur';
     } else if (!form.souscripteur.regimeSocial) {

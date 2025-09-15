@@ -42,7 +42,7 @@ export function useManualLead() {
     const isBasicValid: boolean =
       !!data.souscripteur.dateNaissance &&
       !!data.souscripteur.codePostal &&
-      /^\d{5}$/.test(data.souscripteur.codePostal) &&
+      /^\d{2,5}$/.test(data.souscripteur.codePostal) &&
       !!data.souscripteur.regimeSocial &&
       !!data.souscripteur.statut;
 
@@ -171,13 +171,18 @@ export function useManualLead() {
 
   // Obtenir le département depuis le code postal
   const getDepartmentFromCodePostal = useCallback((codePostal: string): string => {
-    if (!/^\d{5}$/.test(codePostal)) return '';
+    if (!/^\d{2,5}$/.test(codePostal)) return '';
+    
+    // Si c'est un code à 2 chiffres, c'est directement le département
+    if (codePostal.length === 2) return codePostal;
     
     const dept = codePostal.slice(0, 2);
     
-    // Cas spéciaux
-    if (codePostal.startsWith('97')) return codePostal.slice(0, 3); // DOM-TOM
-    if (codePostal.startsWith('20')) return codePostal.startsWith('200') || codePostal.startsWith('201') ? '2A' : '2B'; // Corse
+    // Cas spéciaux pour les codes à 5 chiffres
+    if (codePostal.length === 5) {
+      if (codePostal.startsWith('97')) return codePostal.slice(0, 3); // DOM-TOM
+      if (codePostal.startsWith('20')) return codePostal.startsWith('200') || codePostal.startsWith('201') ? '2A' : '2B'; // Corse
+    }
     
     return dept;
   }, []);

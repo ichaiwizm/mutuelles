@@ -50,12 +50,12 @@ export function SouscripteurTab({ form, updateSouscripteur, setNombreEnfants, ge
                 const value = e.target.value.replace(/\D/g, '').slice(0, 5);
                 updateSouscripteur({ codePostal: value });
               }}
-              placeholder="12345"
+              placeholder="75 ou 75001"
               maxLength={5}
               className={highlightedFields?.has('souscripteur.codePostal') ? 'border-red-500 ring-2 ring-red-200' : ''}
               required
             />
-            {form.souscripteur.codePostal.length === 5 && (
+            {form.souscripteur.codePostal.length >= 2 && (
               <p className="text-sm text-muted-foreground">
                 Département: {getDepartmentFromCodePostal(form.souscripteur.codePostal)}
               </p>
