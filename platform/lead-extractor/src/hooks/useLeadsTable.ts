@@ -41,7 +41,7 @@ export function useLeadsTable({
   isAllSelected,
   someSelected,
 }: UseLeadsTableProps) {
-  const [sorting, setSorting] = useState<SortingState>([{ id: 'score', desc: true }]);
+  const [sorting, setSorting] = useState<SortingState>([{ id: 'extractedAt', desc: true }]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   
   const columns = useTableColumns({
