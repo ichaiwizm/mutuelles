@@ -31,6 +31,7 @@ export function formatLeadForSwissLife(lead: Lead): TestDataFormat {
     id: lead.id,
     nom: lead.contact?.nom || '',
     prenom: lead.contact?.prenom || '',
+    projectName: (lead.projectName || '').trim() || undefined,
     contact: {
       codePostal: lead.contact?.codePostal || ''
     },

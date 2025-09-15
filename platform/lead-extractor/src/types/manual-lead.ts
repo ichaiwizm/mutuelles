@@ -2,7 +2,8 @@
 export interface ManualLeadForm {
   // Configuration de base
   simulationType: 'individuel' | 'couple';
-  projectName?: 'lead_name' | 'lead_source'; // Hérite de la config globale
+  projectName?: 'lead_name' | 'lead_source'; // Hérite de la config globale (format)
+  projectNameValue?: string; // Valeur personnalisée (champ formulaire)
   dateEffet?: 'end_next_month' | 'start_next_month' | 'middle_next_month'; // Hérite de la config globale
   loiMadelin: 'oui' | 'non';
   
@@ -135,6 +136,7 @@ export const REGIME_OPTIONS: RegimeOption[] = [
 // Valeurs par défaut
 export const DEFAULT_MANUAL_LEAD: ManualLeadForm = {
   simulationType: 'individuel',
+  projectNameValue: '',
   loiMadelin: 'non',
   souscripteur: {
     nom: '',

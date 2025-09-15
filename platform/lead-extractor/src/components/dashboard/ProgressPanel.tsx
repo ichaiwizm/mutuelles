@@ -1,4 +1,3 @@
-import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 import { Mail, Calendar } from 'lucide-react';
@@ -13,15 +12,8 @@ interface ProgressPanelProps {
   onCancel?: () => void;
 }
 
-export function ProgressPanel({
-  show,
-  source,
-  phase,
-  message,
-  current,
-  total,
-  onCancel
-}: ProgressPanelProps) {
+export function ProgressPanel(props: ProgressPanelProps) {
+  const { show, source, message, current, total, onCancel } = props;
   if (!show) return null;
 
   return (

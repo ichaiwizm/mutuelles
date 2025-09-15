@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Mail, Plus, Trash2 } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -28,7 +28,7 @@ export function ControlsPanel({
   filterMode = 'predefined',
   onClearAll,
   busy,
-  lastSyncGmail
+  lastSyncGmail: _lastSyncGmail
 }: ControlsPanelProps) {
   const [gmailOpen, setGmailOpen] = useState(false);
   return (

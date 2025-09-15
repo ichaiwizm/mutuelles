@@ -1,5 +1,6 @@
 export interface Lead {
   id: string;
+  projectName?: string;
   contact: {
     civilite?: string;
     nom?: string;
@@ -48,7 +49,7 @@ export interface Lead {
     numeroRCP?: string;
     nomEntreprise?: string;
   };
-  source: 'gmail' | 'calendar' | 'multiple';
+  source: 'gmail' | 'calendar' | 'multiple' | 'manual';
   extractedAt: string;
   rawSnippet?: string;
   fullContent?: string;

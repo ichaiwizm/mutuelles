@@ -24,7 +24,7 @@ export function Dashboard() {
   // Hooks principaux
   const { isAuthenticated, hasTokens, email, loading: authLoading, checkAuthStatus, redirectToLogin, logout } = useAuth();
   const { days, setDays, dateRange, setDateRange, filterMode, parallelTabs } = useSettings();
-  const { leads, addLeads, clearAllLeads, removeLeadsByIds, stats } = useLeads();
+  const { leads, addLeads, clearAllLeads, removeLeadsByIds } = useLeads();
   const { enrichLeadsWithStatus, applyStatusUpdate, cleanupOrphanedStatuses, isLoaded, setLeadStatus } = useProcessingStatus();
   const { uiState, setPageSize, setCurrentPage, setGlobalFilter } = useUIState();
 
@@ -175,8 +175,8 @@ export function Dashboard() {
       <div className="container mx-auto p-6">
         {/* Header */}
         <DashboardHeader
-          isAuthenticated={isAuthenticated}
-          hasTokens={hasTokens}
+          isAuthenticated={!!isAuthenticated}
+          hasTokens={!!hasTokens}
           email={email}
           loading={authLoading}
           onConfigOpen={() => modalActions.setConfigModalOpen(true)}

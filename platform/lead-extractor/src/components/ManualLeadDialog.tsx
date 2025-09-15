@@ -1,18 +1,15 @@
-import React, { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogClose } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { useManualLead } from '@/hooks/useManualLead';
 import { useGlobalConfig } from '@/hooks/useGlobalConfig';
-import { REGIME_OPTIONS } from '@/types/manual-lead';
-import { Settings, User, Users, Baby, FileText, ChevronDown, Star } from 'lucide-react';
+import { Settings, User, Users, Baby, FileText, Star } from 'lucide-react';
 import { toast } from 'sonner';
-import { cn } from '@/lib/utils';
+import { ConfigTab } from '@/components/manual-lead/ConfigTab';
+import { SouscripteurTab } from '@/components/manual-lead/SouscripteurTab';
+import { ConjointTab } from '@/components/manual-lead/ConjointTab';
+import { EnfantsTab } from '@/components/manual-lead/EnfantsTab';
 
 interface ManualLeadDialogProps {
   open: boolean;
@@ -20,57 +17,10 @@ interface ManualLeadDialogProps {
   onAddLead?: (lead: any) => void;
 }
 
-// Composant CollapsibleSection réutilisable
-interface CollapsibleSectionProps {
-  title: string;
-  description: string;
-  icon: React.ReactNode;
-  badge?: React.ReactNode;
-  defaultOpen?: boolean;
-  children: React.ReactNode;
-}
-
-function FormCollapsibleSection({ title, description, icon, badge, defaultOpen = false, children }: CollapsibleSectionProps) {
-  const [isOpen, setIsOpen] = useState(defaultOpen);
-
-  return (
-    <Card className="w-full">
-      <Collapsible open={isOpen} onOpenChange={setIsOpen}>
-        <CollapsibleTrigger asChild>
-          <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors pb-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="text-muted-foreground">{icon}</div>
-                <div className="space-y-1 text-left">
-                  <div className="flex items-center gap-2">
-                    <CardTitle className="text-base leading-none">{title}</CardTitle>
-                    {badge && badge}
-                  </div>
-                  <CardDescription className="text-sm leading-tight">
-                    {description}
-                  </CardDescription>
-                </div>
-              </div>
-              <ChevronDown
-                className={cn(
-                  "h-5 w-5 text-muted-foreground transition-transform duration-200",
-                  isOpen && "rotate-180"
-                )}
-              />
-            </div>
-          </CardHeader>
-        </CollapsibleTrigger>
-        <CollapsibleContent>
-          <CardContent className="pt-0 pb-6">
-            {children}
-          </CardContent>
-        </CollapsibleContent>
-      </Collapsible>
-    </Card>
-  );
-}
+// Plus de sections déroulantes: passage en onglets
 
 export function ManualLeadDialog({ open, onOpenChange, onAddLead }: ManualLeadDialogProps) {
+  const [activeTab, setActiveTab] = useState<'config' | 'souscripteur' | 'conjoint' | 'enfants'>('config');
   const {
     form,
     isValid,
@@ -104,9 +54,7 @@ export function ManualLeadDialog({ open, onOpenChange, onAddLead }: ManualLeadDi
     }
   };
 
-  const handleClose = () => {
-    onOpenChange(false);
-  };
+  // Note: fermeture gérée par onOpenChange depuis les actions du Dialog
 
   // Options de date d'effet avec les vraies dates
   const dateEffetOptions = [
@@ -115,12 +63,30 @@ export function ManualLeadDialog({ open, onOpenChange, onAddLead }: ManualLeadDi
     { value: 'end_next_month', label: `Fin du mois suivant (${nextMonthDates.end})` }
   ];
 
-  const availableStatutsSouscripteur = getAvailableStatuts(form.souscripteur.regimeSocial);
-  const availableProfessionsSouscripteur = getAvailableProfessions(form.souscripteur.regimeSocial, form.souscripteur.statut);
-  
-  const availableStatutsConjoint = form.conjoint?.regimeSocial ? getAvailableStatuts(form.conjoint.regimeSocial) : [];
-  const availableProfessionsConjoint = form.conjoint?.regimeSocial && form.conjoint?.statut ? 
-    getAvailableProfessions(form.conjoint.regimeSocial, form.conjoint.statut) : [];
+  const orderedTabs = useMemo(() => {
+    const tabs: Array<'config' | 'souscripteur' | 'conjoint' | 'enfants'> = ['config', 'souscripteur'];
+    if (form.simulationType === 'couple') tabs.push('conjoint');
+    if ((form.souscripteur?.nombreEnfants || 0) > 0) tabs.push('enfants');
+    return tabs;
+  }, [form.simulationType, form.souscripteur?.nombreEnfants]);
+
+  useEffect(() => {
+    if (!orderedTabs.includes(activeTab)) setActiveTab(orderedTabs[0]);
+  }, [orderedTabs, activeTab]);
+
+  const getNextTab = useMemo(() => {
+    const nextMap: Record<'config' | 'souscripteur' | 'conjoint' | 'enfants', () => ('config' | 'souscripteur' | 'conjoint' | 'enfants' | null)> = {
+      config: () => 'souscripteur',
+      souscripteur: () => {
+        if (form.simulationType === 'couple') return 'conjoint';
+        if ((form.souscripteur?.nombreEnfants || 0) > 0) return 'enfants';
+        return null;
+      },
+      conjoint: () => ((form.souscripteur?.nombreEnfants || 0) > 0 ? 'enfants' : null),
+      enfants: () => null
+    };
+    return nextMap;
+  }, [form.simulationType, form.souscripteur?.nombreEnfants]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -135,394 +101,63 @@ export function ManualLeadDialog({ open, onOpenChange, onAddLead }: ManualLeadDi
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 py-4">
-          {/* Configuration de base */}
-          <FormCollapsibleSection
-            title="Configuration de la simulation"
-            description="Paramètres généraux de la simulation"
-            icon={<Settings className="h-4 w-4" />}
-            defaultOpen={true}
-          >
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="simulation-type">Type de simulation</Label>
-                <Select
-                  value={form.simulationType}
-                  onValueChange={(value: 'individuel' | 'couple') => {
-                    if (value === 'individuel') {
-                      updateForm({ simulationType: value, conjoint: undefined });
-                    } else {
-                      updateForm({
-                        simulationType: value,
-                        conjoint: {
-                          dateNaissance: '',
-                          regimeSocial: 'TNS',
-                          statut: 'TNS',
-                          profession: 'AUTRE'
-                        }
-                      });
-                    }
-                  }}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="individuel">Individuel</SelectItem>
-                    <SelectItem value="couple">En couple</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="loi-madelin">Loi Madelin</Label>
-                <Select
-                  value={form.loiMadelin}
-                  onValueChange={(value: 'oui' | 'non') => updateForm({ loiMadelin: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="non">Non</SelectItem>
-                    <SelectItem value="oui">Oui</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {globalConfig.enabled && (
-                <>
-                  <div className="space-y-2">
-                    <Label>Format du nom de projet <Badge variant="secondary" className="ml-2">Config globale</Badge></Label>
-                    <Select value={globalConfig.projectName || 'lead_name'} disabled>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="lead_name">Nom du lead</SelectItem>
-                        <SelectItem value="lead_source">Nom du lead - Source Extension</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Date d'effet <Badge variant="secondary" className="ml-2">Config globale</Badge></Label>
-                    <Select value={globalConfig.dateEffet || 'start_next_month'} disabled>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {dateEffetOptions.map(option => (
-                          <SelectItem key={option.value} value={option.value}>
-                            {option.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </>
-              )}
-            </div>
-          </FormCollapsibleSection>
-
-          {/* Assuré principal */}
-          <FormCollapsibleSection
-            title="Assuré principal"
-            description="Informations de la personne principale à assurer"
-            icon={<User className="h-4 w-4" />}
-            defaultOpen={true}
-            badge={!form.souscripteur.dateNaissance ? 
-              <Badge variant="destructive">Requis</Badge> : 
-              <Badge variant="secondary">Complété</Badge>
-            }
-          >
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              
-
-              <div className="space-y-2">
-                <Label htmlFor="souscripteur-date">Date de naissance *</Label>
-                <Input
-                  id="souscripteur-date"
-                  type="date"
-                  value={form.souscripteur.dateNaissance}
-                  onChange={(e) => updateSouscripteur({ dateNaissance: e.target.value })}
-                  max={new Date().toISOString().split('T')[0]} // Ne peut pas être dans le futur
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="souscripteur-codepostal">Code postal *</Label>
-                <Input
-                  id="souscripteur-codepostal"
-                  value={form.souscripteur.codePostal}
-                  onChange={(e) => {
-                    const value = e.target.value.replace(/\D/g, '').slice(0, 5);
-                    updateSouscripteur({ codePostal: value });
-                  }}
-                  placeholder="12345"
-                  maxLength={5}
-                />
-                {form.souscripteur.codePostal.length === 5 && (
-                  <p className="text-sm text-muted-foreground">
-                    Département: {getDepartmentFromCodePostal(form.souscripteur.codePostal)}
-                  </p>
+        <div className="space-y-4 py-2">
+          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>
+            <div className="flex items-center justify-between">
+              <TabsList>
+                <TabsTrigger value="config" className="gap-2"><Settings className="h-4 w-4" /> Configuration</TabsTrigger>
+                <TabsTrigger value="souscripteur" className="gap-2"><User className="h-4 w-4" /> Assuré principal</TabsTrigger>
+                {form.simulationType === 'couple' && (
+                  <TabsTrigger value="conjoint" className="gap-2"><Users className="h-4 w-4" /> Conjoint</TabsTrigger>
                 )}
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="souscripteur-regime">Régime social *</Label>
-                <Select
-                  value={form.souscripteur.regimeSocial}
-                  onValueChange={(value) => {
-                    const nextStatut = getAvailableStatuts(value)[0]?.value || '';
-                    const profs = nextStatut ? getAvailableProfessions(value, nextStatut) : [];
-                    const defaultProf = profs.find(p => p.value === 'AUTRE')?.value || profs[0]?.value || undefined;
-                    updateSouscripteur({ 
-                      regimeSocial: value as any,
-                      statut: nextStatut,
-                      profession: defaultProf
-                    });
-                  }}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {REGIME_OPTIONS.map(regime => (
-                      <SelectItem key={regime.value} value={regime.value}>
-                        {regime.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="souscripteur-statut">Statut *</Label>
-                <Select
-                  value={form.souscripteur.statut}
-                  onValueChange={(value) => {
-                    const profs = getAvailableProfessions(form.souscripteur.regimeSocial, value);
-                    const defaultProf = profs.find(p => p.value === 'AUTRE')?.value || profs[0]?.value || undefined;
-                    updateSouscripteur({ 
-                      statut: value,
-                      profession: defaultProf
-                    });
-                  }}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {availableStatutsSouscripteur.map(statut => (
-                      <SelectItem key={statut.value} value={statut.value}>
-                        {statut.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {availableProfessionsSouscripteur.length > 0 && (
-                <div className="space-y-2 md:col-span-2">
-                  <Label htmlFor="souscripteur-profession">Profession</Label>
-                  <Select
-                    value={form.souscripteur.profession || ''}
-                    onValueChange={(value) => updateSouscripteur({ profession: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {availableProfessionsSouscripteur.map(profession => (
-                        <SelectItem key={profession.value} value={profession.value}>
-                          {profession.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-
-              <div className="space-y-2">
-                <Label htmlFor="nombre-enfants">Nombre d'enfants à assurer</Label>
-                <Select
-                  value={form.souscripteur.nombreEnfants.toString()}
-                  onValueChange={(value) => setNombreEnfants(parseInt(value))}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Array.from({ length: 11 }, (_, i) => (
-                      <SelectItem key={i} value={i.toString()}>
-                        {i === 0 ? 'Aucun enfant' : i === 1 ? '1 enfant' : `${i} enfants`}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+                {form.souscripteur.nombreEnfants > 0 && (
+                  <TabsTrigger value="enfants" className="gap-2"><Baby className="h-4 w-4" /> Enfants</TabsTrigger>
+                )}
+              </TabsList>
             </div>
-          </FormCollapsibleSection>
+
+            <TabsContent value="config" className="mt-3">
+              <ConfigTab
+                form={form}
+                updateForm={updateForm}
+                globalConfig={globalConfig}
+                dateEffetOptions={dateEffetOptions}
+                onNext={getNextTab.config() ? () => setActiveTab(getNextTab.config() as any) : undefined}
+              />
+            </TabsContent>
+
+            <TabsContent value="souscripteur" className="mt-3">
+              <SouscripteurTab
+                form={form}
+                updateSouscripteur={updateSouscripteur}
+                setNombreEnfants={setNombreEnfants}
+                getAvailableStatuts={getAvailableStatuts}
+                getAvailableProfessions={getAvailableProfessions}
+                getDepartmentFromCodePostal={getDepartmentFromCodePostal}
+                onNext={getNextTab.souscripteur() ? () => setActiveTab(getNextTab.souscripteur() as any) : undefined}
+              />
+            </TabsContent>
 
           {/* Conjoint */}
-          {form.simulationType === 'couple' && (
-            <FormCollapsibleSection
-              title="Conjoint"
-              description="Informations du conjoint à assurer"
-              icon={<Users className="h-4 w-4" />}
-              defaultOpen={true}
-              badge={!form.conjoint?.dateNaissance ? 
-                <Badge variant="destructive">Requis</Badge> : 
-                <Badge variant="secondary">Complété</Badge>
-              }
-            >
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              
-
-                <div className="space-y-2">
-                  <Label htmlFor="conjoint-date">Date de naissance *</Label>
-                  <Input
-                    id="conjoint-date"
-                    type="date"
-                    value={form.conjoint?.dateNaissance || ''}
-                    onChange={(e) => updateConjoint({ dateNaissance: e.target.value })}
-                    max={new Date().toISOString().split('T')[0]}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="conjoint-regime">Régime social *</Label>
-                <Select
-                  value={form.conjoint?.regimeSocial || 'TNS'}
-                  onValueChange={(value) => {
-                    const nextStatut = getAvailableStatuts(value)[0]?.value || '';
-                    const profs = nextStatut ? getAvailableProfessions(value, nextStatut) : [];
-                    const defaultProf = profs.find(p => p.value === 'AUTRE')?.value || profs[0]?.value || undefined;
-                    updateConjoint({ 
-                      regimeSocial: value as any,
-                      statut: nextStatut,
-                      profession: defaultProf
-                    });
-                  }}
-                >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {REGIME_OPTIONS.map(regime => (
-                        <SelectItem key={regime.value} value={regime.value}>
-                          {regime.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="conjoint-statut">Statut *</Label>
-                <Select
-                  value={form.conjoint?.statut || ''}
-                  onValueChange={(value) => {
-                    const profs = form.conjoint?.regimeSocial ? getAvailableProfessions(form.conjoint.regimeSocial, value) : [];
-                    const defaultProf = profs.find(p => p.value === 'AUTRE')?.value || profs[0]?.value || undefined;
-                    updateConjoint({ 
-                      statut: value,
-                      profession: defaultProf
-                    });
-                  }}
-                >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {availableStatutsConjoint.map(statut => (
-                        <SelectItem key={statut.value} value={statut.value}>
-                          {statut.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {availableProfessionsConjoint.length > 0 && (
-                  <div className="space-y-2">
-                    <Label htmlFor="conjoint-profession">Profession</Label>
-                    <Select
-                      value={form.conjoint?.profession || ''}
-                      onValueChange={(value) => updateConjoint({ profession: value })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {availableProfessionsConjoint.map(profession => (
-                          <SelectItem key={profession.value} value={profession.value}>
-                            {profession.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
-              </div>
-            </FormCollapsibleSection>
-          )}
+            {form.simulationType === 'couple' && (
+              <TabsContent value="conjoint" className="mt-3">
+                <ConjointTab
+                  form={form}
+                  updateConjoint={updateConjoint}
+                  getAvailableStatuts={getAvailableStatuts}
+                  getAvailableProfessions={getAvailableProfessions}
+                  onNext={getNextTab.conjoint() ? () => setActiveTab(getNextTab.conjoint() as any) : undefined}
+                />
+              </TabsContent>
+            )}
 
           {/* Enfants */}
-          {form.souscripteur.nombreEnfants > 0 && (
-            <FormCollapsibleSection
-              title={`Enfants (${form.enfants.length}/${form.souscripteur.nombreEnfants})`}
-              description="Informations des enfants à assurer"
-              icon={<Baby className="h-4 w-4" />}
-              defaultOpen={true}
-              badge={form.enfants.some(e => !e.dateNaissance) ? 
-                <Badge variant="destructive">Requis</Badge> : 
-                <Badge variant="secondary">Complété</Badge>
-              }
-            >
-              <div className="space-y-4">
-                {form.enfants.map((enfant, index) => (
-                  <div key={index} className="p-4 border rounded-lg space-y-4">
-                    <h4 className="font-medium text-sm">Enfant {index + 1}</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor={`enfant-${index}-date`}>Date de naissance *</Label>
-                        <Input
-                          id={`enfant-${index}-date`}
-                          type="date"
-                          value={enfant.dateNaissance}
-                          onChange={(e) => updateEnfant(index, { dateNaissance: e.target.value })}
-                          max={new Date().toISOString().split('T')[0]}
-                          min="1900-01-01"
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label>Ayant droit</Label>
-                        <Select
-                          value={enfant.ayantDroit}
-                          onValueChange={(value: 'souscripteur' | 'conjoint') => 
-                            updateEnfant(index, { ayantDroit: value })
-                          }
-                        >
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="souscripteur">Assuré principal</SelectItem>
-                            {form.simulationType === 'couple' && (
-                              <SelectItem value="conjoint">Conjoint</SelectItem>
-                            )}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </FormCollapsibleSection>
-          )}
+            {form.souscripteur.nombreEnfants > 0 && (
+              <TabsContent value="enfants" className="mt-3">
+                <EnfantsTab form={form} updateEnfant={updateEnfant} />
+              </TabsContent>
+            )}
+          </Tabs>
         </div>
 
         <DialogFooter className="gap-2">

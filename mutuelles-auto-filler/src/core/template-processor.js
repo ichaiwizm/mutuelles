@@ -8,6 +8,7 @@ export function processTemplate(template, data) {
       const replacements = {
         'lead.nom': data.lead?.nom,
         'lead.prenom': data.lead?.prenom,
+        'lead.projectName': data.lead?.projectName,
         'lead.conjoint ? \'couple\' : \'individuel\'': data.lead?.conjoint ? 'couple' : 'individuel',
         'lead.conjoint.dateNaissance': data.lead?.conjoint?.dateNaissance,
         // Conditions

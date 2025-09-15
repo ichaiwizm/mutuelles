@@ -55,13 +55,16 @@ export function generateWorkflow(lead: TestDataLead, config: SwissLifeConfig): T
   let order = 1;
 
   // Étape 1: projectName (toujours)
+  const projectNameTemplate = (lead as any).projectName && (lead as any).projectName.trim().length > 0
+    ? '{{lead.projectName}}'
+    : `Simulation {{lead.nom}} {{lead.prenom}}`;
   etapes.push({
     order: order++,
     name: 'projectName',
     service: 'nom-projet-service',
     required: true,
     data: {
-      value: `Simulation {{lead.nom}} {{lead.prenom}}`
+      value: projectNameTemplate
     }
   });
 

@@ -5,6 +5,7 @@ export interface TestDataLead {
   id: string;
   nom: string;
   prenom: string;
+  projectName?: string;
   contact: {
     codePostal: string;
   };

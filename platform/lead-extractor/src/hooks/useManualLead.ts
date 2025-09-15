@@ -33,21 +33,51 @@ export function useManualLead() {
 
   // Valider le formulaire
   const validateForm = useCallback((data: ManualLeadForm) => {
-    const isBasicValid =
+    // Champs de configuration requis
+    const hasProjectName = !!(data.projectNameValue && data.projectNameValue.trim().length > 0);
+    const hasSimulationType = data.simulationType === 'individuel' || data.simulationType === 'couple';
+    const hasMadelin = data.loiMadelin === 'oui' || data.loiMadelin === 'non';
+
+    // Champs assuré principal
+    const isBasicValid: boolean =
       !!data.souscripteur.dateNaissance &&
       !!data.souscripteur.codePostal &&
-      /^\d{5}$/.test(data.souscripteur.codePostal);
+      /^\d{5}$/.test(data.souscripteur.codePostal) &&
+      !!data.souscripteur.regimeSocial &&
+      !!data.souscripteur.statut;
 
-    const isConjointValid = 
-      data.simulationType !== 'couple' || 
-      (data.conjoint?.dateNaissance && data.conjoint?.regimeSocial && data.conjoint?.statut);
+    // Profession requise si le statut du régime a une liste non vide
+    const regimeOption = REGIME_OPTIONS.find(r => r.value === data.souscripteur.regimeSocial);
+    const statutOption = regimeOption?.statuts.find(s => s.value === data.souscripteur.statut);
+    const professionRequired = !!(statutOption && Array.isArray(statutOption.professions) && statutOption.professions.length > 0);
+    const hasSouscripteurProfession = professionRequired ? !!data.souscripteur.profession : true;
 
-    const areEnfantsValid = 
+    // Conjoint
+    const isConjointValid: boolean =
+      data.simulationType !== 'couple' ||
+      (
+        !!data.conjoint?.dateNaissance &&
+        !!data.conjoint?.regimeSocial &&
+        !!data.conjoint?.statut &&
+        // Profession requise si applicable
+        (() => {
+          const reg = REGIME_OPTIONS.find(r => r.value === data.conjoint!.regimeSocial);
+          const st = reg?.statuts.find(s => s.value === data.conjoint!.statut);
+          const profReq = !!(st && Array.isArray(st.professions) && st.professions.length > 0);
+          return profReq ? !!data.conjoint!.profession : true;
+        })()
+      );
+
+    // Enfants
+    const areEnfantsValid: boolean =
       data.souscripteur.nombreEnfants === 0 ||
       (data.enfants.length === data.souscripteur.nombreEnfants &&
-       data.enfants.every(enfant => enfant.dateNaissance && enfant.ayantDroit));
+        data.enfants.every((enfant) => !!enfant.dateNaissance && !!enfant.ayantDroit));
 
-    return isBasicValid && isConjointValid && areEnfantsValid;
+    return Boolean(
+      hasProjectName && hasSimulationType && hasMadelin &&
+      isBasicValid && hasSouscripteurProfession && isConjointValid && areEnfantsValid
+    );
   }, []);
 
   // Mettre à jour le formulaire
@@ -171,6 +201,7 @@ export function useManualLead() {
     
     return {
       id: leadId,
+      projectName: (form.projectNameValue || '').trim() || undefined,
       contact: {
         codePostal: form.souscripteur.codePostal
       },

@@ -94,7 +94,7 @@ export class ExtensionBridge {
   // (méthodes d'arrêt de run / retries isolés supprimées côté UI)
 
   // Démarrer un run (fenêtre unique + pool d'onglets)
-  static async startRun(params: { providers: string[]; leads: Lead[]; parallelTabs: number; options?: { minimizeWindow?: boolean; closeOnFinish?: boolean } }): Promise<{ success: boolean; error?: string }> {
+  static async startRun(params: { providers: string[]; leads: Lead[]; parallelTabs: number; options?: { minimizeWindow?: boolean; closeOnFinish?: boolean; swissLifeOverrides?: Record<string, any> } }): Promise<{ success: boolean; error?: string }> {
     try {
       const { providers, leads, parallelTabs, options } = params || ({} as any);
       if (!providers || providers.length === 0) return { success: false, error: 'providers requis' };

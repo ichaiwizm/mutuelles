@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Calendar, CalendarDays } from "lucide-react";
+import { CalendarDays } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Input } from "./input";
 import { Button } from "./button";

@@ -87,12 +87,22 @@ async function resolveStepData(etape, leadData, resolver, overrides = null) {
 
   // Appliquer les overrides (globaux et spécifiques) si disponibles
   if (overrides) {
-    if (stepName === 'projectName' && overrides.projectName) {
-      // Générer le nom du projet selon l'option choisie
-      if (overrides.projectName === 'lead_name') {
-        stepData = { value: `Simulation ${leadData.lead.nom} ${leadData.lead.prenom}` };
-      } else if (overrides.projectName === 'lead_source') {
-        stepData = { value: `${leadData.lead.nom} ${leadData.lead.prenom} - Source Extension` };
+    if (stepName === 'projectName') {
+      // 1) Valeur par lead (champ manuel) prend le dessus si présent
+      if (leadData?.lead?.projectName) {
+        stepData = { value: leadData.lead.projectName };
+      }
+      // 2) Sinon, accepter une valeur brute passée en override
+      else if (typeof overrides.projectNameValue === 'string' && overrides.projectNameValue.trim()) {
+        stepData = { value: overrides.projectNameValue };
+      }
+      // 3) Sinon, utiliser le format prédéfini (lead_name / lead_source)
+      else if (overrides.projectName) {
+        if (overrides.projectName === 'lead_name') {
+          stepData = { value: `Simulation ${leadData.lead.nom} ${leadData.lead.prenom}` };
+        } else if (overrides.projectName === 'lead_source') {
+          stepData = { value: `${leadData.lead.nom} ${leadData.lead.prenom} - Source Extension` };
+        }
       }
     } else if (stepName === 'dateEffet' && overrides.dateEffet) {
       // Calculer la date selon l'option choisie

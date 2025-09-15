@@ -13,7 +13,10 @@ export interface DashboardHandlersConfig {
 }
 
 export class DashboardHandlers {
-  constructor(private config: DashboardHandlersConfig) {}
+  private config: DashboardHandlersConfig;
+  constructor(config: DashboardHandlersConfig) {
+    this.config = config;
+  }
 
   // Handler pour l'envoi d'un seul lead (retry)
   handleRetrySingleLead = async (lead: Lead) => {
@@ -35,7 +38,6 @@ export class DashboardHandlers {
         options: {
           minimizeWindow: false,
           closeOnFinish: false,
-          isolated: true,
           swissLifeOverrides: this.config.getSwissLifeOverrides?.() || undefined,
         },
       });
