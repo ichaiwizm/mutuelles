@@ -4,8 +4,9 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { useManualLead } from '@/hooks/useManualLead';
 import { useGlobalConfig } from '@/hooks/useGlobalConfig';
-import { Settings, User, Users, Baby, FileText, Star } from 'lucide-react';
+import { Settings, User, Users, Baby, FileText, Star, Send } from 'lucide-react';
 import { toast } from 'sonner';
+import { ExtensionBridge } from '@/services/extension-bridge';
 import { ConfigTab } from '@/components/manual-lead/ConfigTab';
 import { SouscripteurTab } from '@/components/manual-lead/SouscripteurTab';
 import { ConjointTab } from '@/components/manual-lead/ConjointTab';
@@ -23,6 +24,7 @@ interface ManualLeadDialogProps {
 export function ManualLeadDialog({ open, onOpenChange, onAddLead }: ManualLeadDialogProps) {
   const [activeTab, setActiveTab] = useState<'config' | 'souscripteur' | 'conjoint' | 'enfants'>('config');
   const [highlightedFields, setHighlightedFields] = useState<Set<string>>(new Set());
+  const [isSendingToExtension, setIsSendingToExtension] = useState(false);
   const {
     form,
     isValid,
@@ -148,6 +150,71 @@ export function ManualLeadDialog({ open, onOpenChange, onAddLead }: ManualLeadDi
     }
   };
 
+  const handleSubmitAndSend = async () => {
+    if (!isValid) {
+      const { missingFields, firstMissingTab } = getMissingFieldsInfo();
+      setHighlightedFields(missingFields);
+      setActiveTab(firstMissingTab);
+      toast.error('Veuillez remplir tous les champs obligatoires');
+      return;
+    }
+
+    const lead = generateLead();
+    if (!lead || !onAddLead) return;
+
+    setIsSendingToExtension(true);
+
+    try {
+      // 1. Ajouter le lead au tableau
+      onAddLead(lead);
+
+      // 2. Vérifier si l'extension est installée
+      const isInstalled = await ExtensionBridge.checkExtensionInstalled();
+      if (!isInstalled) {
+        toast.error('Extension SwissLife non détectée', {
+          description: "Assurez-vous que l'extension est installée et activée.",
+        });
+        setIsSendingToExtension(false);
+        return;
+      }
+
+      // 3. Envoyer le lead à l'extension
+      toast.info("Envoi du lead à l'extension...");
+      const result = await ExtensionBridge.startRun({
+        providers: ['swisslife'],
+        leads: [lead],
+        parallelTabs: 1,
+        options: {
+          minimizeWindow: false,
+          closeOnFinish: false,
+        },
+      });
+
+      if (result.success) {
+        toast.success('Lead créé et envoyé à l\'extension avec succès', {
+          description: "Traitement en cours dans l'extension.",
+        });
+
+        // Nettoyer le formulaire et fermer le modal
+        resetForm();
+        setHighlightedFields(new Set());
+        setActiveTab('config');
+        onOpenChange(false);
+      } else {
+        toast.error("Erreur lors de l'envoi à l'extension", {
+          description: result.error || 'Erreur inconnue',
+        });
+      }
+    } catch (error) {
+      console.error('Erreur envoi extension:', error);
+      toast.error('Erreur lors de l\'envoi', {
+        description: error instanceof Error ? error.message : 'Erreur inconnue',
+      });
+    } finally {
+      setIsSendingToExtension(false);
+    }
+  };
+
   // Note: fermeture gérée par onOpenChange depuis les actions du Dialog
 
   // Options de date d'effet avec les vraies dates
@@ -270,12 +337,30 @@ export function ManualLeadDialog({ open, onOpenChange, onAddLead }: ManualLeadDi
               Annuler
             </Button>
           </DialogClose>
-          <Button 
+          <Button
             onClick={handleSubmit}
             className="min-w-[100px]"
+            disabled={isSendingToExtension}
           >
             <Star className="h-4 w-4 mr-2" />
             Créer la simulation
+          </Button>
+          <Button
+            onClick={handleSubmitAndSend}
+            className="min-w-[140px]"
+            disabled={isSendingToExtension}
+          >
+            {isSendingToExtension ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                Envoi en cours...
+              </>
+            ) : (
+              <>
+                <Send className="h-4 w-4 mr-2" />
+                Créer et envoyer
+              </>
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>
