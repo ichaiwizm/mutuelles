@@ -9,8 +9,6 @@ export interface ManualLeadForm {
   
   // Assuré principal
   souscripteur: {
-    nom?: string;
-    prenom?: string;
     dateNaissance: string;
     regimeSocial: RegimeSocial;
     statut: string;
@@ -21,8 +19,6 @@ export interface ManualLeadForm {
   
   // Conjoint (optionnel)
   conjoint?: {
-    nom?: string;
-    prenom?: string;
     dateNaissance: string;
     regimeSocial: RegimeSocial;
     statut: string;
@@ -139,8 +135,6 @@ export const DEFAULT_MANUAL_LEAD: ManualLeadForm = {
   projectNameValue: '',
   loiMadelin: 'oui',
   souscripteur: {
-    nom: '',
-    prenom: '',
     dateNaissance: '',
     regimeSocial: 'TNS',
     statut: 'TNS',

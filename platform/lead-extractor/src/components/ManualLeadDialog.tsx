@@ -142,6 +142,7 @@ export function ManualLeadDialog({ open, onOpenChange, onAddLead }: ManualLeadDi
       onAddLead(lead);
       resetForm();
       setHighlightedFields(new Set());
+      setActiveTab('config'); // Remettre le modal au premier onglet
       onOpenChange(false);
       toast.success('Lead ajouté avec succès');
     }
