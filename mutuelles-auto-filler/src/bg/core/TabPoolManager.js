@@ -10,6 +10,7 @@ self.BG.TabPoolManager = class TabPoolManager {
     this.storageKey = self.BG.STORAGE_KEYS.POOL;
     this.config = self.BG.SCHEDULER_CONSTANTS.CONFIG;
     this.tabStatus = self.BG.SCHEDULER_CONSTANTS.TAB_STATUS;
+    this.singleTabMode = this.config.SINGLE_TAB_MODE === true;
   }
 
   async getPool() {
@@ -54,32 +55,44 @@ self.BG.TabPoolManager = class TabPoolManager {
     let pool = await this.getPool();
     pool = await this.validatePool(pool);
     
-    if (pool) return pool;
+    if (pool) {
+      if (this.singleTabMode && pool.windowId) {
+        try { await this._applySingleTabBounds(pool.windowId); } catch (_) { /* ignore */ }
+      }
+      return pool;
+    }
 
     const wantFocus = options?.minimizeWindow === false;
+    const singleCfg = this.config.SINGLE_TAB_WINDOW || {};
+    const desiredWidth = this.singleTabMode ? (Number(singleCfg.width) || this.config.WINDOW_WIDTH) : this.config.WINDOW_WIDTH;
+    const desiredHeight = this.singleTabMode ? (Number(singleCfg.height) || this.config.WINDOW_HEIGHT) : this.config.WINDOW_HEIGHT;
     const window = await self.BG.chromeHelpers.safeWindowsCreate({
       type: 'normal',
       focused: !!wantFocus,
-      width: this.config.WINDOW_WIDTH,
-      height: this.config.WINDOW_HEIGHT,
+      width: desiredWidth,
+      height: desiredHeight,
       url: initialUrl
     });
 
+    let shouldMinimize = true;
     try {
-      let minimize;
       if (typeof options.minimizeWindow === 'boolean') {
-        minimize = options.minimizeWindow;
+        shouldMinimize = options.minimizeWindow;
       } else {
         const { automation_config } = await chrome.storage.local.get(['automation_config']);
-        minimize = automation_config?.minimizeWindow !== false;
+        shouldMinimize = automation_config?.minimizeWindow !== false;
       }
-      if (minimize) {
+      if (shouldMinimize) {
         await self.BG.chromeHelpers.safeWindowsUpdate(window.id, { state: 'minimized' });
       } else if (wantFocus) {
         await self.BG.chromeHelpers.safeWindowsUpdate(window.id, { state: 'normal', focused: true });
       }
     } catch (error) {
       // Ignore si impossible de minimiser
+    }
+
+    if (this.singleTabMode && !shouldMinimize) {
+      try { await this._applySingleTabBounds(window.id); } catch (_) { /* ignore */ }
     }
 
     // Enregistrer l'onglet initial de la fenêtre comme premier slot du pool
@@ -112,10 +125,12 @@ self.BG.TabPoolManager = class TabPoolManager {
   }
 
   async ensureCapacity(targetCapacity, options = {}) {
-    const capacity = Math.max(
-      this.config.MIN_PARALLEL_TABS,
-      Math.min(this.config.MAX_PARALLEL_TABS, targetCapacity || this.config.DEFAULT_PARALLEL_TABS)
-    );
+    const capacity = this.singleTabMode
+      ? 1
+      : Math.max(
+          this.config.MIN_PARALLEL_TABS,
+          Math.min(this.config.MAX_PARALLEL_TABS, targetCapacity || this.config.DEFAULT_PARALLEL_TABS)
+        );
 
     let pool = await this.ensureWindow(undefined, options);
     pool = await this.validatePool(pool);
@@ -127,6 +142,15 @@ self.BG.TabPoolManager = class TabPoolManager {
     while (pool.tabs.length > capacity && pool.tabs.length > 1) {
       const tabToRemove = pool.tabs.pop();
       await self.BG.chromeHelpers.safeTabsRemove(tabToRemove.tabId);
+    }
+
+    if (this.singleTabMode && pool.tabs.length > 1) {
+      const keep = pool.tabs[0];
+      const rest = pool.tabs.slice(1);
+      for (const tab of rest) {
+        await self.BG.chromeHelpers.safeTabsRemove(tab.tabId);
+      }
+      pool.tabs = keep ? [keep] : [];
     }
 
     pool.capacity = capacity;
@@ -180,6 +204,43 @@ self.BG.TabPoolManager = class TabPoolManager {
 
     await this.setPool(pool);
     return true;
+  }
+
+  async _applySingleTabBounds(windowId) {
+    const cfg = this.config.SINGLE_TAB_WINDOW || {};
+    let currentInfo = null;
+    try { currentInfo = await chrome.windows.get(windowId); } catch (_) { /* ignore */ }
+    if (currentInfo && currentInfo.state === 'minimized') {
+      return;
+    }
+
+    const width = Math.max(400, Number(cfg.width) || this.config.WINDOW_WIDTH);
+    const height = Math.max(400, Number(cfg.height) || this.config.WINDOW_HEIGHT);
+    const top = typeof cfg.top === 'number' ? cfg.top : 0;
+    const marginRight = typeof cfg.marginRight === 'number' ? cfg.marginRight : 16;
+
+    let left = null;
+    try {
+      const windows = await chrome.windows.getAll();
+      const others = (windows || []).filter(w => w.id !== windowId);
+      if (others.length > 0) {
+        const rightEdge = others.reduce((max, w) => {
+          const wLeft = typeof w.left === 'number' ? w.left : 0;
+          const wWidth = typeof w.width === 'number' ? w.width : width;
+          return Math.max(max, wLeft + wWidth);
+        }, width);
+        left = Math.max(0, rightEdge - width - marginRight);
+      }
+    } catch (_) { /* ignore */ }
+
+    const updateProps = { width, height };
+    if (typeof top === 'number') updateProps.top = top;
+    if (typeof left === 'number') updateProps.left = left;
+    updateProps.state = 'normal';
+
+    try {
+      await self.BG.chromeHelpers.safeWindowsUpdate(windowId, updateProps);
+    } catch (_) { /* ignore */ }
   }
 
   async closePool() {

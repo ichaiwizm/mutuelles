@@ -82,7 +82,7 @@ export class DashboardHandlers {
       const result = await ExtensionBridge.startRun({
         providers: ['swisslife'],
         leads: this.config.selectedLeads,
-        parallelTabs: Math.max(1, this.config.parallelTabs || 3),
+        parallelTabs: 1,
         options: {
           minimizeWindow: false,
           closeOnFinish: true,

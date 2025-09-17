@@ -8,6 +8,8 @@ self.BG.RunStateManager = class RunStateManager {
   constructor() {
     this.storageKey = self.BG.STORAGE_KEYS.RUN_STATE;
     this.runStatus = self.BG.SCHEDULER_CONSTANTS.RUN_STATUS;
+    this.config = self.BG.SCHEDULER_CONSTANTS.CONFIG;
+    this.singleTabMode = this.config.SINGLE_TAB_MODE === true;
   }
 
   async getRunState() {
@@ -21,7 +23,7 @@ self.BG.RunStateManager = class RunStateManager {
 
   createRunState(providers, leads, options = {}) {
     const batchId = Date.now().toString();
-    const groupCapacity = Math.max(1, Number(options.parallelTabs || 3));
+    const groupCapacity = this.singleTabMode ? 1 : Math.max(1, Number(options.parallelTabs || 3));
 
     return {
       id: batchId,
@@ -170,6 +172,37 @@ self.BG.RunStateManager = class RunStateManager {
     const allGroups = state.groups[provider] || [];
     
     return allGroups.filter(group => pendingIds.includes(group.groupId));
+  }
+
+  async getNextSequentialGroup() {
+    if (!this.singleTabMode) return null;
+
+    const state = await this.getRunState();
+    if (!state) return null;
+
+    for (let i = 0; i < state.providers.length; i++) {
+      const provider = state.providers[i];
+      const backlogIds = state.backlog[provider] || [];
+      if (backlogIds.length === 0) continue;
+
+      const nextGroupId = backlogIds[0];
+      const groups = state.groups[provider] || [];
+      const groupIndex = groups.findIndex(g => g.groupId === nextGroupId);
+      if (groupIndex === -1) continue;
+
+      const group = groups[groupIndex];
+      state.activeProviderIndex = i;
+      await this.setRunState(state);
+
+      return {
+        provider,
+        group,
+        groupIndex,
+        totalGroups: groups.length
+      };
+    }
+
+    return null;
   }
 
   async getRunSummary() {

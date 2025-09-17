@@ -15,6 +15,14 @@ self.BG.SCHEDULER_CONSTANTS = {
     MAX_PARALLEL_TABS: (self.BG.SHARED_DEFAULTS && self.BG.SHARED_DEFAULTS.parallelTabs?.max) || 10,
     MIN_PARALLEL_TABS: (self.BG.SHARED_DEFAULTS && self.BG.SHARED_DEFAULTS.parallelTabs?.min) || 1,
     DEFAULT_PARALLEL_TABS: (self.BG.SHARED_DEFAULTS && self.BG.SHARED_DEFAULTS.parallelTabs?.def) || 3,
+    SINGLE_TAB_MODE: true,
+    // Mode mono-onglet imposé (retour facile en modifiant ce flag)
+    SINGLE_TAB_WINDOW: {
+      width: 720,
+      height: 720,
+      top: 0,
+      marginRight: 16
+    },
     RETRY_ATTEMPTS: (self.BG.SHARED_DEFAULTS && self.BG.SHARED_DEFAULTS.retries?.attempts) || 3,
     RETRY_DELAY: (self.BG.SHARED_DEFAULTS && self.BG.SHARED_DEFAULTS.retries?.delayMs) || 1000,
     WINDOW_WIDTH: (self.BG.SHARED_DEFAULTS && self.BG.SHARED_DEFAULTS.window?.width) || 1000,

@@ -17,11 +17,13 @@ interface ConfigurationModalProps {
   onOpenChange: (open: boolean) => void;
 }
 
+const MULTI_TAB_UI_ENABLED = false;
+
 export function ConfigurationModal({ open, onOpenChange }: ConfigurationModalProps) {
   const { parallelTabs, setParallelTabs } = useSettings();
   const { config: globalConfig, setConfig: setGlobalConfig, getNextMonthDates, isLoaded: globalLoaded } = useGlobalConfig();
   const { config: swissLifeConfig, setConfig: setSwissLifeConfig, isLoaded: swissLifeLoaded } = useSwissLifeConfig();
-  const [tempParallelTabs, setTempParallelTabs] = useState<number>(parallelTabs ?? 3);
+  const [tempParallelTabs, setTempParallelTabs] = useState<number>(parallelTabs ?? 1);
   const [globalExpanded, setGlobalExpanded] = useState(false);
   const [swissLifeExpanded, setSwissLifeExpanded] = useState(false);
   const [tempGlobalConfig, setTempGlobalConfig] = useState<GlobalConfig>(globalConfig);
@@ -31,8 +33,8 @@ export function ConfigurationModal({ open, onOpenChange }: ConfigurationModalPro
 
   useEffect(() => {
     // Sync local temp when modal opens or global values change
-    if (open) {
-      setTempParallelTabs(parallelTabs ?? 3);
+    if (open && MULTI_TAB_UI_ENABLED) {
+      setTempParallelTabs(parallelTabs ?? 1);
       if (globalLoaded) {
         setTempGlobalConfig(globalConfig);
       }
@@ -44,13 +46,13 @@ export function ConfigurationModal({ open, onOpenChange }: ConfigurationModalPro
 
   const hasGlobalChanges = JSON.stringify(tempGlobalConfig) !== JSON.stringify(globalConfig);
   const hasSwissChanges = JSON.stringify(tempSwissLifeConfig) !== JSON.stringify(swissLifeConfig);
-  const hasChanges = ((tempParallelTabs ?? 3) !== (parallelTabs ?? 3)) || hasGlobalChanges || hasSwissChanges;
+  const hasParallelTabChanges = MULTI_TAB_UI_ENABLED && ((tempParallelTabs ?? 1) !== (parallelTabs ?? 1));
+  const hasChanges = hasParallelTabChanges || hasGlobalChanges || hasSwissChanges;
 
   const handleApply = async () => {
-    const sanitized = Math.max(1, Math.min(10, Math.floor(Number(tempParallelTabs) || 1)));
-    setParallelTabs(sanitized);
+    setParallelTabs(1);
     try {
-      await ExtensionBridge.setAutomationConfig({ parallelTabs: sanitized });
+      await ExtensionBridge.setAutomationConfig({ parallelTabs: 1 });
     } catch (_) {}
 
     // Apply Global configuration changes
@@ -77,7 +79,7 @@ export function ConfigurationModal({ open, onOpenChange }: ConfigurationModalPro
             Configuration de l'extension
           </DialogTitle>
           <DialogDescription>
-            Définissez le nombre d'onglets parallèles utilisés par l'extension.
+            L'extension traite désormais les leads séquentiellement dans un seul onglet.
           </DialogDescription>
         </DialogHeader>
 
@@ -87,22 +89,28 @@ export function ConfigurationModal({ open, onOpenChange }: ConfigurationModalPro
           <Card>
             <CardHeader>
               <CardTitle className="text-base">Parallélisation</CardTitle>
-              <CardDescription>Nombre d'onglets parallèles ouverts pour traiter les leads.</CardDescription>
+              <CardDescription>Mode mono-onglet activé (traitement lead par lead).</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center gap-3">
-                <Label htmlFor="parallelTabs" className="whitespace-nowrap">Onglets parallèles</Label>
-                <Input
-                  id="parallelTabs"
-                  type="number"
-                  min={1}
-                  max={10}
-                  value={tempParallelTabs}
-                  onChange={(e) => setTempParallelTabs(Number(e.target.value))}
-                  className="w-24"
-                />
-              </div>
-            </CardContent>
+            {MULTI_TAB_UI_ENABLED ? (
+              <CardContent className="space-y-4">
+                <div className="flex items-center gap-3">
+                  <Label htmlFor="parallelTabs" className="whitespace-nowrap">Onglets parallèles</Label>
+                  <Input
+                    id="parallelTabs"
+                    type="number"
+                    min={1}
+                    max={10}
+                    value={tempParallelTabs}
+                    onChange={(e) => setTempParallelTabs(Number(e.target.value))}
+                    className="w-24"
+                  />
+                </div>
+              </CardContent>
+            ) : (
+              <CardContent className="text-sm text-muted-foreground">
+                Le paramètre est figé à 1 onglet pour garantir un traitement séquentiel stable.
+              </CardContent>
+            )}
           </Card>
 
           {/* Configuration Globale */}

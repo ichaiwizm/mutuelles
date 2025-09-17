@@ -23,7 +23,7 @@ import type { Lead } from '@/types/lead';
 export function Dashboard() {
   // Hooks principaux
   const { isAuthenticated, hasTokens, email, loading: authLoading, checkAuthStatus, redirectToLogin, logout } = useAuth();
-  const { days, setDays, dateRange, setDateRange, filterMode, parallelTabs } = useSettings();
+  const { days, setDays, dateRange, setDateRange, filterMode } = useSettings();
   const { leads, addLeads, clearAllLeads, removeLeadsByIds } = useLeads();
   const { enrichLeadsWithStatus, applyStatusUpdate, cleanupOrphanedStatuses, isLoaded, setLeadStatus } = useProcessingStatus();
   const { uiState, setPageSize, setCurrentPage, setGlobalFilter } = useUIState();
@@ -78,7 +78,7 @@ export function Dashboard() {
   // Configuration des handlers
   const handlersConfig = {
     selectedLeads,
-    parallelTabs: parallelTabs || 3,
+    parallelTabs: 1,
     setLeadStatus,
     setSendingToExtension: uiActions.setSendingToExtension,
     clearSelection: deselectAll,

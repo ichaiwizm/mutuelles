@@ -28,18 +28,24 @@ self.BG = self.BG || {};
  * @param {Object} params - { providers, leads, parallelTabs, options }
  */
 self.BG.startRun = async function startRun(params) {
+  const sanitizedParams = {
+    ...params,
+    parallelTabs: 1,
+    options: { ...(params?.options || {}) }
+  };
+
   // Si des overrides sont fournis, les stocker pour ce run
-  if (params.options?.swissLifeOverrides) {
+  if (sanitizedParams.options?.swissLifeOverrides) {
     try {
       await chrome.storage.local.set({
-        temp_overrides: params.options.swissLifeOverrides,
+        temp_overrides: sanitizedParams.options.swissLifeOverrides,
         temp_overrides_timestamp: Date.now()
       });
     } catch (error) {
       self.BG.logger.warn('[Scheduler] Erreur lors du stockage des overrides:', error);
     }
   }
-  return await getOrchestrator().startRun(params);
+  return await getOrchestrator().startRun(sanitizedParams);
 };
 
 /**

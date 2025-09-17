@@ -16,18 +16,20 @@ const DEFAULT_SETTINGS = {
   dateRange: null as DateRange | null
 };
 
+const SINGLE_TAB_PARALLEL_TABS = 1;
+
 export const useSettings = () => {
   const [days, setDays] = useState(DEFAULT_SETTINGS.days);
   const [dateRange, setDateRange] = useState<DateRange | null>(DEFAULT_SETTINGS.dateRange);
   const [filterMode, setFilterMode] = useState<'predefined' | 'custom'>('predefined');
-  const [parallelTabs, setParallelTabs] = useState<number>(3);
+  const [parallelTabs, setParallelTabsState] = useState<number>(SINGLE_TAB_PARALLEL_TABS);
   const [isLoaded, setIsLoaded] = useState(false);
 
   // Charger les paramètres au démarrage
   useEffect(() => {
     const settings = StorageManager.getSettings();
     setDays(settings.days);
-    setParallelTabs(typeof settings.parallelTabs === 'number' ? settings.parallelTabs : 3);
+    setParallelTabsState(SINGLE_TAB_PARALLEL_TABS);
     if (settings.dateRange) {
       setDateRange({
         from: settings.dateRange.from ? new Date(settings.dateRange.from) : undefined,
@@ -44,7 +46,7 @@ export const useSettings = () => {
       const detail = (e as CustomEvent).detail as ReturnType<typeof StorageManager.getSettings>;
       if (!detail) return;
       setDays(detail.days);
-      setParallelTabs(typeof detail.parallelTabs === 'number' ? detail.parallelTabs : 3);
+      setParallelTabsState(SINGLE_TAB_PARALLEL_TABS);
       if (detail.dateRange) {
         setDateRange({
           from: detail.dateRange.from ? new Date(detail.dateRange.from) : undefined,
@@ -68,7 +70,7 @@ export const useSettings = () => {
     const settings = {
       ...currentSettings,
       days,
-      parallelTabs,
+      parallelTabs: SINGLE_TAB_PARALLEL_TABS,
       sources: {
         gmail: true // Toujours activé maintenant
       },
@@ -93,6 +95,10 @@ export const useSettings = () => {
     if (!range && days === 0) {
       setDays(7);
     }
+  };
+
+  const setParallelTabs = (_newTabs: number) => {
+    setParallelTabsState(SINGLE_TAB_PARALLEL_TABS);
   };
 
   return {

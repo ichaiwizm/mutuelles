@@ -46,7 +46,7 @@ export class StorageManager {
       sources: {
         gmail: true
       },
-      parallelTabs: 3,
+      parallelTabs: 1,
       ui: {
         pageSize: 10,
         currentPage: 0,
@@ -58,7 +58,7 @@ export class StorageManager {
     if (!data) return defaults;
     try {
       const parsed = JSON.parse(data);
-      if (typeof parsed.parallelTabs !== 'number') parsed.parallelTabs = 3;
+      if (typeof parsed.parallelTabs !== 'number' || parsed.parallelTabs !== 1) parsed.parallelTabs = 1;
       return parsed;
     } catch (_) {
       return defaults;

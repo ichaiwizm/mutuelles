@@ -133,8 +133,9 @@ self.BG.IsolatedGroupManager = class IsolatedGroupManager {
 
     // Démarrer le pianotage si fenêtre visible
     try {
-      if (options.minimizeWindow === false && windowId) {
-        const intervalMs = self.BG.SCHEDULER_CONSTANTS.CONFIG.TAB_CYCLE_INTERVAL_MS || 1000;
+      const cfg = self.BG.SCHEDULER_CONSTANTS?.CONFIG || {};
+      if (options.minimizeWindow === false && windowId && cfg.SINGLE_TAB_MODE !== true) {
+        const intervalMs = cfg.TAB_CYCLE_INTERVAL_MS || 1000;
         self.BG.FocusCycler?.start(windowId, intervalMs);
       }
     } catch (_) { /* ignore */ }

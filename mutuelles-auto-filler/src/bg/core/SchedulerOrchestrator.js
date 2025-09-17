@@ -12,6 +12,7 @@ self.BG.SchedulerOrchestrator = class SchedulerOrchestrator {
     this.isolatedManager = new self.BG.IsolatedGroupManager();
     this.config = self.BG.SCHEDULER_CONSTANTS.CONFIG;
     this.runStatus = self.BG.SCHEDULER_CONSTANTS.RUN_STATUS;
+    this.singleTabMode = this.config.SINGLE_TAB_MODE === true;
   }
 
   /**
@@ -48,10 +49,11 @@ self.BG.SchedulerOrchestrator = class SchedulerOrchestrator {
       throw new Error('Aucun provider valide');
     }
 
-    const capacity = Math.max(
+    const requestedCapacity = Math.max(
       this.config.MIN_PARALLEL_TABS,
       Math.min(this.config.MAX_PARALLEL_TABS, parallelTabs || this.config.DEFAULT_PARALLEL_TABS)
     );
+    const capacity = this.singleTabMode ? 1 : requestedCapacity;
 
     // Gérer les runs isolés (retry single lead)
     if (options.isolated === true && leads.length === 1) {
@@ -69,12 +71,15 @@ self.BG.SchedulerOrchestrator = class SchedulerOrchestrator {
     });
 
     // Dimensionner la capacité initiale au besoin réel multi-provider
-    let totalNeeded = 0;
-    for (const p of runState.providers) {
-      const groups = (runState.groups && runState.groups[p]) ? runState.groups[p] : [];
-      totalNeeded += Math.min(capacity, groups.length);
+    let totalNeeded = 1;
+    if (!this.singleTabMode) {
+      totalNeeded = 0;
+      for (const p of runState.providers) {
+        const groups = (runState.groups && runState.groups[p]) ? runState.groups[p] : [];
+        totalNeeded += Math.min(capacity, groups.length);
+      }
+      totalNeeded = Math.max(1, totalNeeded);
     }
-    totalNeeded = Math.max(1, totalNeeded);
 
     // Assurer la capacité du pool (fenêtre + onglets) selon le besoin multi-provider
     const pool = await this.poolManager.ensureCapacity(totalNeeded, { minimizeWindow: options.minimizeWindow });
@@ -83,15 +88,19 @@ self.BG.SchedulerOrchestrator = class SchedulerOrchestrator {
     await this.runStateManager.startRun(runState);
 
     // Démarrer tous les providers en parallèle (selon plafond par provider)
-    await this._startAllProviders(runState, pool);
+    if (this.singleTabMode) {
+      await this._startNextSequentialGroup(pool);
+    } else {
+      await this._startAllProviders(runState, pool);
 
-    // Si fenêtre visible demandée, lancer le pianotage d'onglets
-    try {
-      if (options.minimizeWindow === false && pool?.windowId) {
-        const intervalMs = self.BG.SCHEDULER_CONSTANTS.CONFIG.TAB_CYCLE_INTERVAL_MS || 1000;
-        self.BG.FocusCycler?.start(pool.windowId, intervalMs);
-      }
-    } catch (_) { /* ignore */ }
+      // Si fenêtre visible demandée, lancer le pianotage d'onglets
+      try {
+        if (options.minimizeWindow === false && pool?.windowId) {
+          const intervalMs = self.BG.SCHEDULER_CONSTANTS.CONFIG.TAB_CYCLE_INTERVAL_MS || 1000;
+          self.BG.FocusCycler?.start(pool.windowId, intervalMs);
+        }
+      } catch (_) { /* ignore */ }
+    }
 
     return {
       started: true,
@@ -216,6 +225,22 @@ self.BG.SchedulerOrchestrator = class SchedulerOrchestrator {
     }
   }
 
+  async _startNextSequentialGroup(pool) {
+    const next = await this.runStateManager.getNextSequentialGroup();
+    if (!next) return null;
+
+    const { provider, group, groupIndex, totalGroups } = next;
+    const url = await self.BG.getProvider(provider).buildUrlWithGroupId(group.groupId);
+    const tabId = await this._getOrCreateTabForUrl(pool, url);
+    if (!tabId) return null;
+
+    await this.poolManager.assignTab(tabId, provider, group.groupId);
+    await this._storeGroupData(provider, group, groupIndex, totalGroups);
+    await this._notifyTabLeadsUpdated(tabId, provider, group, groupIndex, totalGroups);
+
+    return tabId;
+  }
+
   async _getOrCreateTabForUrl(pool, url) {
     // Essayer de réutiliser un onglet IDLE
     let currentPool = await this.poolManager.getPool();
@@ -284,9 +309,26 @@ self.BG.SchedulerOrchestrator = class SchedulerOrchestrator {
       } catch (_) { /* ignore */ }
     }
 
+    const pool = await this.poolManager.getPool();
+
+    if (this.singleTabMode) {
+      const anyBacklog = await this._hasAnyBacklog();
+      if (anyBacklog) {
+        await this._startNextSequentialGroup(pool);
+        return { reassigned: true };
+      }
+
+      const hasActiveAssignments = pool?.tabs?.some(t => !!t.assigned);
+      if (!hasActiveAssignments) {
+        await this._completeRun();
+        return { finished: true };
+      }
+
+      return { ok: true };
+    }
+
     // Essayer de réassigner cet onglet à un autre provider avec backlog, sans dépasser le plafond par provider
     const perProviderCap = runState.options?.parallelTabs || this.config.DEFAULT_PARALLEL_TABS;
-    const pool = await this.poolManager.getPool();
     const providers = runState.providers || [];
 
     // Compter les assignations actives par provider
